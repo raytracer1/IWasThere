@@ -45,20 +45,17 @@ export class D1Helper {
     return this.first<User>('SELECT * FROM users WHERE email = ?', email);
   }
 
-  async upsertUser(user: Omit<User, 'createdAt'>): Promise<void> {
+  async upsertUser(user: Omit<User, 'createdAt' | 'role'>): Promise<void> {
     await this.run(
-      `INSERT INTO users (id, email, name, image, role, created_at)
-       VALUES (?, ?, ?, ?, ?, unixepoch())
+      `INSERT INTO users (id, email, name, image, created_at)
+       VALUES (?, ?, ?, ?, unixepoch())
        ON CONFLICT(email) DO UPDATE SET
-         id = excluded.id,
          name = excluded.name,
-         image = excluded.image,
-         role = excluded.role`,
+         image = excluded.image`,
       user.id,
       user.email,
       user.name ?? null,
-      user.image ?? null,
-      user.role
+      user.image ?? null
     );
   }
 

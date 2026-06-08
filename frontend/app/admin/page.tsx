@@ -7,7 +7,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { fetchAdminEvents, deleteEvent } from "@/lib/api";
+import { fetchAdminEvents, deleteEvent, updateEvent } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
 import type { Event } from "@/lib/types";
 
@@ -52,6 +52,17 @@ export default function AdminPage() {
       setEvents((prev) => prev.filter((e) => e.id !== eventId));
     } catch (err) {
       setError("Failed to delete event");
+    }
+  }
+
+  async function handleApprove(eventId: string) {
+    try {
+      await updateEvent(eventId, { status: 'active' });
+      setEvents((prev) =>
+        prev.map((e) => (e.id === eventId ? { ...e, status: 'active' } : e))
+      );
+    } catch (err) {
+      setError("Failed to approve event");
     }
   }
 
@@ -120,6 +131,16 @@ export default function AdminPage() {
                   </td>
                   <td className="px-4 py-3 text-right">
                     <div className="flex items-center justify-end gap-2">
+                      {event.status === 'draft' && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-green-400 hover:text-green-300"
+                          onClick={() => handleApprove(event.id)}
+                        >
+                          ✅ Approve
+                        </Button>
+                      )}
                       <Link href={`/admin/events/${event.id}/edit`}>
                         <Button variant="ghost" size="sm">Edit</Button>
                       </Link>

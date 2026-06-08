@@ -1,5 +1,4 @@
 import { createMiddleware } from 'hono/factory';
-import type { User } from '../shared';
 import { D1Helper } from '../utils/d1';
 
 // JWT payload from NextAuth — verified with jose
@@ -57,25 +56,40 @@ export function authMiddleware() {
       return c.json({ success: false, error: 'Invalid or expired token' }, 401);
     }
 
-    // Upsert user into D1 on each request (lightweight, ensures user exists)
+    // Find or create user — prefer email match so crawler shares the real admin identity
     const db = new D1Helper(c.env.DB);
     const adminEmails = (c.env.ADMIN_EMAILS ?? '').split(',').map((e: string) => e.trim().toLowerCase());
-    const role = adminEmails.includes(payload.email?.toLowerCase() ?? '') ? 'admin' : 'user';
+    const isAdmin = adminEmails.includes(payload.email?.toLowerCase() ?? '');
 
-    await db.upsertUser({
-      id: payload.sub,
-      email: payload.email ?? '',
-      name: payload.name,
-      image: payload.picture,
-      role: role as User['role'],
-    });
+    // Look up existing user by email first (handles crawler + real user merging)
+    let user = await db.getUserByEmail(payload.email ?? '');
 
-    // Attach user to context
-    const user = await db.getUserById(payload.sub);
+    if (user) {
+      // Existing user — refresh name/image
+      await db.upsertUser({
+        id: payload.sub,
+        email: payload.email ?? '',
+        name: payload.name,
+        image: payload.picture,
+      });
+      user = await db.getUserByEmail(payload.email ?? '');
+    } else {
+      // New user — create with current sub as id
+      await db.upsertUser({
+        id: payload.sub,
+        email: payload.email ?? '',
+        name: payload.name,
+        image: payload.picture,
+      });
+      user = await db.getUserById(payload.sub);
+    }
+
     if (!user) {
       return c.json({ success: false, error: 'User not found' }, 401);
     }
 
+    // Set role directly from email — no DB dependency
+    user.role = isAdmin ? 'admin' : 'user';
     c.set('user', user);
     await next();
   });
