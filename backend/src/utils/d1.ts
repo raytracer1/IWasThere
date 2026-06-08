@@ -1,5 +1,5 @@
 import type { D1Database, D1Result } from '@cloudflare/workers-types';
-import type { User, Event, Job, JobStatus, RateLimit } from '@hotinsert/shared';
+import type { User, Event, Job, JobStatus, RateLimit } from '../shared';
 
 /**
  * Typed wrapper around Cloudflare D1 binding.

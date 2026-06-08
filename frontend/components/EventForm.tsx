@@ -4,8 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import type { Event, EventCategory, EventStatus } from "@hotinsert/shared";
-import { EVENT_CATEGORIES } from "@hotinsert/shared";
+import type { Event, EventCategory, EventStatus } from "@/lib/types";
+import { EVENT_CATEGORIES } from "@/lib/types";
 import { createEvent, updateEvent } from "@/lib/api";
 
 interface EventFormProps {

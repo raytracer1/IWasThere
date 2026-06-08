@@ -10,7 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { UploadSelfie } from "@/components/UploadSelfie";
 import { fetchEvent, uploadSelfie, triggerSwap } from "@/lib/api";
 import { formatDuration } from "@/lib/format";
-import type { Event } from "@hotinsert/shared";
+import type { Event } from "@/lib/types";
 
 export default function CreatePage({
   params,

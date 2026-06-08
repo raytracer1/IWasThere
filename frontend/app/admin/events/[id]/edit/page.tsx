@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { EventForm } from "@/components/EventForm";
 import { fetchEvent } from "@/lib/api";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { Event } from "@hotinsert/shared";
+import type { Event } from "@/lib/types";
 
 export default function EditEventPage({
   params,

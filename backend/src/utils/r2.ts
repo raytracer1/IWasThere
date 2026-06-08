@@ -1,5 +1,5 @@
 import type { R2Bucket } from '@cloudflare/workers-types';
-import { SIGNED_URL_EXPIRY } from '@hotinsert/shared';
+import { SIGNED_URL_EXPIRY } from '../shared';
 
 /**
  * Generate a presigned URL for an R2 object (for reading).

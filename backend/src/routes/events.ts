@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { D1Helper } from '../utils/d1';
 import { generateSignedUrl } from '../utils/r2';
-import type { EventCategory } from '@hotinsert/shared';
+import type { EventCategory } from '../shared';
 import type { Bindings } from '../types';
 
 const eventsRouter = new Hono<{ Bindings: Bindings }>();

@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fetchAdminEvents, deleteEvent } from "@/lib/api";
 import { formatDate } from "@/lib/utils";
-import type { Event } from "@hotinsert/shared";
+import type { Event } from "@/lib/types";
 
 export default function AdminPage() {
   const { status } = useSession();

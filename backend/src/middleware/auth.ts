@@ -1,5 +1,5 @@
 import { createMiddleware } from 'hono/factory';
-import type { User } from '@hotinsert/shared';
+import type { User } from '../shared';
 import { D1Helper } from '../utils/d1';
 
 // JWT payload from NextAuth — verified with jose

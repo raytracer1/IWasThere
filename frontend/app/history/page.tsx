@@ -10,7 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { fetchHistory } from "@/lib/api";
 import { formatDate, formatRelativeTime } from "@/lib/utils";
-import type { JobWithEvent } from "@hotinsert/shared";
+import type { JobWithEvent } from "@/lib/types";
 
 export default function HistoryPage() {
   const { status } = useSession();

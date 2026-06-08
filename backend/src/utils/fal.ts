@@ -1,4 +1,4 @@
-import { DEFAULT_RESOLUTION } from '@hotinsert/shared';
+import { DEFAULT_RESOLUTION } from '../shared';
 
 const FAL_API_BASE = 'https://queue.fal.run/fal-ai/pixverse/swap';
 

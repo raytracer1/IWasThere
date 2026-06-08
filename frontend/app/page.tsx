@@ -7,7 +7,7 @@ import { EventCard } from "@/components/EventCard";
 import { Tabs } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fetchEvents } from "@/lib/api";
-import type { Event } from "@hotinsert/shared";
+import type { Event } from "@/lib/types";
 
 const CATEGORIES = [
   { value: "", label: "All" },

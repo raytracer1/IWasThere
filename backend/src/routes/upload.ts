@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { uploadToR2, generateFileKey } from '../utils/r2';
-import { MAX_SELFIE_SIZE, ACCEPTED_IMAGE_TYPES } from '@hotinsert/shared';
+import { MAX_SELFIE_SIZE, ACCEPTED_IMAGE_TYPES } from '../shared';
 import type { Bindings } from '../types';
 
 const uploadRouter = new Hono<{ Bindings: Bindings }>();

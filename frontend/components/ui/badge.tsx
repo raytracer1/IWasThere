@@ -1,6 +1,6 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
-import type { EventCategory, JobStatus } from "@hotinsert/shared";
+import type { EventCategory, JobStatus } from "@/lib/types";
 
 interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
   variant?: JobStatus | EventCategory;

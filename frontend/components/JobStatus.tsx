@@ -4,8 +4,8 @@ import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { fetchJob } from "@/lib/api";
 import { formatRelativeTime } from "@/lib/utils";
-import { POLL_INTERVAL_MS } from "@hotinsert/shared";
-import type { Job, Event } from "@hotinsert/shared";
+import { POLL_INTERVAL_MS } from "@/lib/types";
+import type { Job, Event } from "@/lib/types";
 
 type JobWithDetails = Job & {
   event?: Event;

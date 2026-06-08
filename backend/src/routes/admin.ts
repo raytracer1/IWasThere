@@ -1,8 +1,8 @@
 import { Hono } from 'hono';
 import { D1Helper } from '../utils/d1';
 import { uploadToR2, deleteFromR2 } from '../utils/r2';
-import { MAX_VIDEO_SIZE, MAX_THUMBNAIL_SIZE } from '@hotinsert/shared';
-import type { CreateEventRequest, UpdateEventRequest } from '@hotinsert/shared';
+import { MAX_VIDEO_SIZE, MAX_THUMBNAIL_SIZE } from '../shared';
+import type { CreateEventRequest, UpdateEventRequest } from '../shared';
 import type { Bindings } from '../types';
 
 const adminRouter = new Hono<{ Bindings: Bindings }>();

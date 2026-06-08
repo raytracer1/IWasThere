@@ -1,6 +1,6 @@
 import { createMiddleware } from 'hono/factory';
 import { D1Helper } from '../utils/d1';
-import { DAILY_GENERATION_LIMIT } from '@hotinsert/shared';
+import { DAILY_GENERATION_LIMIT } from '../shared';
 
 /**
  * Middleware: Check daily generation rate limit.

@@ -7,7 +7,7 @@ import type {
   JobWithEvent,
   UploadResponse,
   SwapRequest,
-} from "@hotinsert/shared";
+} from "@/lib/types";
 
 const WORKER_URL =
   process.env.NEXT_PUBLIC_WORKER_URL ?? "http://localhost:8787";

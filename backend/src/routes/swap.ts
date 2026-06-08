@@ -3,8 +3,8 @@ import { D1Helper } from '../utils/d1';
 import { submitSwapJob } from '../utils/fal';
 import { generateSignedUrl } from '../utils/r2';
 import { rateLimitMiddleware } from '../middleware/rate-limit';
-import { DAILY_GENERATION_LIMIT, DEFAULT_RESOLUTION } from '@hotinsert/shared';
-import type { SwapRequest } from '@hotinsert/shared';
+import { DAILY_GENERATION_LIMIT, DEFAULT_RESOLUTION } from '../shared';
+import type { SwapRequest } from '../shared';
 import type { Bindings } from '../types';
 
 const swapRouter = new Hono<{ Bindings: Bindings }>();

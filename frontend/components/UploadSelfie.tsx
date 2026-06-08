@@ -3,7 +3,7 @@
 import { useState, useCallback } from "react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
-import { MAX_SELFIE_SIZE } from "@hotinsert/shared";
+import { MAX_SELFIE_SIZE } from "@/lib/types";
 
 interface UploadSelfieProps {
   onUpload: (file: File) => void;
