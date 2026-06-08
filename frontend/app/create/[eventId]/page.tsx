@@ -121,9 +121,17 @@ export default function CreatePage({
 
       {/* Event Info */}
       <div className="mb-8 grid gap-6 md:grid-cols-2">
-        {/* Video / Thumbnail */}
+        {/* Video Player */}
         <div className="relative aspect-video overflow-hidden rounded-xl bg-gray-800">
-          {event.thumbnailUrl ? (
+          {event.videoUrl ? (
+            <video
+              src={event.videoUrl}
+              poster={event.thumbnailUrl}
+              controls
+              preload="metadata"
+              className="h-full w-full object-contain"
+            />
+          ) : event.thumbnailUrl ? (
             <Image
               src={event.thumbnailUrl}
               alt={event.title}
