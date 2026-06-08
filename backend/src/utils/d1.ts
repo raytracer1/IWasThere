@@ -49,10 +49,11 @@ export class D1Helper {
     await this.run(
       `INSERT INTO users (id, email, name, image, role, created_at)
        VALUES (?, ?, ?, ?, ?, unixepoch())
-       ON CONFLICT(id) DO UPDATE SET
-         email = excluded.email,
+       ON CONFLICT(email) DO UPDATE SET
+         id = excluded.id,
          name = excluded.name,
-         image = excluded.image`,
+         image = excluded.image,
+         role = excluded.role`,
       user.id,
       user.email,
       user.name ?? null,

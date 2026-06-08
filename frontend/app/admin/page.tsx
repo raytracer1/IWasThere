@@ -38,7 +38,8 @@ export default function AdminPage() {
         setError("Failed to load events. Check admin permissions.");
       }
     } catch (err) {
-      setError("Admin API not available. Check your permissions.");
+      console.error("Admin API error:", err);
+      setError(err instanceof Error ? err.message : "Admin API not available. Check your permissions.");
     } finally {
       setLoading(false);
     }
