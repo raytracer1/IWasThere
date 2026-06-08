@@ -1,0 +1,11 @@
+{
+  "name": "hotinsert-ai",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Insert your selfie into trending hot event videos using AI",
+  "scripts": {
+    "dev": "pnpm --parallel -r dev",
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint"
+  }
+}
