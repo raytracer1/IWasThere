@@ -18,8 +18,7 @@ app.use('*', cors({
     if (!origin) return null;
     const allowed = [
       'http://localhost:3000',
-      'https://hotinsert.vercel.app',
-      'https://hotinsert-ai.vercel.app',
+      'https://i-was-there-psi.vercel.app',
     ];
     return allowed.includes(origin) ? origin : null;
   },
