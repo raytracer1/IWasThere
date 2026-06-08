@@ -3,7 +3,6 @@ import fs from 'node:fs';
 import cron from 'node-cron';
 import { fetchPexelsVideos } from './sources/pexels';
 import { fetchRedditVideos } from './sources/reddit';
-import { fetchNewsItems } from './sources/news';
 import { downloadVideo, downloadThumbnail, cleanupTemp } from './downloader';
 import { uploadEvent } from './uploader';
 import { isSeen, markSeen, pruneState, loadState } from './state';
@@ -56,15 +55,6 @@ async function crawl() {
     console.error('   Reddit error:', err);
   }
 
-  console.log('\n📰 Fetching News RSS...');
-  try {
-    const newsItems = await fetchNewsItems(MAX_PER_SOURCE);
-    console.log(`   Got ${newsItems.length} items`);
-    allItems.push(...newsItems);
-  } catch (err) {
-    console.error('   News RSS error:', err);
-  }
-
   // Filter out already-seen
   const newItems = allItems.filter((item) => !isSeen(item.sourceUrl));
   console.log(`\n🔍 Total: ${allItems.length}, New: ${newItems.length}`);
@@ -75,14 +65,7 @@ async function crawl() {
     console.log(`\n---`);
     console.log(`📥 [${item.category}] ${item.title.slice(0, 80)}`);
 
-    // Download thumbnail first (smaller, faster)
-    let thumbPath: string | undefined;
-    if (item.thumbnailUrl) {
-      console.log('   Downloading thumbnail...');
-      thumbPath = await downloadThumbnail(item.thumbnailUrl) ?? undefined;
-    }
-
-    // Download video
+    // Download video first (needed for thumbnail fallback)
     console.log('   Downloading video...');
     const videoPath = await downloadVideo(item.videoUrl);
     if (!videoPath) {
@@ -90,11 +73,16 @@ async function crawl() {
       markSeen(item.sourceUrl);
       continue;
     }
-    console.log(`   Downloaded ${(fs.statSync(videoPath).size / 1024 / 1024).toFixed(1)} MB`);
+    console.log(`   Video: ${(fs.statSync(videoPath).size / 1024 / 1024).toFixed(1)} MB`);
+
+    // Thumbnail: try URL first, fallback to frame extraction from video
+    console.log('   Thumbnail...');
+    const thumbPath = await downloadThumbnail(item.thumbnailUrl ?? undefined, videoPath);
+    console.log(thumbPath ? '   ✅ Thumbnail ready' : '   ⚠️  No thumbnail available');
 
     // Upload to Worker
     console.log('   Uploading to Worker...');
-    const result = await uploadEvent(WORKER_URL, CRAWLER_TOKEN, item, videoPath, thumbPath);
+    const result = await uploadEvent(WORKER_URL, CRAWLER_TOKEN, item, videoPath, thumbPath ?? undefined);
 
     if (result.success) {
       console.log(`   ✅ Created event: ${result.eventId}`);

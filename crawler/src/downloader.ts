@@ -7,13 +7,17 @@ import { promisify } from 'node:util';
 const execFileAsync = promisify(execFile);
 
 const TEMP_DIR = path.join(import.meta.dirname, '..', 'data', 'tmp');
-const MAX_VIDEO_SIZE = 100 * 1024 * 1024; // 100 MB
-const MAX_IMAGE_SIZE = 5 * 1024 * 1024;   // 5 MB
+const MAX_VIDEO_SIZE = 100 * 1024 * 1024;
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 
 const MIN_HEIGHT = 720;
 const TARGET_HEIGHT = 720;
 const MIN_FPS = 24;
 const TARGET_FPS = 24;
+
+function ensureTempDir() {
+  if (!fs.existsSync(TEMP_DIR)) { fs.mkdirSync(TEMP_DIR, { recursive: true }); }
+}
 
 interface VideoInfo {
   width: number;
@@ -21,66 +25,35 @@ interface VideoInfo {
   fps: number;
 }
 
-function ensureTempDir() {
-  if (!fs.existsSync(TEMP_DIR)) {
-    fs.mkdirSync(TEMP_DIR, { recursive: true });
-  }
-}
-
-/** Probe video metadata using ffprobe */
 async function probeVideo(filePath: string): Promise<VideoInfo | null> {
   try {
     const { stdout } = await execFileAsync('ffprobe', [
-      '-v', 'quiet',
-      '-select_streams', 'v:0',
+      '-v', 'quiet', '-select_streams', 'v:0',
       '-show_entries', 'stream=width,height,r_frame_rate',
-      '-of', 'csv=p=0',
-      filePath,
+      '-of', 'csv=p=0', filePath,
     ], { timeout: 30_000 });
-
     const parts = stdout.trim().split(',');
     if (parts.length < 3) return null;
-
-    const width = parseInt(parts[0], 10);
-    const height = parseInt(parts[1], 10);
-    const fpsStr = parts[2];
-    const fpsParts = fpsStr.split('/');
-    const fps = fpsParts.length === 2
-      ? parseInt(fpsParts[0], 10) / parseInt(fpsParts[1], 10)
-      : parseFloat(fpsStr);
-
-    if (isNaN(width) || isNaN(height) || isNaN(fps)) return null;
-    return { width, height, fps };
-  } catch {
-    return null;
-  }
+    const w = parseInt(parts[0]), h = parseInt(parts[1]);
+    const [num, den] = parts[2].split('/');
+    const fps = den ? parseInt(num) / parseInt(den) : parseFloat(parts[2]);
+    if (isNaN(w) || isNaN(h) || isNaN(fps)) return null;
+    return { width: w, height: h, fps };
+  } catch { return null; }
 }
 
-/** Re-encode video to target quality using ffmpeg */
-async function reencodeVideo(
-  inputPath: string,
-  outputPath: string,
-  info: VideoInfo
-): Promise<boolean> {
-  const needsScale = info.height > TARGET_HEIGHT;
-  const needsFpsLimit = info.fps > TARGET_FPS + 0.5;
-
-  if (!needsScale && !needsFpsLimit) {
-    fs.renameSync(inputPath, outputPath);
-    return true;
-  }
-
+async function reencode(inputPath: string, outputPath: string, info: VideoInfo): Promise<boolean> {
+  const scale = info.height > TARGET_HEIGHT;
+  const fps = info.fps > TARGET_FPS + 0.5;
+  if (!scale && !fps) { fs.renameSync(inputPath, outputPath); return true; }
   const filters: string[] = [];
-  if (needsScale) filters.push(`scale=-2:${TARGET_HEIGHT}`);
-  if (needsFpsLimit) filters.push(`fps=${TARGET_FPS}`);
-
+  if (scale) filters.push(`scale=-2:${TARGET_HEIGHT}`);
+  if (fps) filters.push(`fps=${TARGET_FPS}`);
   try {
     await execFileAsync('ffmpeg', [
-      '-y', '-i', inputPath,
-      '-vf', filters.join(','),
+      '-y', '-i', inputPath, '-vf', filters.join(','),
       '-c:v', 'libx264', '-preset', 'fast', '-crf', '23',
-      '-c:a', 'aac', '-b:a', '128k',
-      '-movflags', '+faststart',
+      '-c:a', 'aac', '-b:a', '128k', '-movflags', '+faststart',
       outputPath,
     ], { timeout: 120_000 });
     try { fs.unlinkSync(inputPath); } catch {}
@@ -92,27 +65,18 @@ async function reencodeVideo(
   }
 }
 
-/**
- * Download video using yt-dlp. Handles YouTube, Reddit, Twitter, etc.
- * Format: max 720p, mp4, under 100MB.
- */
+/** Download video with yt-dlp (handles YouTube, Bilibili, Reddit, etc.) */
 async function downloadWithYtDlp(url: string, outputPath: string): Promise<boolean> {
   const cookieFile = path.join(import.meta.dirname, '..', 'cookies.txt');
   const args = [
-    url,
-    '-o', outputPath,
+    url, '-o', outputPath,
     '--format', 'best[height<=720][ext=mp4]/best[height<=720]/best[ext=mp4]/best',
-    '--max-filesize', '100M',
-    '--no-playlist',
+    '--max-filesize', '100M', '--no-playlist',
     '--js-runtimes', 'node',
-    '--socket-timeout', '30',
-    '--retries', '2',
-    '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+    '--socket-timeout', '30', '--retries', '2',
+    '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
   ];
-  // Use cookies if available
-  if (fs.existsSync(cookieFile)) {
-    args.push('--cookies', cookieFile);
-  }
+  if (fs.existsSync(cookieFile)) args.push('--cookies', cookieFile);
   try {
     await execFileAsync('yt-dlp', args, { timeout: 120_000 });
     return fs.existsSync(outputPath);
@@ -122,138 +86,106 @@ async function downloadWithYtDlp(url: string, outputPath: string): Promise<boole
   }
 }
 
-/** Direct HTTP download for non-YouTube URLs */
-async function downloadDirect(url: string, outputPath: string): Promise<boolean> {
+/** Direct HTTP download */
+async function downloadDirect(url: string, outputPath: string, maxSize: number): Promise<boolean> {
   try {
-    const response = await fetch(url, {
+    const r = await fetch(url, {
       headers: { 'User-Agent': 'HotInsert-Crawler/1.0' },
       signal: AbortSignal.timeout(120_000),
     });
-    if (!response.ok || !response.body) return false;
-
-    const contentLength = parseInt(response.headers.get('content-length') ?? '0', 10);
-    if (contentLength > MAX_VIDEO_SIZE) return false;
-
+    if (!r.ok || !r.body) return false;
+    const cl = parseInt(r.headers.get('content-length') ?? '0');
+    if (cl > maxSize) return false;
     const chunks: Uint8Array[] = [];
     let total = 0;
-    const reader = response.body.getReader();
+    const reader = r.body.getReader();
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
       total += value.length;
-      if (total > MAX_VIDEO_SIZE) return false;
+      if (total > maxSize) return false;
       chunks.push(value);
     }
     fs.writeFileSync(outputPath, Buffer.concat(chunks));
     return true;
-  } catch {
-    return false;
-  }
+  } catch { return false; }
 }
 
-/**
- * Download video: yt-dlp first, then direct HTTP fallback.
- * Then probe quality and re-encode if needed.
- */
+/** Extract a frame from video as thumbnail using ffmpeg */
+async function extractThumbnail(videoPath: string, outputPath: string): Promise<boolean> {
+  try {
+    await execFileAsync('ffmpeg', [
+      '-y', '-i', videoPath,
+      '-ss', '00:00:01',        // 1 second in
+      '-vframes', '1',
+      '-vf', 'scale=640:360',    // small thumbnail
+      outputPath,
+    ], { timeout: 15_000 });
+    return fs.existsSync(outputPath);
+  } catch { return false; }
+}
+
+// ─── Public API ──────────────────────────────────────────
+
 export async function downloadVideo(url: string): Promise<string | null> {
   ensureTempDir();
   const rawPath = path.join(TEMP_DIR, `${randomUUID()}.mp4`);
-
-  // Try yt-dlp first (handles YouTube, Reddit, most platforms)
-  const isPageUrl = url.includes('youtube.com') || url.includes('youtu.be')
+  const isPage = url.includes('youtube.com') || url.includes('youtu.be')
     || url.includes('reddit.com') || url.includes('redd.it')
-    || url.includes('twitter.com') || url.includes('x.com')
+    || url.includes('bilibili.com') || url.includes('twitter.com') || url.includes('x.com')
     || url.includes('tiktok.com');
 
-  let ok: boolean;
-  if (isPageUrl) {
-    ok = await downloadWithYtDlp(url, rawPath);
-  } else {
-    // Direct download for plain video URLs
-    ok = await downloadDirect(url, rawPath);
-    if (!ok) {
-      // Fallback to yt-dlp for unknown URLs
-      ok = await downloadWithYtDlp(url, rawPath);
-    }
-  }
+  let ok = isPage ? await downloadWithYtDlp(url, rawPath) : await downloadDirect(url, rawPath, MAX_VIDEO_SIZE);
+  if (!ok) ok = await downloadWithYtDlp(url, rawPath); // fallback
+  if (!ok) { try { fs.unlinkSync(rawPath); } catch {} return null; }
 
-  if (!ok) {
+  // Reject tiny files (< 5 MB likely not a real video, e.g. news article page)
+  const size = fs.statSync(rawPath).size;
+  if (size < 5 * 1024 * 1024) {
+    console.log(`   ❌ Too small (${(size / 1024).toFixed(0)} KB), not a real video`);
     try { fs.unlinkSync(rawPath); } catch {}
     return null;
   }
 
-  // Probe quality
   const info = await probeVideo(rawPath);
-  if (!info) {
-    console.log(`   ⚠️  Could not probe, using as-is`);
-    return rawPath;
-  }
-
+  if (!info) { console.log('   ⚠️  Could not probe, using as-is'); return rawPath; }
   console.log(`   📐 ${info.width}x${info.height} @ ${info.fps.toFixed(1)}fps`);
 
-  // Reject below thresholds
-  if (info.height < MIN_HEIGHT) {
-    console.log(`   ❌ ${info.height}p < ${MIN_HEIGHT}p minimum, skipping`);
-    try { fs.unlinkSync(rawPath); } catch {}
-    return null;
+  if (info.height < MIN_HEIGHT) { console.log(`   ❌ < ${MIN_HEIGHT}p`); try { fs.unlinkSync(rawPath); } catch {} return null; }
+  if (info.fps < MIN_FPS - 0.5) { console.log(`   ❌ < ${MIN_FPS}fps`); try { fs.unlinkSync(rawPath); } catch {} return null; }
+
+  if (info.height > TARGET_HEIGHT || info.fps > TARGET_FPS + 0.5) {
+    const msg = `${info.height}p→${TARGET_HEIGHT}p, ${info.fps.toFixed(1)}fps→${TARGET_FPS}fps`;
+    console.log(`   🔧 ${msg}`);
+    const out = path.join(TEMP_DIR, `${randomUUID()}.mp4`);
+    if (!(await reencode(rawPath, out, info))) { try { fs.unlinkSync(rawPath); } catch {} return null; }
+    console.log(`   ✅ ${(fs.statSync(out).size / 1024 / 1024).toFixed(1)} MB`);
+    return out;
   }
-  if (info.fps < MIN_FPS - 0.5) {
-    console.log(`   ❌ ${info.fps.toFixed(1)}fps < ${MIN_FPS} minimum, skipping`);
-    try { fs.unlinkSync(rawPath); } catch {}
-    return null;
-  }
-
-  // Re-encode if exceeding targets
-  const needsScale = info.height > TARGET_HEIGHT;
-  const needsFps = info.fps > TARGET_FPS + 0.5;
-
-  if (needsScale || needsFps) {
-    const parts: string[] = [];
-    if (needsScale) parts.push(`${info.height}p → ${TARGET_HEIGHT}p`);
-    if (needsFps) parts.push(`${info.fps.toFixed(1)}fps → ${TARGET_FPS}fps`);
-    console.log(`   🔧 ${parts.join(', ')}`);
-
-    const processed = path.join(TEMP_DIR, `${randomUUID()}.mp4`);
-    ok = await reencodeVideo(rawPath, processed, info);
-    if (!ok) {
-      try { fs.unlinkSync(rawPath); } catch {}
-      return null;
-    }
-    console.log(`   ✅ ${(fs.statSync(processed).size / 1024 / 1024).toFixed(1)} MB`);
-    return processed;
-  }
-
   console.log(`   ✅ ${(fs.statSync(rawPath).size / 1024 / 1024).toFixed(1)} MB`);
   return rawPath;
 }
 
-/** Download thumbnail image */
-export async function downloadThumbnail(url: string): Promise<string | null> {
+export async function downloadThumbnail(thumbnailUrl?: string, videoPath?: string): Promise<string | null> {
   ensureTempDir();
-  const outputPath = path.join(TEMP_DIR, `${randomUUID()}.jpg`);
+  const outPath = path.join(TEMP_DIR, `${randomUUID()}.jpg`);
 
-  try {
-    const response = await fetch(url, {
-      headers: { 'User-Agent': 'HotInsert-Crawler/1.0' },
-      signal: AbortSignal.timeout(30_000),
-    });
-    if (!response.ok || !response.body) return null;
-    if (parseInt(response.headers.get('content-length') ?? '0', 10) > MAX_IMAGE_SIZE) return null;
-
-    const buf = Buffer.from(await response.arrayBuffer());
-    fs.writeFileSync(outputPath, buf);
-    return outputPath;
-  } catch {
-    try { fs.unlinkSync(outputPath); } catch {}
-    return null;
+  // Strategy 1: download from URL
+  if (thumbnailUrl) {
+    if (await downloadDirect(thumbnailUrl, outPath, MAX_IMAGE_SIZE)) return outPath;
   }
+
+  // Strategy 2: extract frame from video
+  if (videoPath && fs.existsSync(videoPath)) {
+    if (await extractThumbnail(videoPath, outPath)) {
+      console.log('   🎞️  Extracted thumbnail from video');
+      return outPath;
+    }
+  }
+
+  return null;
 }
 
-/** Clean up temp files */
 export function cleanupTemp(): void {
-  try {
-    for (const file of fs.readdirSync(TEMP_DIR)) {
-      try { fs.unlinkSync(path.join(TEMP_DIR, file)); } catch {}
-    }
-  } catch {}
+  try { for (const f of fs.readdirSync(TEMP_DIR)) { try { fs.unlinkSync(path.join(TEMP_DIR, f)); } catch {} } } catch {}
 }
