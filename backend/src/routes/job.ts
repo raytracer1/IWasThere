@@ -34,9 +34,10 @@ jobRouter.get('/:id', async (c) => {
   if ((job.status === 'queued' || job.status === 'processing') && job.falRequestId && falApiKey) {
     try {
       const falStatus = await pollSwapStatus(falApiKey, job.falRequestId);
+      console.log(`Poll job ${jobId}: fal status=${JSON.stringify(falStatus)}`);
 
       if (falStatus.status === 'COMPLETED') {
-        const outputVideoUrl = falStatus.video?.url;
+        const outputVideoUrl = falStatus.videoUrl || (falStatus as { video?: { url: string } }).video?.url;
         if (outputVideoUrl) {
           await db.updateJobStatus(jobId, 'completed', outputVideoUrl);
           job.status = 'completed';
@@ -53,10 +54,8 @@ jobRouter.get('/:id', async (c) => {
         job.status = 'failed';
         job.errorMessage = errMsg;
       }
-      // Otherwise still IN_QUEUE or IN_PROGRESS, keep current status
     } catch (err) {
       console.error('fal.ai poll error:', err);
-      // Don't fail the request — just return current known status
     }
   }
 
