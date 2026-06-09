@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/useAppSession";
 import { useRouter } from "next/navigation";
 import { EventCard } from "@/components/EventCard";
 import { Tabs } from "@/components/ui/tabs";

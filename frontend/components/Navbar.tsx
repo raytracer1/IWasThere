@@ -1,12 +1,14 @@
 "use client";
 
-import { useSession, signOut } from "next-auth/react";
+import { useSession, signOut } from "@/lib/useAppSession";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 export function Navbar() {
   const { data: session } = useSession();
   const pathname = usePathname();
+
+  if (pathname === "/login") return null;
 
   if (!session?.user) return null;
 

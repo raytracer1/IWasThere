@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, use } from "react";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/useAppSession";
 import { useRouter } from "next/navigation";
 import { EventForm } from "@/components/EventForm";
 import { fetchEvent } from "@/lib/api";

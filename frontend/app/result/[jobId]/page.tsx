@@ -2,7 +2,7 @@
 
 import { use } from "react";
 import { useRouter } from "next/navigation";
-import { useSession } from "next-auth/react";
+import { useSession } from "@/lib/useAppSession";
 import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { JobStatusDisplay } from "@/components/JobStatus";

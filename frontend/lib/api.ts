@@ -17,6 +17,10 @@ const WORKER_URL =
  * This is a JWT signed by NextAuth, verifiable by the Worker.
  */
 async function getAccessToken(): Promise<string | null> {
+  // Dev mode: use token from .env.local (never committed)
+  if (typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.port === "3000")) {
+    return process.env.NEXT_PUBLIC_DEV_TOKEN ?? null;
+  }
   const session = await getSession();
   return (session as { accessToken?: string } | null)?.accessToken ?? null;
 }

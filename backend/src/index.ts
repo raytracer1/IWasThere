@@ -18,6 +18,7 @@ app.use('*', cors({
     if (!origin) return null;
     const allowed = [
       'http://localhost:3000',
+      'http://192.168.0.104:3000',
       'https://i-was-there-psi.vercel.app',
     ];
     return allowed.includes(origin) ? origin : null;

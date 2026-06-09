@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { NextResponse } from "next/server";
 
 export default auth((req) => {
+  if (process.env.NODE_ENV === "development") return NextResponse.next();
   const isLoggedIn = !!req.auth;
   const isAuthRoute = req.nextUrl.pathname.startsWith("/api/auth");
   const isLoginPage = req.nextUrl.pathname === "/login";
