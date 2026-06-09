@@ -96,7 +96,7 @@ export function EventForm({ event }: EventFormProps) {
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          className="w-full rounded-lg border border-white/20 bg-white/5 px-4 py-2 text-white placeholder-gray-500 focus:border-purple-500 focus:outline-none"
+          className="w-full rounded-lg border border-white/20 bg-gray-800 px-4 py-2 text-white placeholder-gray-500 focus:border-purple-500 focus:outline-none"
           placeholder="e.g., World Cup 2026 Final Goal"
           required
         />
@@ -111,10 +111,10 @@ export function EventForm({ event }: EventFormProps) {
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value as EventCategory)}
-            className="w-full rounded-lg border border-white/20 bg-white/5 px-4 py-2 text-white focus:border-purple-500 focus:outline-none"
+            className="w-full rounded-lg border border-white/20 bg-gray-800 px-4 py-2 text-white focus:border-purple-500 focus:outline-none"
           >
             {EVENT_CATEGORIES.map((cat) => (
-              <option key={cat} value={cat} className="bg-gray-900">
+              <option key={cat} value={cat} className="bg-gray-800 text-white">
                 {cat.charAt(0).toUpperCase() + cat.slice(1)}
               </option>
             ))}
@@ -128,11 +128,11 @@ export function EventForm({ event }: EventFormProps) {
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value as EventStatus)}
-            className="w-full rounded-lg border border-white/20 bg-white/5 px-4 py-2 text-white focus:border-purple-500 focus:outline-none"
+            className="w-full rounded-lg border border-white/20 bg-gray-800 px-4 py-2 text-white focus:border-purple-500 focus:outline-none"
           >
-            <option value="draft" className="bg-gray-900">Draft</option>
-            <option value="active" className="bg-gray-900">Active</option>
-            <option value="archived" className="bg-gray-900">Archived</option>
+            <option value="draft" className="bg-gray-800 text-white">Draft</option>
+            <option value="active" className="bg-gray-800 text-white">Active</option>
+            <option value="archived" className="bg-gray-800 text-white">Archived</option>
           </select>
         </div>
       </div>
@@ -146,7 +146,7 @@ export function EventForm({ event }: EventFormProps) {
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={3}
-          className="w-full rounded-lg border border-white/20 bg-white/5 px-4 py-2 text-white placeholder-gray-500 focus:border-purple-500 focus:outline-none"
+          className="w-full rounded-lg border border-white/20 bg-gray-800 px-4 py-2 text-white placeholder-gray-500 focus:border-purple-500 focus:outline-none"
           placeholder="Brief description of the event..."
         />
       </div>
@@ -160,7 +160,7 @@ export function EventForm({ event }: EventFormProps) {
           type="number"
           value={duration}
           onChange={(e) => setDuration(e.target.value)}
-          className="w-full rounded-lg border border-white/20 bg-white/5 px-4 py-2 text-white focus:border-purple-500 focus:outline-none"
+          className="w-full rounded-lg border border-white/20 bg-gray-800 px-4 py-2 text-white focus:border-purple-500 focus:outline-none"
           placeholder="e.g., 30"
         />
       </div>
