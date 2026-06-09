@@ -146,7 +146,7 @@ export async function createEvent(
 
 export async function updateEvent(
   eventId: string,
-  body: Partial<Pick<Event, "title" | "category" | "description" | "duration" | "status">>
+  body: Partial<Pick<Event, "title" | "category" | "description" | "duration" | "price" | "status">>
 ): Promise<ApiResponse<{ id: string }>> {
   return authFetch(`/admin/events/${eventId}`, {
     method: "PUT",

@@ -22,6 +22,7 @@ export function EventForm({ event }: EventFormProps) {
   const [category, setCategory] = useState<EventCategory>(event?.category ?? "other");
   const [description, setDescription] = useState(event?.description ?? "");
   const [status, setStatus] = useState<EventStatus>(event?.status ?? "draft");
+  const [price, setPrice] = useState(event?.price?.toString() ?? "");
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [compressedVideo, setCompressedVideo] = useState<Blob | null>(null);
   const trimmerRef = useRef<VideoTrimmerHandle>(null);
@@ -67,6 +68,7 @@ export function EventForm({ event }: EventFormProps) {
       formData.append("title", title.trim());
       formData.append("category", category);
       if (description.trim()) formData.append("description", description.trim());
+      formData.append("price", price || "0.50");
       formData.append("status", status);
 
       // Trim and upload clips if ranges are set
@@ -88,6 +90,7 @@ export function EventForm({ event }: EventFormProps) {
           title: title.trim(),
           category,
           description: description.trim() || undefined,
+          price: price ? parseFloat(price) : undefined,
           status,
         });
         if (!res.success) throw new Error(res.error);
@@ -200,8 +203,8 @@ export function EventForm({ event }: EventFormProps) {
         />
       </div>
 
-      {/* Category + Status */}
-      <div className="grid gap-4 sm:grid-cols-2">
+      {/* Category + Price + Status */}
+      <div className="grid gap-4 sm:grid-cols-3">
         <div>
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Category *
@@ -217,6 +220,22 @@ export function EventForm({ event }: EventFormProps) {
               </option>
             ))}
           </select>
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            Price (USD) *
+          </label>
+          <input
+            type="number"
+            min="0.50"
+            step="0.01"
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+            className="w-full rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-gray-800 px-4 py-2 text-gray-900 dark:text-white focus:border-purple-500 focus:outline-none"
+            placeholder="0.50"
+            required
+          />
         </div>
 
         <div>

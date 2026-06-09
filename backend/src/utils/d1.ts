@@ -1,5 +1,5 @@
 import type { D1Database, D1Result } from '@cloudflare/workers-types';
-import type { User, Event, Job, JobStatus, RateLimit } from '../shared';
+import { COST_PER_GENERATION, type User, type Event, type Job, type JobStatus, type RateLimit } from '../shared';
 
 /**
  * Typed wrapper around Cloudflare D1 binding.
@@ -115,8 +115,8 @@ export class D1Helper {
 
   async createEvent(event: Omit<Event, 'createdAt'>): Promise<void> {
     await this.run(
-      `INSERT INTO events (id, title, category, description, video_url, thumbnail_url, duration, status, created_by, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, unixepoch())`,
+      `INSERT INTO events (id, title, category, description, video_url, thumbnail_url, duration, price, status, created_by, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, unixepoch())`,
       event.id,
       event.title,
       event.category,
@@ -124,6 +124,7 @@ export class D1Helper {
       event.videoUrl,
       event.thumbnailUrl ?? null,
       event.duration ?? null,
+      event.price ?? COST_PER_GENERATION,
       event.status,
       event.createdBy
     );
@@ -265,6 +266,7 @@ export class D1Helper {
       videoUrl: row.video_url as string,
       thumbnailUrl: (row.thumbnail_url as string) ?? undefined,
       duration: (row.duration as number) ?? undefined,
+      price: (row.price as number) ?? 0.50,
       status: row.status as Event['status'],
       createdBy: row.created_by as string,
       createdAt: row.created_at as number,

@@ -29,6 +29,7 @@ export interface Event {
   videoUrl: string;       // R2 object key
   thumbnailUrl?: string;  // R2 object key
   duration?: number;      // seconds
+  price?: number;          // USD, minimum 0.50
   status: EventStatus;
   createdBy: string;
   createdAt: number;
@@ -90,6 +91,7 @@ export interface CreateEventRequest {
   category: EventCategory;
   description?: string;
   duration?: number;
+  price?: number;
   status?: EventStatus;
 }
 
@@ -98,6 +100,7 @@ export interface UpdateEventRequest {
   category?: EventCategory;
   description?: string;
   duration?: number;
+  price?: number;
   status?: EventStatus;
 }
 

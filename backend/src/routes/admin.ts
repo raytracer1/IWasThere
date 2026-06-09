@@ -40,6 +40,7 @@ adminRouter.post('/events', async (c) => {
   const category = formData.get('category') as string | null;
   const description = formData.get('description') as string | null;
   const duration = formData.get('duration') as string | null;
+  const price = formData.get('price') as string | null;
   const status = formData.get('status') as string | null;
   const videoFiles = formData.getAll('video'); // supports multiple clips
   const originalFile = formData.get('original');
@@ -108,6 +109,7 @@ adminRouter.post('/events', async (c) => {
     videoUrl: videoKeys[0] ?? '',
     thumbnailUrl: thumbnailKey ?? undefined,
     duration: duration ? parseInt(duration, 10) : undefined,
+    price: price ? parseFloat(price) : undefined,
     status: (status as CreateEventRequest['status']) ?? 'draft',
     createdBy: user.id,
   });
