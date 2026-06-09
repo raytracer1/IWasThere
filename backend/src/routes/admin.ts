@@ -129,9 +129,20 @@ adminRouter.post('/events', async (c) => {
 });
 
 /**
+ * POST /admin/events/:id/update — Update event with files (no CORS preflight issues).
+ */
+adminRouter.post('/events/:id/update', async (c) => {
+  return handleEventUpdate(c);
+});
+
+/**
  * PUT /admin/events/:id — Update event (JSON metadata or multipart with files).
  */
 adminRouter.put('/events/:id', async (c) => {
+  return handleEventUpdate(c);
+});
+
+async function handleEventUpdate(c: import('hono').Context<{ Bindings: import('../types').Bindings }>) {
   const db = new D1Helper(c.env.DB);
   const eventId = c.req.param('id');
 
@@ -141,8 +152,16 @@ adminRouter.put('/events/:id', async (c) => {
   }
 
   const contentType = c.req.header('Content-Type') ?? '';
+  console.log('PUT /admin/events/:id Content-Type:', contentType, 'method:', c.req.method);
 
   if (contentType.includes('multipart/form-data')) {
+    // Delete old R2 files before re-upload
+    try {
+      const oldObjects = await c.env.ASSETS.list({ prefix: `hot-events/${eventId}/` });
+      for (const obj of oldObjects.objects) {
+        await c.env.ASSETS.delete(obj.key);
+      }
+    } catch {}
     // Handle multipart file re-upload
     const formData = await c.req.formData();
     const title = formData.get('title') as string | null;
@@ -211,7 +230,7 @@ adminRouter.put('/events/:id', async (c) => {
   await db.updateEvent(eventId, body);
 
   return c.json({ success: true, data: { id: eventId } });
-});
+}
 
 /**
  * DELETE /admin/events/:id — Delete event and associated R2 files.

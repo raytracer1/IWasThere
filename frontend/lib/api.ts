@@ -34,30 +34,16 @@ async function authFetch<T>(
 ): Promise<T> {
   const token = await getAccessToken();
 
-  const headers: Record<string, string> = {};
-
-  // Copy existing headers
-  if (options.headers) {
-    if (options.headers instanceof Headers) {
-      options.headers.forEach((value, key) => {
-        headers[key] = value;
-      });
-    } else if (Array.isArray(options.headers)) {
-      for (const [key, value] of options.headers) {
-        headers[key] = value;
-      }
-    } else {
-      Object.assign(headers, options.headers);
-    }
-  }
+  // Use native Headers so browser auto-sets Content-Type for FormData
+  const headers = new Headers(options.headers);
 
   if (token) {
-    headers["Authorization"] = `Bearer ${token}`;
+    headers.set("Authorization", `Bearer ${token}`);
   }
 
-  // Don't set Content-Type for FormData (browser sets it with boundary)
-  if (!(options.body instanceof FormData)) {
-    headers["Content-Type"] = headers["Content-Type"] ?? "application/json";
+  // Only set Content-Type for non-FormData requests
+  if (!(options.body instanceof FormData) && !headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
   }
 
   const response = await fetch(`${WORKER_URL}${path}`, {
@@ -158,8 +144,8 @@ export async function updateEventMultipart(
   eventId: string,
   formData: FormData
 ): Promise<ApiResponse<{ id: string }>> {
-  return authFetch(`/admin/events/${eventId}`, {
-    method: "PUT",
+  return authFetch(`/admin/events/${eventId}/update`, {
+    method: "POST",
     body: formData,
   });
 }
