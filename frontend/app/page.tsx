@@ -71,7 +71,7 @@ export default function HomePage() {
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white">🔥 Trending Hot Events</h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">🔥 Trending Hot Events</h1>
         <p className="mt-2 text-gray-400">
           Choose a trending event and put yourself in the moment with AI.
         </p>
@@ -99,7 +99,7 @@ export default function HomePage() {
       {!loading && !error && events.length === 0 && (
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <span className="text-6xl">📭</span>
-          <h3 className="mt-4 text-lg font-medium text-white">No events yet</h3>
+          <h3 className="mt-4 text-lg font-medium text-gray-900 dark:text-white">No events yet</h3>
           <p className="mt-1 text-gray-400">
             Check back soon for trending hot events, or visit the admin panel to add some.
           </p>

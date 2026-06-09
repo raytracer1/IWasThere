@@ -79,7 +79,7 @@ export default function AdminPage() {
     <div className="mx-auto max-w-6xl px-4 py-8">
       <div className="mb-8 flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-white">Admin Panel</h1>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Admin Panel</h1>
           <p className="mt-1 text-gray-400">Manage hot events</p>
         </div>
         <Link href="/admin/events/new">
@@ -96,7 +96,7 @@ export default function AdminPage() {
       {events.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <span className="text-6xl">📋</span>
-          <h3 className="mt-4 text-lg font-medium text-white">No events yet</h3>
+          <h3 className="mt-4 text-lg font-medium text-gray-900 dark:text-white">No events yet</h3>
           <p className="mt-1 text-gray-400">Create your first event to get started.</p>
         </div>
       ) : (
@@ -115,7 +115,7 @@ export default function AdminPage() {
               {events.map((event) => (
                 <tr key={event.id} className="hover:bg-white/5">
                   <td className="px-4 py-3">
-                    <p className="font-medium text-white line-clamp-1">{event.title}</p>
+                    <p className="font-medium text-gray-900 dark:text-white line-clamp-1">{event.title}</p>
                     <p className="text-xs text-gray-500 line-clamp-1">{event.id}</p>
                   </td>
                   <td className="px-4 py-3 hidden sm:table-cell">

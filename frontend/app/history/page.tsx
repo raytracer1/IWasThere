@@ -54,8 +54,8 @@ export default function HistoryPage() {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
-      <h1 className="mb-2 text-3xl font-bold text-white">Your History</h1>
-      <p className="mb-8 text-gray-400">
+      <h1 className="mb-2 text-3xl font-bold text-gray-900 dark:text-white">Your History</h1>
+      <p className="mb-8 text-gray-500 dark:text-gray-400">
         {total} generation{total !== 1 ? "s" : ""} total
       </p>
 
