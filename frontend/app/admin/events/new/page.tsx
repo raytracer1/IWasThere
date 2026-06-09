@@ -16,7 +16,7 @@ export default function NewEventPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-4">
       <h1 className="mb-4 text-center text-3xl font-bold text-gray-900 dark:text-white">Create New Event</h1>
-      <div className="rounded-xl border border-white/10 bg-white/5 p-6">
+      <div className="rounded-xl border border-gray-200 dark:border-white/10 bg-white dark:bg-white/5 p-6">
         <EventForm />
       </div>
     </div>

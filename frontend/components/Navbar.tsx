@@ -3,14 +3,13 @@
 import { useSession, signOut } from "@/lib/useAppSession";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { ThemeToggle } from "./ThemeToggle";
 
 export function Navbar() {
   const { data: session } = useSession();
   const pathname = usePathname();
 
   if (pathname === "/login") return null;
-
-  if (!session?.user) return null;
 
   return (
     <nav className="sticky top-0 z-50 border-b border-white/10 bg-gray-950/80 backdrop-blur-xl">
@@ -29,8 +28,9 @@ export function Navbar() {
 
         {/* User Menu */}
         <div className="flex items-center gap-4">
+          <ThemeToggle />
           <div className="flex items-center gap-3">
-            {session.user.image && (
+            {session?.user?.image && (
               <img
                 src={session.user.image}
                 alt={session.user.name ?? "User"}
@@ -38,7 +38,7 @@ export function Navbar() {
               />
             )}
             <span className="hidden text-sm text-gray-300 sm:block">
-              {session.user.name}
+              {session?.user?.name ?? "User"}
             </span>
           </div>
           <button

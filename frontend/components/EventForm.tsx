@@ -96,7 +96,7 @@ export function EventForm({ event }: EventFormProps) {
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          className="w-full rounded-lg border border-white/20 bg-[var(--background)] px-4 py-2 text-gray-900 placeholder-gray-300 focus:border-purple-500 focus:outline-none"
+          className="w-full rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-gray-800 px-4 py-2 text-gray-900 dark:text-white dark:text-white placeholder-gray-400 dark:placeholder-gray-600 focus:border-purple-500 focus:outline-none"
           placeholder="e.g., World Cup 2026 Final Goal"
           required
         />
@@ -111,10 +111,10 @@ export function EventForm({ event }: EventFormProps) {
           <select
             value={category}
             onChange={(e) => setCategory(e.target.value as EventCategory)}
-            className="w-full rounded-lg border border-white/20 bg-[var(--background)] px-4 py-2 text-gray-900 focus:border-purple-500 focus:outline-none"
+            className="w-full rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-gray-800 px-4 py-2 text-gray-900 dark:text-white focus:border-purple-500 focus:outline-none"
           >
             {EVENT_CATEGORIES.map((cat) => (
-              <option key={cat} value={cat} className="bg-[var(--background)] text-gray-900">
+              <option key={cat} value={cat} className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
                 {cat.charAt(0).toUpperCase() + cat.slice(1)}
               </option>
             ))}
@@ -128,11 +128,11 @@ export function EventForm({ event }: EventFormProps) {
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value as EventStatus)}
-            className="w-full rounded-lg border border-white/20 bg-[var(--background)] px-4 py-2 text-gray-900 focus:border-purple-500 focus:outline-none"
+            className="w-full rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-gray-800 px-4 py-2 text-gray-900 dark:text-white focus:border-purple-500 focus:outline-none"
           >
-            <option value="draft" className="bg-[var(--background)] text-gray-900">Draft</option>
-            <option value="active" className="bg-[var(--background)] text-gray-900">Active</option>
-            <option value="archived" className="bg-[var(--background)] text-gray-900">Archived</option>
+            <option value="draft" className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white">Draft</option>
+            <option value="active" className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white">Active</option>
+            <option value="archived" className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white">Archived</option>
           </select>
         </div>
       </div>
@@ -146,7 +146,7 @@ export function EventForm({ event }: EventFormProps) {
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={3}
-          className="w-full rounded-lg border border-white/20 bg-[var(--background)] px-4 py-2 text-gray-900 placeholder-gray-300 focus:border-purple-500 focus:outline-none"
+          className="w-full rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-gray-800 px-4 py-2 text-gray-900 dark:text-white dark:text-white placeholder-gray-400 dark:placeholder-gray-600 focus:border-purple-500 focus:outline-none"
           placeholder="Brief description of the event..."
         />
       </div>
@@ -160,7 +160,7 @@ export function EventForm({ event }: EventFormProps) {
           type="number"
           value={duration}
           onChange={(e) => setDuration(e.target.value)}
-          className="w-full rounded-lg border border-white/20 bg-[var(--background)] px-4 py-2 text-gray-900 focus:border-purple-500 focus:outline-none"
+          className="w-full rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-gray-800 px-4 py-2 text-gray-900 dark:text-white focus:border-purple-500 focus:outline-none"
           placeholder="e.g., 30"
         />
       </div>
@@ -175,7 +175,7 @@ export function EventForm({ event }: EventFormProps) {
             type="file"
             accept="video/*"
             onChange={(e) => setVideoFile(e.target.files?.[0] ?? null)}
-            className="w-full text-sm text-gray-400 file:mr-4 file:rounded-lg file:border-0 file:bg-purple-600 file:px-4 file:py-2 file:text-sm file:text-gray-900 hover:file:bg-purple-700"
+            className="w-full text-sm text-gray-400 file:mr-4 file:rounded-lg file:border-0 file:bg-purple-600 file:px-4 file:py-2 file:text-sm file:text-gray-900 dark:text-white hover:file:bg-purple-700"
           />
           {isEdit && event?.videoUrl && (
             <p className="mt-1 text-xs text-gray-500">Current: {event.videoUrl}</p>
@@ -190,7 +190,7 @@ export function EventForm({ event }: EventFormProps) {
             type="file"
             accept="image/*"
             onChange={(e) => setThumbnailFile(e.target.files?.[0] ?? null)}
-            className="w-full text-sm text-gray-400 file:mr-4 file:rounded-lg file:border-0 file:bg-purple-600 file:px-4 file:py-2 file:text-sm file:text-gray-900 hover:file:bg-purple-700"
+            className="w-full text-sm text-gray-400 file:mr-4 file:rounded-lg file:border-0 file:bg-purple-600 file:px-4 file:py-2 file:text-sm file:text-gray-900 dark:text-white hover:file:bg-purple-700"
           />
         </div>
       </div>
