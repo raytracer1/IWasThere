@@ -62,6 +62,8 @@ adminRouter.post('/events', async (c) => {
   let thumbnailKey: string | null = null;
 
   // Upload video file(s)
+  const clipCount = parseInt(trimRanges ? (formData.get('clipCount') as string || '1') : '1', 10);
+  let clipIndex = 0;
   for (const vf of videoFiles) {
     if (typeof vf === 'string') continue;
     const file = vf as unknown as { name: string; size: number; type: string; arrayBuffer(): Promise<ArrayBuffer> };
@@ -72,9 +74,12 @@ adminRouter.post('/events', async (c) => {
       }, 400);
     }
     const ext = file.name.split('.').pop() || 'mp4';
-    const key = `hot-events/${eventId}/${crypto.randomUUID()}.${ext}`;
+    // Use sequential numbers for clips, UUID for fallback
+    const name = clipCount > 1 ? `${clipIndex + 1}` : crypto.randomUUID();
+    const key = `hot-events/${eventId}/${name}.${ext}`;
     await uploadToR2(c.env.ASSETS, key, await file.arrayBuffer(), file.type);
     videoKeys.push(key);
+    clipIndex++;
   }
 
   // Upload original (untrimmed) video if provided
@@ -108,6 +113,7 @@ adminRouter.post('/events', async (c) => {
     category: category as CreateEventRequest['category'],
     description: description ?? undefined,
     videoUrl: videoKeys[0] ?? '',
+    videoKeys: videoKeys.length > 1 ? JSON.stringify(videoKeys) : undefined,
     thumbnailUrl: thumbnailKey ?? undefined,
     duration: duration ? parseInt(duration, 10) : undefined,
     price: price ? parseFloat(price) : undefined,
@@ -123,7 +129,7 @@ adminRouter.post('/events', async (c) => {
 });
 
 /**
- * PUT /admin/events/:id — Update event metadata.
+ * PUT /admin/events/:id — Update event (JSON metadata or multipart with files).
  */
 adminRouter.put('/events/:id', async (c) => {
   const db = new D1Helper(c.env.DB);
@@ -134,6 +140,57 @@ adminRouter.put('/events/:id', async (c) => {
     return c.json({ success: false, error: 'Event not found' }, 404);
   }
 
+  const contentType = c.req.header('Content-Type') ?? '';
+
+  if (contentType.includes('multipart/form-data')) {
+    // Handle multipart file re-upload
+    const formData = await c.req.formData();
+    const title = formData.get('title') as string | null;
+    const category = formData.get('category') as string | null;
+    const description = formData.get('description') as string | null;
+    const price = formData.get('price') as string | null;
+    const trimRanges = formData.get('trimRanges') as string | null;
+    const status = formData.get('status') as string | null;
+    const videoFiles = formData.getAll('video');
+    const originalFile = formData.get('original');
+    const thumbnailFile = formData.get('thumbnail');
+
+    // Upload new files
+    const videoKeys: string[] = [];
+    for (const vf of videoFiles) {
+      if (typeof vf === 'string') continue;
+      const file = vf as unknown as { name: string; size: number; type: string; arrayBuffer(): Promise<ArrayBuffer> };
+      const ext = file.name.split('.').pop() || 'mp4';
+      const key = `hot-events/${eventId}/${file.name}`;
+      await uploadToR2(c.env.ASSETS, key, await file.arrayBuffer(), file.type);
+      videoKeys.push(key);
+    }
+    if (originalFile && typeof originalFile !== 'string') {
+      const of = originalFile as unknown as { name: string; type: string; arrayBuffer(): Promise<ArrayBuffer> };
+      await uploadToR2(c.env.ASSETS, `hot-events/${eventId}/original.mp4`, await of.arrayBuffer(), of.type);
+    }
+    if (thumbnailFile && typeof thumbnailFile !== 'string') {
+      const tf = thumbnailFile as unknown as { name: string; type: string; arrayBuffer(): Promise<ArrayBuffer> };
+      await uploadToR2(c.env.ASSETS, `hot-events/${eventId}/thumbnail.jpg`, await tf.arrayBuffer(), tf.type);
+    }
+
+    // Update metadata
+    const updates: Record<string, unknown> = {};
+    if (title) updates.title = title;
+    if (category) updates.category = category;
+    if (description !== null) updates.description = description || null;
+    if (price) updates.price = parseFloat(price);
+    if (status) updates.status = status;
+    if (trimRanges) updates.trimRanges = trimRanges;
+    if (videoKeys.length > 0) {
+      updates.videoUrl = videoKeys[0];
+      updates.videoKeys = videoKeys.length > 1 ? JSON.stringify(videoKeys) : null;
+    }
+    await db.updateEvent(eventId, updates);
+    return c.json({ success: true, data: { id: eventId } });
+  }
+
+  // Fallback: JSON metadata only
   let body: UpdateEventRequest;
   try {
     body = await c.req.json<UpdateEventRequest>();
@@ -148,7 +205,6 @@ adminRouter.put('/events/:id', async (c) => {
     }
   }
 
-  // Handle trimRanges separately (not in the generic updateEvent)
   if (body.trimRanges !== undefined) {
     await db.run('UPDATE events SET trim_ranges = ? WHERE id = ?', body.trimRanges as string, eventId);
   }

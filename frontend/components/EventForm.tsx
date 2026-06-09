@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { Event, EventCategory, EventStatus } from "@/lib/types";
 import { EVENT_CATEGORIES } from "@/lib/types";
-import { createEvent, updateEvent } from "@/lib/api";
+import { createEvent, updateEventMultipart } from "@/lib/api";
 import { compressVideo } from "@/lib/videoCompress";
 import VideoTrimmer, { type VideoTrimmerHandle } from "@/components/VideoTrimmer";
 
@@ -95,9 +95,11 @@ export function EventForm({ event, initialVideo, initialThumbnail }: EventFormPr
       const ranges = trimmerRef.current?.getRanges();
       if (ranges && ranges.length > 0) {
         formData.append("trimRanges", JSON.stringify(ranges));
+        formData.append("clipCount", String(ranges.length));
         const clips = await trimmerRef.current!.trimAll();
-        clips.forEach((clip, i) => formData.append("video", new File([clip], `clip${i}.webm`, { type: clip.type })));
-        if (compressedVideo) formData.append("original", new File([compressedVideo], "compressed.mp4", { type: compressedVideo.type }));
+        // Upload clips 1, 2, 3... and the compressed original
+        clips.forEach((clip, i) => formData.append("video", new File([clip], `${i + 1}.webm`, { type: clip.type })));
+        if (compressedVideo) formData.append("original", new File([compressedVideo], "original.mp4", { type: compressedVideo.type }));
       } else if (compressedVideo) {
         formData.append("video", new File([compressedVideo], videoFile?.name ?? "video.webm", { type: compressedVideo.type }));
       } else if (videoFile) {
@@ -106,16 +108,7 @@ export function EventForm({ event, initialVideo, initialThumbnail }: EventFormPr
       if (thumbnailFile) formData.append("thumbnail", thumbnailFile);
 
       if (isEdit) {
-        const res = await updateEvent(event!.id, {
-          title: title.trim(),
-          category,
-          description: description.trim() || undefined,
-          price: price ? parseFloat(price) : undefined,
-          trimRanges: trimmerRef.current?.getRanges().length
-            ? (() => { const r = trimmerRef.current!.getRanges(); return r.length > 0 ? JSON.stringify(r) : undefined; })()
-            : undefined,
-          status,
-        });
+        const res = await updateEventMultipart(event!.id, formData);
         if (!res.success) throw new Error(res.error);
       } else {
         const res = await createEvent(formData);

@@ -154,6 +154,16 @@ export async function updateEvent(
   });
 }
 
+export async function updateEventMultipart(
+  eventId: string,
+  formData: FormData
+): Promise<ApiResponse<{ id: string }>> {
+  return authFetch(`/admin/events/${eventId}`, {
+    method: "PUT",
+    body: formData,
+  });
+}
+
 export async function deleteEvent(
   eventId: string
 ): Promise<ApiResponse<{ id: string }>> {
