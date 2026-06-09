@@ -1,12 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { Event, EventCategory, EventStatus } from "@/lib/types";
 import { EVENT_CATEGORIES } from "@/lib/types";
 import { createEvent, updateEvent } from "@/lib/api";
+import { compressVideo } from "@/lib/videoCompress";
+import VideoTrimmer, { type VideoTrimmerHandle } from "@/components/VideoTrimmer";
 
 interface EventFormProps {
   event?: Event; // If provided, this is edit mode
@@ -19,12 +21,35 @@ export function EventForm({ event }: EventFormProps) {
   const [title, setTitle] = useState(event?.title ?? "");
   const [category, setCategory] = useState<EventCategory>(event?.category ?? "other");
   const [description, setDescription] = useState(event?.description ?? "");
-  const [duration, setDuration] = useState(event?.duration?.toString() ?? "");
   const [status, setStatus] = useState<EventStatus>(event?.status ?? "draft");
   const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [compressedVideo, setCompressedVideo] = useState<Blob | null>(null);
+  const trimmerRef = useRef<VideoTrimmerHandle>(null);
+  const [compressMsg, setCompressMsg] = useState<string | null>(null);
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
+  const [thumbPreviewUrl, setThumbPreviewUrl] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  async function handleVideoChange(file: File | null) {
+    setCompressedVideo(null);
+    setCompressMsg(null);
+    setVideoFile(file);
+    if (!file) return;
+
+    try {
+      const result = await compressVideo(file, (msg) => setCompressMsg(msg));
+      setCompressedVideo(result.blob);
+      if (result.compressed) {
+        setCompressMsg(`Compressed: ${result.originalWidth}x${result.originalHeight} → 720p`);
+      } else {
+        setCompressMsg(`Already ${result.originalHeight}p, no compression needed`);
+      }
+    } catch (err) {
+      setCompressMsg("Compression failed, will upload original");
+      setCompressedVideo(file); // fallback to original
+    }
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,10 +67,20 @@ export function EventForm({ event }: EventFormProps) {
       formData.append("title", title.trim());
       formData.append("category", category);
       if (description.trim()) formData.append("description", description.trim());
-      if (duration) formData.append("duration", duration);
       formData.append("status", status);
 
-      if (videoFile) formData.append("video", videoFile);
+      // Trim and upload clips if ranges are set
+      const ranges = trimmerRef.current?.getRanges();
+      if (ranges && ranges.length > 0) {
+        const clips = await trimmerRef.current!.trimAll();
+        clips.forEach((clip, i) => formData.append("video", new File([clip], `clip${i}.webm`, { type: clip.type })));
+        if (videoFile) formData.append("original", videoFile);
+      } else if (compressedVideo) {
+        formData.append("video", new File([compressedVideo], videoFile?.name ?? "video.webm", { type: compressedVideo.type }));
+        if (videoFile && videoFile !== compressedVideo) formData.append("original", videoFile);
+      } else if (videoFile) {
+        formData.append("video", videoFile);
+      }
       if (thumbnailFile) formData.append("thumbnail", thumbnailFile);
 
       if (isEdit) {
@@ -53,7 +88,6 @@ export function EventForm({ event }: EventFormProps) {
           title: title.trim(),
           category,
           description: description.trim() || undefined,
-          duration: duration ? parseInt(duration, 10) : undefined,
           status,
         });
         if (!res.success) throw new Error(res.error);
@@ -87,16 +121,80 @@ export function EventForm({ event }: EventFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Video Upload */}
+      <div className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            {isEdit ? "Replace Video (optional)" : "Video File *"}
+          </label>
+          <input
+            type="file"
+            accept="video/*"
+            onChange={(e) => handleVideoChange(e.target.files?.[0] ?? null)}
+            className="w-full text-sm text-gray-400 file:mr-4 file:rounded-lg file:border-0 file:bg-purple-600 file:px-4 file:py-2 file:text-sm file:text-white hover:file:bg-purple-700"
+          />
+          {compressMsg && (
+            <p className="mt-1 text-xs text-blue-400">{compressMsg}</p>
+          )}
+          {/* Trimmer: shows after compression, uses H.264 MP4 (plays in all browsers) */}
+          {compressedVideo && (
+            <div className="mt-4 rounded-lg border border-gray-200 dark:border-white/10 p-4">
+              <p className="mb-2 text-sm font-medium text-gray-700 dark:text-gray-300">
+                ✂️ Trim Video (optional)
+              </p>
+              <VideoTrimmer
+                ref={trimmerRef}
+                blob={compressedVideo}
+                type="video/mp4"
+                onThumbnailCapture={(blob) => {
+                  const f = new File([blob], "thumbnail.jpg", { type: "image/jpeg" });
+                  setThumbnailFile(f);
+                  setThumbPreviewUrl(URL.createObjectURL(blob));
+                }}
+              />
+            </div>
+          )}
+          {!compressedVideo && videoFile && compressMsg && (
+            <p className="text-sm text-yellow-400">⏳ {compressMsg}</p>
+          )}
+          {isEdit && event?.videoUrl && (
+            <p className="mt-1 text-xs text-gray-500">Current: {event.videoUrl}</p>
+          )}
+        </div>
+
+        {/* Thumbnail Upload */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            {isEdit ? "Replace Thumbnail (optional)" : "Thumbnail Image"}
+          </label>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => {
+              const f = e.target.files?.[0] ?? null;
+              setThumbnailFile(f);
+              if (f) setThumbPreviewUrl(URL.createObjectURL(f));
+            }}
+            className="w-full text-sm text-gray-400 file:mr-4 file:rounded-lg file:border-0 file:bg-purple-600 file:px-4 file:py-2 file:text-sm file:text-white hover:file:bg-purple-700"
+          />
+          {thumbPreviewUrl && (
+            <div className="mt-2 rounded-lg overflow-hidden border border-gray-200 dark:border-white/10">
+              <img src={thumbPreviewUrl} alt="thumbnail" className="w-full max-h-32 object-contain" />
+            </div>
+          )}
+        </div>
+      </div>
+
       {/* Title */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
           Title *
         </label>
         <input
           type="text"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          className="w-full rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-gray-800 px-4 py-2 text-gray-900 dark:text-white dark:text-white placeholder-gray-400 dark:placeholder-gray-600 focus:border-purple-500 focus:outline-none"
+          className="w-full rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-gray-800 px-4 py-2 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 focus:border-purple-500 focus:outline-none"
           placeholder="e.g., World Cup 2026 Final Goal"
           required
         />
@@ -105,7 +203,7 @@ export function EventForm({ event }: EventFormProps) {
       {/* Category + Status */}
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Category *
           </label>
           <select
@@ -122,7 +220,7 @@ export function EventForm({ event }: EventFormProps) {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
             Status
           </label>
           <select
@@ -139,60 +237,16 @@ export function EventForm({ event }: EventFormProps) {
 
       {/* Description */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
           Description
         </label>
         <textarea
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           rows={3}
-          className="w-full rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-gray-800 px-4 py-2 text-gray-900 dark:text-white dark:text-white placeholder-gray-400 dark:placeholder-gray-600 focus:border-purple-500 focus:outline-none"
+          className="w-full rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-gray-800 px-4 py-2 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 focus:border-purple-500 focus:outline-none"
           placeholder="Brief description of the event..."
         />
-      </div>
-
-      {/* Duration */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">
-          Duration (seconds)
-        </label>
-        <input
-          type="number"
-          value={duration}
-          onChange={(e) => setDuration(e.target.value)}
-          className="w-full rounded-lg border border-gray-300 dark:border-white/20 bg-white dark:bg-gray-800 px-4 py-2 text-gray-900 dark:text-white focus:border-purple-500 focus:outline-none"
-          placeholder="e.g., 30"
-        />
-      </div>
-
-      {/* Files */}
-      <div className="grid gap-4 sm:grid-cols-2">
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            {isEdit ? "Replace Video (optional)" : "Video File *"}
-          </label>
-          <input
-            type="file"
-            accept="video/*"
-            onChange={(e) => setVideoFile(e.target.files?.[0] ?? null)}
-            className="w-full text-sm text-gray-400 file:mr-4 file:rounded-lg file:border-0 file:bg-purple-600 file:px-4 file:py-2 file:text-sm file:text-gray-900 dark:text-white hover:file:bg-purple-700"
-          />
-          {isEdit && event?.videoUrl && (
-            <p className="mt-1 text-xs text-gray-500">Current: {event.videoUrl}</p>
-          )}
-        </div>
-
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">
-            {isEdit ? "Replace Thumbnail (optional)" : "Thumbnail Image"}
-          </label>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={(e) => setThumbnailFile(e.target.files?.[0] ?? null)}
-            className="w-full text-sm text-gray-400 file:mr-4 file:rounded-lg file:border-0 file:bg-purple-600 file:px-4 file:py-2 file:text-sm file:text-gray-900 dark:text-white hover:file:bg-purple-700"
-          />
-        </div>
       </div>
 
       {/* Error */}

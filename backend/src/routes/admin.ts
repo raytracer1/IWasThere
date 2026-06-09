@@ -41,7 +41,8 @@ adminRouter.post('/events', async (c) => {
   const description = formData.get('description') as string | null;
   const duration = formData.get('duration') as string | null;
   const status = formData.get('status') as string | null;
-  const videoFile = formData.get('video');
+  const videoFiles = formData.getAll('video'); // supports multiple clips
+  const originalFile = formData.get('original');
   const thumbnailFile = formData.get('thumbnail');
 
   // Validate required fields
@@ -55,21 +56,34 @@ adminRouter.post('/events', async (c) => {
   }
 
   const eventId = crypto.randomUUID();
-  let videoKey: string | null = null;
+  const videoKeys: string[] = [];
   let thumbnailKey: string | null = null;
 
-  // Upload video file
-  if (videoFile && typeof videoFile !== 'string') {
-    const vf = videoFile as unknown as { name: string; size: number; type: string; arrayBuffer(): Promise<ArrayBuffer> };
-    if (vf.size > MAX_VIDEO_SIZE) {
+  // Upload video file(s)
+  for (const vf of videoFiles) {
+    if (typeof vf === 'string') continue;
+    const file = vf as unknown as { name: string; size: number; type: string; arrayBuffer(): Promise<ArrayBuffer> };
+    if (file.size > MAX_VIDEO_SIZE) {
       return c.json({
         success: false,
         error: `Video too large. Max ${MAX_VIDEO_SIZE / (1024 * 1024)}MB.`,
       }, 400);
     }
-    const ext = vf.name.split('.').pop() || 'mp4';
-    videoKey = `hot-events/${eventId}/video.${ext}`;
-    await uploadToR2(c.env.ASSETS, videoKey, await vf.arrayBuffer(), vf.type);
+    const ext = file.name.split('.').pop() || 'mp4';
+    const key = `hot-events/${eventId}/${crypto.randomUUID()}.${ext}`;
+    await uploadToR2(c.env.ASSETS, key, await file.arrayBuffer(), file.type);
+    videoKeys.push(key);
+  }
+
+  // Upload original (untrimmed) video if provided
+  let originalKey: string | null = null;
+  if (originalFile && typeof originalFile !== 'string') {
+    const of = originalFile as unknown as { name: string; size: number; type: string; arrayBuffer(): Promise<ArrayBuffer> };
+    if (of.size <= MAX_VIDEO_SIZE) {
+      const ext = of.name.split('.').pop() || 'mp4';
+      originalKey = `hot-events/${eventId}/original.${ext}`;
+      await uploadToR2(c.env.ASSETS, originalKey, await of.arrayBuffer(), of.type);
+    }
   }
 
   // Upload thumbnail file
@@ -91,7 +105,7 @@ adminRouter.post('/events', async (c) => {
     title,
     category: category as CreateEventRequest['category'],
     description: description ?? undefined,
-    videoUrl: videoKey ?? '',
+    videoUrl: videoKeys[0] ?? '',
     thumbnailUrl: thumbnailKey ?? undefined,
     duration: duration ? parseInt(duration, 10) : undefined,
     status: (status as CreateEventRequest['status']) ?? 'draft',
