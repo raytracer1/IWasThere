@@ -97,10 +97,9 @@ export function EventForm({ event, initialVideo, initialThumbnail }: EventFormPr
         formData.append("trimRanges", JSON.stringify(ranges));
         const clips = await trimmerRef.current!.trimAll();
         clips.forEach((clip, i) => formData.append("video", new File([clip], `clip${i}.webm`, { type: clip.type })));
-        if (videoFile) formData.append("original", videoFile);
+        if (compressedVideo) formData.append("original", new File([compressedVideo], "compressed.mp4", { type: compressedVideo.type }));
       } else if (compressedVideo) {
         formData.append("video", new File([compressedVideo], videoFile?.name ?? "video.webm", { type: compressedVideo.type }));
-        if (videoFile && videoFile !== compressedVideo) formData.append("original", videoFile);
       } else if (videoFile) {
         formData.append("video", videoFile);
       }
