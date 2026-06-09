@@ -115,8 +115,8 @@ export class D1Helper {
 
   async createEvent(event: Omit<Event, 'createdAt'>): Promise<void> {
     await this.run(
-      `INSERT INTO events (id, title, category, description, video_url, thumbnail_url, duration, price, status, created_by, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, unixepoch())`,
+      `INSERT INTO events (id, title, category, description, video_url, thumbnail_url, duration, price, trim_ranges, status, created_by, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, unixepoch())`,
       event.id,
       event.title,
       event.category,
@@ -125,6 +125,7 @@ export class D1Helper {
       event.thumbnailUrl ?? null,
       event.duration ?? null,
       event.price ?? COST_PER_GENERATION,
+      event.trimRanges ?? null,
       event.status,
       event.createdBy
     );
@@ -267,6 +268,7 @@ export class D1Helper {
       thumbnailUrl: (row.thumbnail_url as string) ?? undefined,
       duration: (row.duration as number) ?? undefined,
       price: (row.price as number) ?? 0.50,
+      trimRanges: (row.trim_ranges as string) ?? undefined,
       status: row.status as Event['status'],
       createdBy: row.created_by as string,
       createdAt: row.created_at as number,

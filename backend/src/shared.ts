@@ -30,7 +30,9 @@ export interface Event {
   thumbnailUrl?: string;
   duration?: number;
   price?: number;
+  trimRanges?: string;
   price?: number;          // USD, minimum 0.50
+  trimRanges?: string;
   status: EventStatus;
   createdBy: string;
   createdAt: number;
@@ -93,7 +95,9 @@ export interface CreateEventRequest {
   description?: string;
   duration?: number;
   price?: number;
+  trimRanges?: string;
   price?: number;          // USD, minimum 0.50
+  trimRanges?: string;
   status?: EventStatus;
 }
 
@@ -103,7 +107,9 @@ export interface UpdateEventRequest {
   description?: string;
   duration?: number;
   price?: number;
+  trimRanges?: string;
   price?: number;          // USD, minimum 0.50
+  trimRanges?: string;
   status?: EventStatus;
 }
 
