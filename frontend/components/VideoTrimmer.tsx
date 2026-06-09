@@ -198,27 +198,27 @@ const VideoTrimmer = forwardRef<VideoTrimmerHandle, VideoTrimmerProps>(function 
       </video>
       {ready && (
         <div className="flex items-center gap-2 flex-wrap">
-          <button onClick={() => stepFrame(-1)} className="rounded bg-gray-700 px-2 py-1 text-xs text-white">◀◀</button>
-          <button onClick={() => stepFrame(-10)} className="rounded bg-gray-700 px-2 py-1 text-xs text-white">-10</button>
+          <button type="button" onClick={() => stepFrame(-1)} className="rounded bg-gray-700 px-2 py-1 text-xs text-white">◀◀</button>
+          <button type="button" onClick={() => stepFrame(-10)} className="rounded bg-gray-700 px-2 py-1 text-xs text-white">-10</button>
           <span className="text-sm font-mono text-white bg-gray-800 rounded px-3 py-1">Frame: {currentFrame} / {totalFrames}</span>
-          <button onClick={() => stepFrame(10)} className="rounded bg-gray-700 px-2 py-1 text-xs text-white">+10</button>
-          <button onClick={() => stepFrame(1)} className="rounded bg-gray-700 px-2 py-1 text-xs text-white">▶▶</button>
+          <button type="button" onClick={() => stepFrame(10)} className="rounded bg-gray-700 px-2 py-1 text-xs text-white">+10</button>
+          <button type="button" onClick={() => stepFrame(1)} className="rounded bg-gray-700 px-2 py-1 text-xs text-white">▶▶</button>
         </div>
       )}
       {ready && (
         <div className="flex items-center gap-2 flex-wrap">
-          <button onClick={markStart} className="rounded bg-green-600 px-3 py-1 text-sm text-white">
+          <button type="button" onClick={markStart} className="rounded bg-green-600 px-3 py-1 text-sm text-white">
             🟢 In: {pendingStart !== null ? `#${pendingStart}` : "--"}</button>
-          <button onClick={markEnd} disabled={!hasPending}
+          <button type="button" onClick={markEnd} disabled={!hasPending}
             className="rounded bg-red-600 px-3 py-1 text-sm text-white disabled:opacity-50">
             🔴 Out: {pendingEnd !== null ? `#${pendingEnd}` : "--"}</button>
-          <button onClick={addRange} disabled={!pendingReady}
+          <button type="button" onClick={addRange} disabled={!pendingReady}
             className="rounded bg-purple-600 px-3 py-1 text-sm text-white disabled:opacity-50">
             + Add</button>
           {pendingReady && <span className="text-sm text-purple-400">{pendingEnd! - pendingStart! + 1} frames</span>}
           <div className="flex-1" />
           {onThumbnailCapture && (
-            <button onClick={async () => {
+            <button type="button" onClick={async () => {
               const v = videoRef.current;
               if (!v || v.readyState < 2) return;
               const c = document.createElement("canvas");
@@ -237,7 +237,7 @@ const VideoTrimmer = forwardRef<VideoTrimmerHandle, VideoTrimmerProps>(function 
             <div key={i} className="flex items-center gap-2 text-sm">
               <span className="text-green-400">#{r.startFrame}</span> → <span className="text-red-400">#{r.endFrame}</span>
               <span className="text-gray-500">({r.endFrame - r.startFrame + 1}f)</span>
-              <button onClick={() => removeRange(i)} className="ml-2 text-xs text-red-400 hover:text-red-300">✕</button>
+              <button type="button" onClick={() => removeRange(i)} className="ml-2 text-xs text-red-400 hover:text-red-300">✕</button>
             </div>
           ))}
         </div>
