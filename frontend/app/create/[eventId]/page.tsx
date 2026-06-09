@@ -123,9 +123,9 @@ export default function CreatePage({
       <div className="mb-8 grid gap-6 md:grid-cols-2">
         {/* Video Player */}
         <div className="relative aspect-video overflow-hidden rounded-xl bg-gray-800">
-          {event.videoUrl ? (
+          {(event.originalVideoUrl || event.videoUrl) ? (
             <video
-              src={event.videoUrl}
+              src={event.originalVideoUrl || event.videoUrl}
               poster={event.thumbnailUrl}
               controls
               preload="metadata"
