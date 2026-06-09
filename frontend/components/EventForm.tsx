@@ -320,7 +320,7 @@ export function EventForm({ event, initialVideo, initialThumbnail }: EventFormPr
         </Button>
         <div className="flex-1" />
         {isEdit && (
-          <Button type="button" variant="destructive" onClick={handleDelete}>
+          <Button type="button" variant="destructive" size="lg" onClick={handleDelete}>
             Delete Event
           </Button>
         )}
