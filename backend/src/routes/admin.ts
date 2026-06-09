@@ -144,10 +144,14 @@ adminRouter.put('/events/:id', async (c) => {
   if (body.category) {
     const validCategories = ['sports', 'music', 'movies', 'news', 'other'];
     if (!validCategories.includes(body.category)) {
-      return c.json({ success: false, error: `Invalid category` }, 400);
+      return c.json({ success: false, error: 'Invalid category' }, 400);
     }
   }
 
+  // Handle trimRanges separately (not in the generic updateEvent)
+  if (body.trimRanges !== undefined) {
+    await db.run('UPDATE events SET trim_ranges = ? WHERE id = ?', body.trimRanges as string, eventId);
+  }
   await db.updateEvent(eventId, body);
 
   return c.json({ success: true, data: { id: eventId } });

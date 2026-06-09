@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,10 +11,12 @@ import { compressVideo } from "@/lib/videoCompress";
 import VideoTrimmer, { type VideoTrimmerHandle } from "@/components/VideoTrimmer";
 
 interface EventFormProps {
-  event?: Event; // If provided, this is edit mode
+  event?: Event;
+  initialVideo?: File | null;
+  initialThumbnail?: File | null;
 }
 
-export function EventForm({ event }: EventFormProps) {
+export function EventForm({ event, initialVideo, initialThumbnail }: EventFormProps) {
   const router = useRouter();
   const isEdit = !!event;
 
@@ -31,6 +33,9 @@ export function EventForm({ event }: EventFormProps) {
   const [thumbPreviewUrl, setThumbPreviewUrl] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasRanges, setHasRanges] = useState(false);
+
+  const canSubmit = !!title.trim() && !!compressedVideo && !!thumbnailFile && !!price && parseFloat(price) >= 0.50 && hasRanges;
 
   async function handleVideoChange(file: File | null) {
     setCompressedVideo(null);
@@ -51,6 +56,21 @@ export function EventForm({ event }: EventFormProps) {
       setCompressedVideo(file); // fallback to original
     }
   }
+
+  // Parse saved trim ranges from event
+  const savedRanges = event?.trimRanges ? (() => {
+    try { return JSON.parse(event.trimRanges) as { startFrame: number; endFrame: number }[]; } catch { return undefined; }
+  })() : undefined;
+
+  // Auto-load initial video/thumbnail for edit mode
+  useEffect(() => {
+    if (initialVideo) handleVideoChange(initialVideo);
+    if (initialThumbnail) {
+      setThumbnailFile(initialThumbnail);
+      setThumbPreviewUrl(URL.createObjectURL(initialThumbnail));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialVideo, initialThumbnail]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -74,6 +94,7 @@ export function EventForm({ event }: EventFormProps) {
       // Trim and upload clips if ranges are set
       const ranges = trimmerRef.current?.getRanges();
       if (ranges && ranges.length > 0) {
+        formData.append("trimRanges", JSON.stringify(ranges));
         const clips = await trimmerRef.current!.trimAll();
         clips.forEach((clip, i) => formData.append("video", new File([clip], `clip${i}.webm`, { type: clip.type })));
         if (videoFile) formData.append("original", videoFile);
@@ -91,6 +112,9 @@ export function EventForm({ event }: EventFormProps) {
           category,
           description: description.trim() || undefined,
           price: price ? parseFloat(price) : undefined,
+          trimRanges: trimmerRef.current?.getRanges().length
+            ? (() => { const r = trimmerRef.current!.getRanges(); return r.length > 0 ? JSON.stringify(r) : undefined; })()
+            : undefined,
           status,
         });
         if (!res.success) throw new Error(res.error);
@@ -149,6 +173,8 @@ export function EventForm({ event }: EventFormProps) {
                 ref={trimmerRef}
                 blob={compressedVideo}
                 type="video/mp4"
+                initialRanges={savedRanges}
+                onRangesChange={(r) => setHasRanges(r.length > 0)}
                 onThumbnailCapture={(blob) => {
                   const f = new File([blob], "thumbnail.jpg", { type: "image/jpeg" });
                   setThumbnailFile(f);
@@ -159,9 +185,6 @@ export function EventForm({ event }: EventFormProps) {
           )}
           {!compressedVideo && videoFile && compressMsg && (
             <p className="text-sm text-yellow-400">⏳ {compressMsg}</p>
-          )}
-          {isEdit && event?.videoUrl && (
-            <p className="mt-1 text-xs text-gray-500">Current: {event.videoUrl}</p>
           )}
         </div>
 
@@ -275,9 +298,21 @@ export function EventForm({ event }: EventFormProps) {
         </div>
       )}
 
+      {/* Validation */}
+      {!canSubmit && (
+        <div className="rounded-lg border border-yellow-500/30 bg-yellow-500/10 p-3 text-sm space-y-1">
+          <p className="font-medium text-yellow-400">⚠️ Required:</p>
+          {!title.trim() && <p className="text-yellow-300/70">• Enter a title</p>}
+          {(!price || parseFloat(price) < 0.50) && <p className="text-yellow-300/70">• Set a price (min $0.50)</p>}
+          {!compressedVideo && <p className="text-yellow-300/70">• Upload a video</p>}
+          {!thumbnailFile && <p className="text-yellow-300/70">• Upload or capture a thumbnail</p>}
+          {!hasRanges && <p className="text-yellow-300/70">• Set at least one In/Out range</p>}
+        </div>
+      )}
+
       {/* Actions */}
       <div className="flex items-center gap-4 pt-4">
-        <Button type="submit" disabled={submitting} size="lg">
+        <Button type="submit" disabled={submitting || !canSubmit} size="lg">
           {submitting ? "Saving..." : isEdit ? "Update Event" : "Create Event"}
         </Button>
         <Button type="button" variant="outline" onClick={() => router.back()}>

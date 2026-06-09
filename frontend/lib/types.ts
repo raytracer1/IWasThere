@@ -30,6 +30,7 @@ export interface Event {
   thumbnailUrl?: string;  // R2 object key
   duration?: number;      // seconds
   price?: number;          // USD, minimum 0.50
+  trimRanges?: string;     // JSON array of [start,end] frame pairs
   status: EventStatus;
   createdBy: string;
   createdAt: number;

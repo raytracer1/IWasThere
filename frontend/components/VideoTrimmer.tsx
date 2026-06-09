@@ -16,10 +16,12 @@ export interface VideoTrimmerHandle {
 interface VideoTrimmerProps {
   blob: Blob;
   type: string;
+  initialRanges?: ClipRange[];
+  onRangesChange?: (ranges: ClipRange[]) => void;
   onThumbnailCapture?: (blob: Blob) => void;
 }
 
-const VideoTrimmer = forwardRef<VideoTrimmerHandle, VideoTrimmerProps>(function VideoTrimmer({ blob, type, onThumbnailCapture }, ref) {
+const VideoTrimmer = forwardRef<VideoTrimmerHandle, VideoTrimmerProps>(function VideoTrimmer({ blob, type, initialRanges, onRangesChange, onThumbnailCapture }, ref) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
 
@@ -36,7 +38,16 @@ const VideoTrimmer = forwardRef<VideoTrimmerHandle, VideoTrimmerProps>(function 
   const videoUrl = useMemo(() => URL.createObjectURL(blob), [blob]);
   const totalFrames = Math.round(duration * nativeFps);
 
-  useEffect(() => { rangesRef.current = ranges; }, [ranges]);
+  useEffect(() => { rangesRef.current = ranges; onRangesChange?.(ranges); }, [ranges]);
+
+  // Restore initial ranges (edit mode) — only once
+  const restoredRef = useRef(false);
+  useEffect(() => {
+    if (!restoredRef.current && initialRanges && initialRanges.length > 0) {
+      setRanges(initialRanges);
+      restoredRef.current = true;
+    }
+  }, [initialRanges]);
 
   useEffect(() => {
     const video = videoRef.current;
