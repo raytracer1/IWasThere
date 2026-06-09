@@ -37,8 +37,8 @@ export default function EditEventPage({
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-8">
-        <Skeleton className="mb-8 h-8 w-48" />
+      <div className="mx-auto max-w-3xl px-4 py-0">
+        <Skeleton className="mb-1 h-8 w-48" />
         <Skeleton className="h-96 w-full rounded-xl" />
       </div>
     );
@@ -46,15 +46,15 @@ export default function EditEventPage({
 
   if (!event) {
     return (
-      <div className="mx-auto max-w-3xl px-4 py-20 text-center">
+      <div className="mx-auto max-w-3xl px-4 py-00 text-center">
         <p className="text-gray-400">Event not found</p>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8">
-      <h1 className="mb-8 text-3xl font-bold text-white">Edit Event</h1>
+    <div className="mx-auto max-w-3xl px-4 py-0">
+      <h1 className="mb-4 text-center text-3xl font-bold text-gray-900 dark:text-white">Edit Event</h1>
       <div className="rounded-xl border border-white/10 bg-white/5 p-6">
         <EventForm event={event} />
       </div>
