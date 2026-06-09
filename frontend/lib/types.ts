@@ -31,6 +31,7 @@ export interface Event {
   duration?: number;      // seconds
   price?: number;          // USD, minimum 0.50
   trimRanges?: string;     // JSON array of [start,end] frame pairs
+  originalVideoUrl?: string; // signed URL of full original video
   status: EventStatus;
   createdBy: string;
   createdAt: number;

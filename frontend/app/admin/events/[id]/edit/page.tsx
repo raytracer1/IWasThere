@@ -41,7 +41,7 @@ export default function EditEventPage({
         setEvent(res.data);
         // Download existing assets
         const [video, thumb] = await Promise.all([
-          downloadAsFile(res.data.videoUrl, "current.mp4"),
+          downloadAsFile(res.data.originalVideoUrl || res.data.videoUrl, "current.mp4"),
           res.data.thumbnailUrl ? downloadAsFile(res.data.thumbnailUrl, "thumbnail.jpg") : Promise.resolve(null),
         ]);
         setInitialVideo(video);

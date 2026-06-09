@@ -68,6 +68,30 @@ eventsRouter.get('/:id', async (c) => {
     const baseUrl = new URL(c.req.url).origin;
     const secret = c.env.AUTH_SECRET ?? 'dev-secret';
 
+    // Build original video URL (full compressed video for re-editing)
+    let originalVideoUrl: string | undefined;
+    const eventId = c.req.param('id');
+    // Always try to find original file
+    const candidates = ['mp4', 'webm'];
+    for (const ext of candidates) {
+      const key = `hot-events/${eventId}/original.${ext}`;
+      const obj = await c.env.ASSETS.head(key);
+      console.log(`Checking original key: ${key}, found:`, !!obj);
+      if (obj) {
+        originalVideoUrl = await generateSignedUrl(key, secret, baseUrl);
+        break;
+      }
+    }
+    // Also check R2 listing for any original file
+    if (!originalVideoUrl) {
+      const listObj = await c.env.ASSETS.list({ prefix: `hot-events/${eventId}/original.` });
+      const found = listObj.objects.find((o) => o.key.startsWith(`hot-events/${eventId}/original.`));
+      if (found) {
+        console.log(`Found via list: ${found.key}`);
+        originalVideoUrl = await generateSignedUrl(found.key, secret, baseUrl);
+      }
+    }
+
     return c.json({
       success: true,
       data: {
@@ -76,6 +100,7 @@ eventsRouter.get('/:id', async (c) => {
         thumbnailUrl: event.thumbnailUrl
           ? await generateSignedUrl(event.thumbnailUrl, secret, baseUrl)
           : undefined,
+        originalVideoUrl,
       },
     });
   } catch (err) {
