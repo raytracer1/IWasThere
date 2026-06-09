@@ -62,14 +62,16 @@ jobRouter.get('/:id', async (c) => {
   // Get event info for richer response
   const event = await db.getEventById(job.eventId);
 
+  const { outputVideo: _outputVideo, ...jobWithoutOutput } = job;
+
   return c.json({
     success: true,
     data: {
-      ...job,
-      outputVideoUrl: job.outputVideo
-        ? job.outputVideo.startsWith('http')
-          ? job.outputVideo // fal.ai direct URL
-          : await generateSignedUrl(job.outputVideo, secret, baseUrl) // R2 key
+      ...jobWithoutOutput,
+      outputVideoUrl: _outputVideo
+        ? _outputVideo.startsWith('http')
+          ? _outputVideo // fal.ai direct URL
+          : await generateSignedUrl(_outputVideo, secret, baseUrl) // R2 key
         : undefined,
       inputImageUrl: await generateSignedUrl(job.inputImage, secret, baseUrl),
       event: event
@@ -77,6 +79,17 @@ jobRouter.get('/:id', async (c) => {
             id: event.id,
             title: event.title,
             category: event.category,
+            trimRanges: event.trimRanges,
+            originalVideoUrl:
+              await (async () => {
+                const candidates = ['mp4', 'webm'];
+                for (const ext of candidates) {
+                  const key = `hot-events/${event.id}/original.${ext}`;
+                  const obj = await c.env.ASSETS.head(key);
+                  if (obj) return generateSignedUrl(key, secret, baseUrl);
+                }
+                return event.videoUrl ? generateSignedUrl(event.videoUrl, secret, baseUrl) : undefined;
+              })(),
             thumbnailUrl: event.thumbnailUrl
               ? await generateSignedUrl(event.thumbnailUrl, secret, baseUrl)
               : undefined,
