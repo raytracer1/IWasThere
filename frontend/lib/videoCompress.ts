@@ -63,7 +63,11 @@ export async function compressVideo(file: File, onProgress?: (msg: string) => vo
   }
   args.push("-an", "-movflags", "+faststart", outputName);
 
-  onProgress?.(`Compressing to 720p @ 24fps (H.264 MP4)...`);
+  const fromInfo = `${info.width}x${info.height} @ ${info.fps.toFixed(1)}fps`;
+  const toParts: string[] = [];
+  if (needsResize) toParts.push(`${newWidth}x${TARGET_HEIGHT}`);
+  if (needsFpsDrop) toParts.push(`${TARGET_FPS}fps`);
+  onProgress?.(`Compressing: ${fromInfo} → ${toParts.join(", ")} (H.264 MP4)...`);
   await ff.exec(args);
 
   const data = await ff.readFile(outputName);
@@ -77,7 +81,10 @@ export async function compressVideo(file: File, onProgress?: (msg: string) => vo
   await ff.deleteFile(outputName);
 
   const newWidth = needsResize ? Math.round((TARGET_HEIGHT / info.height) * info.width) : info.width;
-  onProgress?.(`Compressed: ${info.width}x${info.height} → ${newWidth}x${TARGET_HEIGHT} @ 24fps MP4`);
+  const parts: string[] = [];
+  if (needsResize) parts.push(`${info.width}x${info.height} → ${newWidth}x${TARGET_HEIGHT}`);
+  if (needsFpsDrop) parts.push(`${info.fps.toFixed(1)}fps → ${TARGET_FPS}fps`);
+  onProgress?.(`Compressed: ${parts.join(", ")} (H.264 MP4)`);
 
   return { blob, originalWidth: info.width, originalHeight: info.height, compressed: true };
 }

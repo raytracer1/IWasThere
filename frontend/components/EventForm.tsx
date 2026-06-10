@@ -46,14 +46,12 @@ export function EventForm({ event, initialVideo, initialThumbnail }: EventFormPr
     try {
       const result = await compressVideo(file, (msg) => setCompressMsg(msg));
       setCompressedVideo(result.blob);
-      if (result.compressed) {
-        setCompressMsg(`Compressed: ${result.originalWidth}x${result.originalHeight} → 720p`);
-      } else {
-        setCompressMsg(`Already ${result.originalHeight}p, no compression needed`);
+      if (!result.compressed) {
+        setCompressMsg((prev) => `${prev} — no compression needed`);
       }
     } catch (err) {
       setCompressMsg("Compression failed, will upload original");
-      setCompressedVideo(file); // fallback to original
+      setCompressedVideo(file);
     }
   }
 
@@ -62,9 +60,13 @@ export function EventForm({ event, initialVideo, initialThumbnail }: EventFormPr
     try { return JSON.parse(event.trimRanges) as { startFrame: number; endFrame: number }[]; } catch { return undefined; }
   })() : undefined;
 
-  // Auto-load initial video/thumbnail for edit mode
+  // Auto-load initial video/thumbnail for edit mode (no re-compression)
   useEffect(() => {
-    if (initialVideo) handleVideoChange(initialVideo);
+    if (initialVideo) {
+      setVideoFile(initialVideo);
+      setCompressedVideo(initialVideo);
+      setCompressMsg("Using existing video");
+    }
     if (initialThumbnail) {
       setThumbnailFile(initialThumbnail);
       setThumbPreviewUrl(URL.createObjectURL(initialThumbnail));
