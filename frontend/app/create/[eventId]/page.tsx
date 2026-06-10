@@ -18,7 +18,7 @@ export default function CreatePage({
   params: Promise<{ eventId: string }>;
 }) {
   const { eventId } = use(params);
-  const { data: session, status } = useSession();
+  const { data: session, status, update } = useSession();
   const router = useRouter();
 
   const [event, setEvent] = useState<Event | null>(null);
@@ -81,7 +81,10 @@ export default function CreatePage({
         throw new Error(swapRes.error ?? "Generation failed");
       }
 
-      // 3. Redirect to result page
+      // 3. Refresh session so credits update in Navbar
+      await update();
+
+      // 4. Redirect to result page
       router.push(`/result/${swapRes.data.jobId}`);
     } catch (err) {
       setUploading(false);

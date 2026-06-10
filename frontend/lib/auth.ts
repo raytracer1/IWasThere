@@ -53,16 +53,18 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           token.picture ?? "";
       }
 
-      // Regenerate access token on sign-in or when explicitly updated
-      if (trigger === "signIn" || trigger === "signUp" || !token.accessToken) {
-        token.accessToken = await generateAccessToken({
-          id: token.sub!,
-          email: token.email as string,
-          name: token.name as string | null,
-          image: token.picture as string | null,
-        });
+      // Refresh from backend on sign-in, update trigger, or missing token
+      if (trigger === "signIn" || trigger === "signUp" || trigger === "update" || !token.accessToken) {
+        if (trigger === "signIn" || trigger === "signUp" || !token.accessToken) {
+          token.accessToken = await generateAccessToken({
+            id: token.sub!,
+            email: token.email as string,
+            name: token.name as string | null,
+            image: token.picture as string | null,
+          });
+        }
 
-        // Register/update user in backend and fetch role
+        // Fetch latest role & credits from backend
         if (token.accessToken) {
           try {
             const workerUrl = process.env.NEXT_PUBLIC_WORKER_URL ?? "http://localhost:8787";
