@@ -45,10 +45,9 @@ export async function compressVideo(file: File, onProgress?: (msg: string) => vo
   await ff.writeFile(inputName, await fetchFile(file));
 
   // Build ffmpeg args: scale to 720p if needed, force 24fps, encode as H.264 MP4
+  const newWidth = needsResize ? Math.round((TARGET_HEIGHT / info.height) * info.width) : info.width;
   const vfParts: string[] = [];
   if (needsResize) {
-    const newWidth = Math.round((TARGET_HEIGHT / info.height) * info.width);
-    // Width must be even for libx264
     const w = newWidth % 2 === 0 ? newWidth : newWidth + 1;
     vfParts.push(`scale=${w}:${TARGET_HEIGHT}`);
   }
@@ -80,7 +79,6 @@ export async function compressVideo(file: File, onProgress?: (msg: string) => vo
   await ff.deleteFile(inputName);
   await ff.deleteFile(outputName);
 
-  const newWidth = needsResize ? Math.round((TARGET_HEIGHT / info.height) * info.width) : info.width;
   const parts: string[] = [];
   if (needsResize) parts.push(`${info.width}x${info.height} → ${newWidth}x${TARGET_HEIGHT}`);
   if (needsFpsDrop) parts.push(`${info.fps.toFixed(1)}fps → ${TARGET_FPS}fps`);
