@@ -1,6 +1,8 @@
 "use client";
 
+import { useEffect } from "react";
 import { useSession, signOut } from "@/lib/useAppSession";
+import { useCreditsStore } from "@/lib/store";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ThemeToggle } from "./ThemeToggle";
@@ -8,6 +10,13 @@ import { ThemeToggle } from "./ThemeToggle";
 export function Navbar() {
   const { data: session } = useSession();
   const pathname = usePathname();
+  const { credits, refresh } = useCreditsStore();
+
+  // Refresh credits on mount and when auth state changes
+  const isLoggedIn = !!session?.user;
+  useEffect(() => {
+    if (isLoggedIn) refresh();
+  }, [isLoggedIn, refresh]);
 
   if (pathname === "/login") return null;
 
@@ -45,9 +54,7 @@ export function Navbar() {
                 )}
                 <span className="hidden text-sm text-gray-300 sm:block">
                   {session.user.name ?? "User"}
-                  {(session.user as { credits?: number }).credits !== undefined && (
-                    <> · ${(session.user as { credits: number }).credits.toFixed(2)}</>
-                  )}
+                  <> · ${credits.toFixed(2)}</>
                 </span>
               </div>
               <button

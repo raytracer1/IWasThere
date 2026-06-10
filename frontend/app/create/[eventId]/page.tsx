@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UploadSelfie } from "@/components/UploadSelfie";
 import { fetchEvent, uploadSelfie, triggerSwap } from "@/lib/api";
+import { useCreditsStore } from "@/lib/store";
 import { formatDuration } from "@/lib/format";
 import type { Event } from "@/lib/types";
 
@@ -18,7 +19,7 @@ export default function CreatePage({
   params: Promise<{ eventId: string }>;
 }) {
   const { eventId } = use(params);
-  const { data: session, status, update } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
 
   const [event, setEvent] = useState<Event | null>(null);
@@ -30,8 +31,8 @@ export default function CreatePage({
   const [uploading, setUploading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
+  const { credits: userCredits, refresh: refreshCredits } = useCreditsStore();
   const authenticated = status === "authenticated";
-  const userCredits = (session?.user as { credits?: number } | undefined)?.credits ?? 0;
   const priceInsufficient = authenticated && (event?.price ?? 0) > userCredits;
 
   useEffect(() => {
@@ -79,8 +80,8 @@ export default function CreatePage({
         throw new Error(swapRes.error ?? "Generation failed");
       }
 
-      // 3. Refresh session so credits update in Navbar
-      await update();
+      // 3. Refresh credits
+      await refreshCredits();
 
       // 4. Redirect to result page
       router.push(`/result/${swapRes.data.jobId}`);

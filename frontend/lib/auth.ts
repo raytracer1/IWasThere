@@ -72,9 +72,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
               headers: { Authorization: `Bearer ${token.accessToken}` },
             });
             if (res.ok) {
-              const data = await res.json() as { success: boolean; data: { role: string; credits: number } };
+              const data = await res.json() as { success: boolean; data: { role: string } };
               token.role = data.data?.role ?? "user";
-              token.credits = data.data?.credits ?? 0;
             }
           } catch { /* backend unreachable, keep default */ }
         }
@@ -91,7 +90,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       }
       return {
         ...session,
-        user: { ...session.user, role: (token.role as string) ?? "user", credits: (token.credits as number) ?? 0 },
+        user: { ...session.user, role: (token.role as string) ?? "user" },
         accessToken: token.accessToken as string,
       };
     },

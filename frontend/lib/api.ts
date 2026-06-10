@@ -111,6 +111,12 @@ export async function fetchHistory(
   return authFetch(`/history?${params}`);
 }
 
+// ─── User ────────────────────────────────────────────────
+
+export async function fetchMe(): Promise<ApiResponse<{ id: string; email: string; role: string; credits: number }>> {
+  return authFetch("/me");
+}
+
 // ─── Admin API ──────────────────────────────────────────
 
 export async function fetchAdminEvents(
