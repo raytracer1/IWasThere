@@ -5,6 +5,8 @@ export async function submitSwapJob(
   apiKey: string,
   videoUrl: string,
   imageUrl: string,
+  keyframeId: number,
+  seed: number,
   resolution: string = DEFAULT_RESOLUTION
 ): Promise<string> {
   fal.config({ credentials: apiKey });
@@ -14,7 +16,8 @@ export async function submitSwapJob(
       video_url: videoUrl,
       image_url: imageUrl,
       mode: "person",
-      keyframe_id: 1,
+      keyframe_id: keyframeId,
+      seed,
       resolution,
     },
   });

@@ -76,6 +76,18 @@ swapRouter.post('/', async (c) => {
     status: 'queued',
   });
 
+  // Parse trimRanges for keyframe_id (in frame)
+  let keyframeId = 1;
+  if (event.trimRanges) {
+    try {
+      const ranges = JSON.parse(event.trimRanges) as { startFrame: number; endFrame: number }[];
+      if (ranges.length > 0) {
+        keyframeId = ranges[0].startFrame;
+      }
+    } catch { /* keep default */ }
+  }
+  const seed = Math.floor(Math.random() * 2147483647);
+
   // Submit to fal.ai
   let falRequestId: string;
   try {
@@ -83,6 +95,8 @@ swapRouter.post('/', async (c) => {
       falApiKey,
       videoSignedUrl,
       imageSignedUrl,
+      keyframeId,
+      seed,
       body.resolution ?? DEFAULT_RESOLUTION
     );
   } catch (err) {
