@@ -60,7 +60,7 @@ export async function compressVideo(file: File, onProgress?: (msg: string) => vo
   if (vf) {
     args.push("-vf", vf);
   }
-  args.push("-an", "-movflags", "+faststart", outputName);
+  args.push("-c:a", "aac", "-b:a", "128k", "-movflags", "+faststart", outputName);
 
   const fromInfo = `${info.width}x${info.height} @ ${info.fps.toFixed(1)}fps`;
   const toParts: string[] = [];
