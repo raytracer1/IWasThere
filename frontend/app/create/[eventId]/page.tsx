@@ -207,11 +207,11 @@ export default function CreatePage({
           )}
           {priceInsufficient && (
             <p className="mt-2 text-center text-sm text-red-400">
-              Insufficient credits. Need {event?.price ?? 0} 💎, you have {userCredits} 💎.
+              Insufficient credits. Need ${event?.price?.toFixed(2) ?? "0.00"}, have ${userCredits.toFixed(2)}.
             </p>
           )}
           <p className="mt-2 text-center text-xs text-gray-500">
-            {event?.price ?? "?"} 💎 per generation · {userCredits} 💎 available
+            ${event?.price?.toFixed(2) ?? "?"} per generation · ${userCredits.toFixed(2)} available
           </p>
         </div>
       </div>

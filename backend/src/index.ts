@@ -77,13 +77,13 @@ app.get('/me', jwtMiddleware(), async (c) => {
   let user = await db.getUserByEmail(payload.email);
 
   if (!user) {
-    // New user — create in DB
+    // New user — create in DB with $1 welcome credit
     await db.upsertUser({
       id: payload.sub,
       email: payload.email,
       name: payload.name,
       image: payload.picture,
-      credits: 0,
+      credits: 1,
     });
     user = await db.getUserByEmail(payload.email);
   }

@@ -46,7 +46,7 @@ export function Navbar() {
                 <span className="hidden text-sm text-gray-300 sm:block">
                   {session.user.name ?? "User"}
                   {(session.user as { credits?: number }).credits !== undefined && (
-                    <> · {(session.user as { credits: number }).credits} 💎</>
+                    <> · ${(session.user as { credits: number }).credits.toFixed(2)}</>
                   )}
                 </span>
               </div>
