@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import cron from 'node-cron';
 import { fetchPexelsVideos } from './sources/pexels';
 import { fetchRedditVideos } from './sources/reddit';
+import { fetchYoutubeTrending } from './sources/youtube';
 import { downloadVideo, downloadThumbnail, cleanupTemp } from './downloader';
 import { uploadEvent } from './uploader';
 import { isSeen, markSeen, pruneState, loadState } from './state';
@@ -14,6 +15,26 @@ const CRAWLER_TOKEN = process.env.CRAWLER_TOKEN ?? '';
 const PEXELS_API_KEY = process.env.PEXELS_API_KEY ?? '';
 const CRON_SCHEDULE = process.env.CRON_SCHEDULE ?? '0 */2 * * *';
 const MAX_PER_SOURCE = parseInt(process.env.MAX_PER_SOURCE ?? '5', 10);
+
+// ─── Source runner helper ─────────────────────────────────
+interface SourceResult {
+  name: string;
+  items: VideoItem[];
+  error?: string;
+}
+
+async function runSource(name: string, fn: () => Promise<VideoItem[]>): Promise<SourceResult> {
+  console.log(`\n📡 ${name}...`);
+  try {
+    const items = await fn();
+    console.log(`   ✅ ${items.length} items`);
+    return { name, items };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(`   ❌ ${name} error:`, msg);
+    return { name, items: [], error: msg };
+  }
+}
 
 // ─── Main crawl logic ────────────────────────────────────
 async function crawl() {
@@ -30,42 +51,51 @@ async function crawl() {
   const state = loadState();
   console.log(`   Seen URLs: ${state.seenUrls.length}`);
 
-  // Collect items from all sources
-  const allItems: VideoItem[] = [];
+  // ── Collect items from all sources in parallel ──────────
+  const sourcePromises: Promise<SourceResult>[] = [
+    // YouTube trending — richest source of hot videos
+    runSource('YouTube Trending', () => fetchYoutubeTrending(MAX_PER_SOURCE)),
+    // Reddit — native + external video links from popular subs
+    runSource('Reddit Hot', () => fetchRedditVideos(MAX_PER_SOURCE)),
+  ];
 
+  // Pexels is optional (requires API key)
   if (PEXELS_API_KEY) {
-    console.log('\n📸 Fetching Pexels...');
-    try {
-      const pxItems = await fetchPexelsVideos(PEXELS_API_KEY, MAX_PER_SOURCE);
-      console.log(`   Got ${pxItems.length} items`);
-      allItems.push(...pxItems);
-    } catch (err) {
-      console.error('   Pexels error:', err);
-    }
+    sourcePromises.push(
+      runSource('Pexels Popular', () => fetchPexelsVideos(PEXELS_API_KEY, MAX_PER_SOURCE))
+    );
   } else {
     console.log('\n📸 Pexels: skipped (no PEXELS_API_KEY)');
   }
 
-  console.log('\n📱 Fetching Reddit...');
-  try {
-    const redditItems = await fetchRedditVideos(MAX_PER_SOURCE);
-    console.log(`   Got ${redditItems.length} items`);
-    allItems.push(...redditItems);
-  } catch (err) {
-    console.error('   Reddit error:', err);
+  const sourceResults = await Promise.all(sourcePromises);
+
+  // Merge and deduplicate all items
+  const seenVideoUrls = new Set<string>();
+  const allItems: VideoItem[] = [];
+  for (const result of sourceResults) {
+    for (const item of result.items) {
+      const key = item.videoUrl;
+      if (seenVideoUrls.has(key)) continue;
+      seenVideoUrls.add(key);
+      allItems.push(item);
+    }
   }
 
-  // Filter out already-seen
-  const newItems = allItems.filter((item) => !isSeen(item.sourceUrl));
-  console.log(`\n🔍 Total: ${allItems.length}, New: ${newItems.length}`);
+  console.log(`\n📊 Total collected: ${allItems.length} (from ${sourceResults.length} sources)`);
 
-  // Download and upload each new item
+  // Filter out already-uploaded (by source URL)
+  const newItems = allItems.filter((item) => !isSeen(item.sourceUrl));
+  console.log(`🆕 New items: ${newItems.length}`);
+
+  // ── Download and upload each new item ──────────────────
   let uploaded = 0;
   for (const item of newItems) {
     console.log(`\n---`);
     console.log(`📥 [${item.category}] ${item.title.slice(0, 80)}`);
+    console.log(`   Source: ${item.sourceUrl}`);
 
-    // Download video first (needed for thumbnail fallback)
+    // Download video
     console.log('   Downloading video...');
     const videoPath = await downloadVideo(item.videoUrl);
     if (!videoPath) {
@@ -95,11 +125,19 @@ async function crawl() {
     // Clean up temp files
     cleanupTemp();
 
-    // Rate limit: wait between uploads
+    // Rate limit: wait between uploads to avoid overwhelming the Worker
     await sleep(5000);
   }
 
   console.log(`\n✨ Done! Uploaded ${uploaded}/${newItems.length} events`);
+
+  // Show failure summary if all uploads failed
+  if (uploaded === 0 && newItems.length > 0) {
+    console.log('⚠️  All uploads failed. Check:');
+    console.log('   1. WORKER_URL is correct and reachable');
+    console.log('   2. CRAWLER_TOKEN is valid (regenerate if expired)');
+    console.log('   3. Worker /admin/events endpoint accepts multipart uploads');
+  }
 }
 
 // ─── Cron schedule ───────────────────────────────────────
