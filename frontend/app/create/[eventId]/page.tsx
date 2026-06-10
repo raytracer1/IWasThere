@@ -30,14 +30,12 @@ export default function CreatePage({
   const [uploading, setUploading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
+  const authenticated = status === "authenticated";
   const userCredits = (session?.user as { credits?: number } | undefined)?.credits ?? 0;
-  const priceInsufficient = (event?.price ?? 0) > userCredits;
+  const priceInsufficient = authenticated && (event?.price ?? 0) > userCredits;
 
   useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/login");
-      return;
-    }
+    if (status === "loading") return;
 
     setLoading(true);
     fetchEvent(eventId)
@@ -53,7 +51,7 @@ export default function CreatePage({
         setError("Failed to load event");
       })
       .finally(() => setLoading(false));
-  }, [eventId, status, router]);
+  }, [eventId, status]);
 
   const handleGenerate = async () => {
     if (!selectedFile || !event) return;
@@ -185,10 +183,12 @@ export default function CreatePage({
           <Button
             size="lg"
             className="w-full"
-            disabled={!selectedFile || uploading || generating || priceInsufficient}
+            disabled={!authenticated || !selectedFile || uploading || generating || priceInsufficient}
             onClick={handleGenerate}
           >
-            {generating ? (
+            {!authenticated ? (
+              "🔒 Login to Generate"
+            ) : generating ? (
               <span className="flex items-center gap-2">
                 <span className="animate-spin">⏳</span> Generating...
               </span>
@@ -200,6 +200,11 @@ export default function CreatePage({
               "✨ Generate My Video"
             )}
           </Button>
+          {!authenticated && (
+            <p className="mt-2 text-center text-sm text-gray-400">
+              <button onClick={() => router.push("/login")} className="text-purple-400 hover:underline">Sign in</button> to generate your video.
+            </p>
+          )}
           {priceInsufficient && (
             <p className="mt-2 text-center text-sm text-red-400">
               Insufficient credits. Need {event?.price ?? 0} 💎, you have {userCredits} 💎.

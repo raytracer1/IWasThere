@@ -14,8 +14,7 @@ interface EventCardProps {
 export function EventCard({ event }: EventCardProps) {
   return (
     <Link href={`/create/${event.id}`}>
-      <Card className="group overflow-hidden transition-all hover:border-purple-500/50 hover:shadow-lg hover:shadow-purple-500/10">
-        {/* Thumbnail */}
+      <Card className="group overflow-hidden transition-all hover:border-purple-500/50 hover:shadow-lg hover:shadow-purple-500/10 cursor-pointer">
         <div className="relative aspect-video overflow-hidden bg-gray-800">
           {event.thumbnailUrl ? (
             <Image
@@ -31,12 +30,10 @@ export function EventCard({ event }: EventCardProps) {
             </div>
           )}
 
-          {/* Category badge overlay */}
           <div className="absolute left-3 top-3">
             <Badge variant={event.category}>{event.category}</Badge>
           </div>
 
-          {/* Duration badge */}
           {event.duration && (
             <div className="absolute right-3 bottom-3 rounded-md bg-black/70 px-2 py-0.5 text-xs text-white">
               {formatDuration(event.duration)}

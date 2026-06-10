@@ -95,7 +95,6 @@ app.get('/me', jwtMiddleware(), async (c) => {
 const api = new Hono();
 
 // Routes that require authentication
-api.use('/events/*', authMiddleware());
 api.use('/upload/*', authMiddleware());
 api.use('/swap/*', authMiddleware());
 api.use('/job/*', authMiddleware());

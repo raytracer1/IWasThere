@@ -8,9 +8,10 @@ import { MAX_SELFIE_SIZE } from "@/lib/types";
 interface UploadSelfieProps {
   onUpload: (file: File) => void;
   uploading: boolean;
+  disabled?: boolean;
 }
 
-export function UploadSelfie({ onUpload, uploading }: UploadSelfieProps) {
+export function UploadSelfie({ onUpload, uploading, disabled }: UploadSelfieProps) {
   const [preview, setPreview] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -67,6 +68,7 @@ export function UploadSelfie({ onUpload, uploading }: UploadSelfieProps) {
         onDragLeave={() => setDragOver(false)}
         onDrop={handleDrop}
         className={`relative flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-8 transition-colors ${
+          disabled ? "opacity-50 cursor-not-allowed border-white/10" :
           dragOver
             ? "border-purple-500 bg-purple-500/10"
             : "border-white/20 hover:border-white/40"
@@ -98,7 +100,7 @@ export function UploadSelfie({ onUpload, uploading }: UploadSelfieProps) {
           accept="image/jpeg,image/png,image/webp"
           onChange={handleFileChange}
           className="absolute inset-0 cursor-pointer opacity-0"
-          disabled={uploading}
+          disabled={uploading || disabled}
         />
       </div>
 

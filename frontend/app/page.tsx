@@ -27,13 +27,7 @@ export default function HomePage() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/login");
-    }
-  }, [status, router]);
-
-  useEffect(() => {
-    if (status !== "authenticated") return;
+    if (status === "loading") return;
 
     setLoading(true);
     setError(null);
