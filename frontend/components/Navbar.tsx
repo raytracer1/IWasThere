@@ -33,27 +33,38 @@ export function Navbar() {
         {/* User Menu */}
         <div className="flex items-center gap-4">
           <ThemeToggle />
-          <div className="flex items-center gap-3">
-            {session?.user?.image && (
-              <img
-                src={session.user.image}
-                alt={session.user.name ?? "User"}
-                className="h-8 w-8 rounded-full border border-white/20"
-              />
-            )}
-            <span className="hidden text-sm text-gray-300 sm:block">
-              {session?.user?.name ?? "User"}
-              {(session?.user as { credits?: number } | undefined)?.credits !== undefined && (
-                <> · {(session?.user as { credits: number }).credits} 💎</>
-              )}
-            </span>
-          </div>
-          <button
-            onClick={() => signOut({ callbackUrl: "/login" })}
-            className="rounded-lg px-3 py-1.5 text-sm text-gray-400 hover:bg-white/10 hover:text-white transition-colors"
-          >
-            Sign out
-          </button>
+          {session?.user ? (
+            <>
+              <div className="flex items-center gap-3">
+                {session.user.image && (
+                  <img
+                    src={session.user.image}
+                    alt={session.user.name ?? "User"}
+                    className="h-8 w-8 rounded-full border border-white/20"
+                  />
+                )}
+                <span className="hidden text-sm text-gray-300 sm:block">
+                  {session.user.name ?? "User"}
+                  {(session.user as { credits?: number }).credits !== undefined && (
+                    <> · {(session.user as { credits: number }).credits} 💎</>
+                  )}
+                </span>
+              </div>
+              <button
+                onClick={() => signOut({ callbackUrl: "/login" })}
+                className="rounded-lg px-3 py-1.5 text-sm text-gray-400 hover:bg-white/10 hover:text-white transition-colors"
+              >
+                Sign out
+              </button>
+            </>
+          ) : (
+            <Link
+              href="/login"
+              className="rounded-lg px-3 py-1.5 text-sm text-purple-400 hover:bg-white/10 hover:text-purple-300 transition-colors"
+            >
+              Sign in
+            </Link>
+          )}
         </div>
       </div>
     </nav>
