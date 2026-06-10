@@ -97,7 +97,9 @@ export function EventForm({ event, initialVideo, initialThumbnail }: EventFormPr
         formData.append("trimRanges", JSON.stringify(ranges));
       }
       if (compressedVideo) {
-        formData.append("video", new File([compressedVideo], videoFile?.name ?? "video.mp4", { type: compressedVideo.type }));
+        const origName = videoFile?.name ?? "video.mp4";
+        const baseName = origName.includes(".") ? origName.substring(0, origName.lastIndexOf(".")) : origName;
+        formData.append("video", new File([compressedVideo], `${baseName}.mp4`, { type: compressedVideo.type }));
       } else if (videoFile) {
         formData.append("video", videoFile);
       }
