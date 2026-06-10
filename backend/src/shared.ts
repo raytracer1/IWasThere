@@ -119,7 +119,7 @@ export interface UploadResponse {
 
 export const DAILY_GENERATION_LIMIT = 10;
 export const COST_PER_GENERATION = 0.5;
-export const DEFAULT_RESOLUTION = '540p';
+export const DEFAULT_RESOLUTION = '720p';
 export const MAX_SELFIE_SIZE = 10 * 1024 * 1024;
 export const MAX_VIDEO_SIZE = 100 * 1024 * 1024;
 export const MAX_THUMBNAIL_SIZE = 5 * 1024 * 1024;
