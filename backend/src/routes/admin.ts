@@ -43,8 +43,7 @@ adminRouter.post('/events', async (c) => {
   const price = formData.get('price') as string | null;
   const trimRanges = formData.get('trimRanges') as string | null;
   const status = formData.get('status') as string | null;
-  const videoFiles = formData.getAll('video'); // supports multiple clips
-  const originalFile = formData.get('original');
+  const videoFiles = formData.getAll('video');
   const thumbnailFile = formData.get('thumbnail');
 
   // Validate required fields
@@ -62,8 +61,6 @@ adminRouter.post('/events', async (c) => {
   let thumbnailKey: string | null = null;
 
   // Upload video file(s)
-  const clipCount = parseInt(trimRanges ? (formData.get('clipCount') as string || '1') : '1', 10);
-  let clipIndex = 0;
   for (const vf of videoFiles) {
     if (typeof vf === 'string') continue;
     const file = vf as unknown as { name: string; size: number; type: string; arrayBuffer(): Promise<ArrayBuffer> };
@@ -74,23 +71,9 @@ adminRouter.post('/events', async (c) => {
       }, 400);
     }
     const ext = file.name.split('.').pop() || 'mp4';
-    // Use sequential numbers for clips, UUID for fallback
-    const name = clipCount > 1 ? `${clipIndex + 1}` : crypto.randomUUID();
-    const key = `hot-events/${eventId}/${name}.${ext}`;
+    const key = `hot-events/${eventId}/${crypto.randomUUID()}.${ext}`;
     await uploadToR2(c.env.ASSETS, key, await file.arrayBuffer(), file.type);
     videoKeys.push(key);
-    clipIndex++;
-  }
-
-  // Upload original (untrimmed) video if provided
-  let originalKey: string | null = null;
-  if (originalFile && typeof originalFile !== 'string') {
-    const of = originalFile as unknown as { name: string; size: number; type: string; arrayBuffer(): Promise<ArrayBuffer> };
-    if (of.size <= MAX_VIDEO_SIZE) {
-      const ext = of.name.split('.').pop() || 'mp4';
-      originalKey = `hot-events/${eventId}/original.${ext}`;
-      await uploadToR2(c.env.ASSETS, originalKey, await of.arrayBuffer(), of.type);
-    }
   }
 
   // Upload thumbnail file
@@ -171,7 +154,6 @@ async function handleEventUpdate(c: import('hono').Context<{ Bindings: import('.
     const trimRanges = formData.get('trimRanges') as string | null;
     const status = formData.get('status') as string | null;
     const videoFiles = formData.getAll('video');
-    const originalFile = formData.get('original');
     const thumbnailFile = formData.get('thumbnail');
 
     // Upload new files
@@ -180,13 +162,9 @@ async function handleEventUpdate(c: import('hono').Context<{ Bindings: import('.
       if (typeof vf === 'string') continue;
       const file = vf as unknown as { name: string; size: number; type: string; arrayBuffer(): Promise<ArrayBuffer> };
       const ext = file.name.split('.').pop() || 'mp4';
-      const key = `hot-events/${eventId}/${file.name}`;
+      const key = `hot-events/${eventId}/${crypto.randomUUID()}.${ext}`;
       await uploadToR2(c.env.ASSETS, key, await file.arrayBuffer(), file.type);
       videoKeys.push(key);
-    }
-    if (originalFile && typeof originalFile !== 'string') {
-      const of = originalFile as unknown as { name: string; type: string; arrayBuffer(): Promise<ArrayBuffer> };
-      await uploadToR2(c.env.ASSETS, `hot-events/${eventId}/original.mp4`, await of.arrayBuffer(), of.type);
     }
     if (thumbnailFile && typeof thumbnailFile !== 'string') {
       const tf = thumbnailFile as unknown as { name: string; type: string; arrayBuffer(): Promise<ArrayBuffer> };

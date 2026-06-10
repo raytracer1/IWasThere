@@ -30,19 +30,22 @@ const VideoTrimmer = forwardRef<VideoTrimmerHandle, VideoTrimmerProps>(function 
   const currentFrameRef = useRef(0);
   const [pendingStart, setPendingStart] = useState<number | null>(null);
   const [pendingEnd, setPendingEnd] = useState<number | null>(null);
-  const [ranges, setRanges] = useState<ClipRange[]>([]);
-  const rangesRef = useRef<ClipRange[]>([]);
+  const [range, setRange] = useState<ClipRange | null>(null);
+  const rangeRef = useRef<ClipRange | null>(null);
   const [ready, setReady] = useState(false);
 
   const videoUrl = useMemo(() => URL.createObjectURL(blob), [blob]);
   const totalFrames = nativeFps > 0 && duration > 0 ? Math.round(duration * nativeFps) : 0;
 
-  useEffect(() => { rangesRef.current = ranges; onRangesChange?.(ranges); }, [ranges, onRangesChange]);
+  useEffect(() => {
+    rangeRef.current = range;
+    onRangesChange?.(range ? [range] : []);
+  }, [range, onRangesChange]);
 
   const restoredRef = useRef(false);
   useEffect(() => {
     if (!restoredRef.current && initialRanges && initialRanges.length > 0) {
-      setRanges(initialRanges);
+      setRange(initialRanges[0]);
       restoredRef.current = true;
     }
   }, [initialRanges]);
@@ -64,7 +67,7 @@ const VideoTrimmer = forwardRef<VideoTrimmerHandle, VideoTrimmerProps>(function 
     }).catch(() => fallback()).finally(() => setReady(true));
 
     function fallback() {
-      if (nativeFps > 0) return; // already set
+      if (nativeFps > 0) return;
       let fps = 24;
       try {
         const stream = (video as unknown as { captureStream?(): MediaStream }).captureStream?.();
@@ -83,17 +86,14 @@ const VideoTrimmer = forwardRef<VideoTrimmerHandle, VideoTrimmerProps>(function 
   useEffect(() => {
     if (!ready) return;
     const video = videoRef.current!;
-    let startFrameNum = 0;       // frame number at the start of current seek
-    let startPresented = 0;      // presented count at the start of current seek
+    let startFrameNum = 0;
+    let startPresented = 0;
 
-    // Get the real frame number from presented frames count
     function getFrameNumber(now: number, metadata: { presentedFrames: number }) {
-      // presentedFrames counts total frames since load — need to establish baseline
       if (startPresented === 0) {
         startPresented = metadata.presentedFrames;
         startFrameNum = Math.round(video.currentTime * nativeFps);
       }
-      // Actual frame = baseline + delta from presented count
       const delta = metadata.presentedFrames - startPresented;
       return startFrameNum + delta;
     }
@@ -110,19 +110,16 @@ const VideoTrimmer = forwardRef<VideoTrimmerHandle, VideoTrimmerProps>(function 
       }).requestVideoFrameCallback?.(loop) ?? 0;
     }
 
-    // Listen for seek events to reset baseline
     const onSeeked = () => {
       startPresented = 0;
       startFrameNum = Math.round(video.currentTime * nativeFps);
     };
     video.addEventListener('seeked', onSeeked);
 
-    // Start tracking
     try {
       rafId = (video as { requestVideoFrameCallback?: (cb: typeof loop) => number })
         .requestVideoFrameCallback?.(loop) ?? 0;
     } catch {
-      // Fallback: time-based polling
       const interval = setInterval(() => {
         const frame = Math.floor(video.currentTime * nativeFps + 0.0001);
         if (frame !== currentFrameRef.current) { currentFrameRef.current = frame; setCurrentFrame(frame); }
@@ -144,11 +141,9 @@ const VideoTrimmer = forwardRef<VideoTrimmerHandle, VideoTrimmerProps>(function 
     video.pause();
     const targetTime = target / nativeFps;
     video.currentTime = targetTime;
-    // Use requestVideoFrameCallback to confirm we landed on the right frame
     const check = () => {
       const actual = Math.floor(video.currentTime * nativeFps + 0.0001);
       if (actual === target) return;
-      // Re-seek if browser landed on wrong frame
       video.currentTime = targetTime;
       (video as { requestVideoFrameCallback?: (cb: () => void) => void }).requestVideoFrameCallback?.(check);
     };
@@ -159,16 +154,16 @@ const VideoTrimmer = forwardRef<VideoTrimmerHandle, VideoTrimmerProps>(function 
   function stepFrame(delta: number) { seekToFrame(currentFrameRef.current + delta); }
   function markStart() { setPendingStart(currentFrame); setPendingEnd(null); }
   function markEnd() { if (pendingStart !== null && currentFrame > pendingStart) setPendingEnd(currentFrame); }
-  function addRange() {
+  function setCurrentRange() {
     if (pendingStart !== null && pendingEnd !== null) {
-      setRanges((r) => [...r, { startFrame: pendingStart, endFrame: pendingEnd }].sort((a, b) => a.startFrame - b.startFrame));
+      setRange({ startFrame: pendingStart, endFrame: pendingEnd });
       setPendingStart(null); setPendingEnd(null);
     }
   }
-  function removeRange(idx: number) { setRanges((r) => r.filter((_, i) => i !== idx)); }
+  function clearRange() { setRange(null); }
 
   useImperativeHandle(ref, () => ({
-    getRanges: () => rangesRef.current,
+    getRanges: () => rangeRef.current ? [rangeRef.current] : [],
     captureFrame: async () => {
       const v = videoRef.current;
       if (!v || v.readyState < 2) return null;
@@ -178,14 +173,14 @@ const VideoTrimmer = forwardRef<VideoTrimmerHandle, VideoTrimmerProps>(function 
       return new Promise((r) => c.toBlob((b) => r(b), "image/jpeg", 0.9));
     },
     trimAll: async () => {
-      if (rangesRef.current.length === 0) return [];
-      return trimVideo(blob, rangesRef.current);
+      if (!rangeRef.current) return [];
+      return trimVideo(blob, [rangeRef.current]);
     },
   }), [blob]);
 
   const hasPending = pendingStart !== null;
   const pendingReady = hasPending && pendingEnd !== null;
-  const totalSelected = ranges.reduce((s, r) => s + r.endFrame - r.startFrame + 1, 0);
+  const totalSelected = range ? range.endFrame - range.startFrame + 1 : 0;
 
   return (
     <div className="space-y-3">
@@ -207,14 +202,21 @@ const VideoTrimmer = forwardRef<VideoTrimmerHandle, VideoTrimmerProps>(function 
       )}
       {ready && (
         <div className="flex items-center gap-2 flex-wrap">
-          <button type="button" onClick={markStart} className="rounded bg-green-600 px-3 py-1 text-sm text-white">
-            🟢 In: {pendingStart !== null ? `#${pendingStart}` : "--"}</button>
+          <button type="button" onClick={markStart} disabled={!!range}
+            className="rounded bg-green-600 px-3 py-1 text-sm text-white disabled:opacity-50">
+            🟢 In: {pendingStart !== null ? `#${pendingStart}` : range ? `#${range.startFrame}` : "--"}</button>
           <button type="button" onClick={markEnd} disabled={!hasPending}
             className="rounded bg-red-600 px-3 py-1 text-sm text-white disabled:opacity-50">
-            🔴 Out: {pendingEnd !== null ? `#${pendingEnd}` : "--"}</button>
-          <button type="button" onClick={addRange} disabled={!pendingReady}
-            className="rounded bg-purple-600 px-3 py-1 text-sm text-white disabled:opacity-50">
-            + Add</button>
+            🔴 Out: {pendingEnd !== null ? `#${pendingEnd}` : range ? `#${range.endFrame}` : "--"}</button>
+          {!range ? (
+            <button type="button" onClick={setCurrentRange} disabled={!pendingReady}
+              className="rounded bg-purple-600 px-3 py-1 text-sm text-white disabled:opacity-50">
+              ✓ Set</button>
+          ) : (
+            <button type="button" onClick={clearRange}
+              className="rounded bg-gray-600 px-3 py-1 text-sm text-white hover:bg-gray-500">
+              ✕ Clear</button>
+          )}
           {pendingReady && <span className="text-sm text-purple-400">{pendingEnd! - pendingStart! + 1} frames</span>}
           <div className="flex-1" />
           {onThumbnailCapture && (
@@ -230,16 +232,15 @@ const VideoTrimmer = forwardRef<VideoTrimmerHandle, VideoTrimmerProps>(function 
           )}
         </div>
       )}
-      {ranges.length > 0 && (
-        <div className="space-y-1 rounded-lg bg-gray-800 p-3">
-          <p className="text-xs text-gray-400 mb-2">📋 {ranges.length} range(s) · {totalSelected} frames total</p>
-          {ranges.map((r, i) => (
-            <div key={i} className="flex items-center gap-2 text-sm">
-              <span className="text-green-400">#{r.startFrame}</span> → <span className="text-red-400">#{r.endFrame}</span>
-              <span className="text-gray-500">({r.endFrame - r.startFrame + 1}f)</span>
-              <button type="button" onClick={() => removeRange(i)} className="ml-2 text-xs text-red-400 hover:text-red-300">✕</button>
-            </div>
-          ))}
+      {range && (
+        <div className="rounded-lg bg-gray-800 p-3">
+          <p className="text-xs text-gray-400 mb-1">📋 Range · {totalSelected} frames</p>
+          <p className="text-sm">
+            <span className="text-green-400">#{range.startFrame}</span>
+            {" → "}
+            <span className="text-red-400">#{range.endFrame}</span>
+            <span className="text-gray-500 ml-2">({range.endFrame - range.startFrame + 1}f)</span>
+          </p>
         </div>
       )}
     </div>

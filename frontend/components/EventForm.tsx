@@ -91,17 +91,13 @@ export function EventForm({ event, initialVideo, initialThumbnail }: EventFormPr
       formData.append("price", price || "0.50");
       formData.append("status", status);
 
-      // Trim and upload clips if ranges are set
+      // Send trimRanges if set, upload compressed video as single file
       const ranges = trimmerRef.current?.getRanges();
       if (ranges && ranges.length > 0) {
         formData.append("trimRanges", JSON.stringify(ranges));
-        formData.append("clipCount", String(ranges.length));
-        const clips = await trimmerRef.current!.trimAll();
-        // Upload clips 1, 2, 3... and the compressed original
-        clips.forEach((clip, i) => formData.append("video", new File([clip], `${i + 1}.webm`, { type: clip.type })));
-        if (compressedVideo) formData.append("original", new File([compressedVideo], "original.mp4", { type: compressedVideo.type }));
-      } else if (compressedVideo) {
-        formData.append("video", new File([compressedVideo], videoFile?.name ?? "video.webm", { type: compressedVideo.type }));
+      }
+      if (compressedVideo) {
+        formData.append("video", new File([compressedVideo], videoFile?.name ?? "video.mp4", { type: compressedVideo.type }));
       } else if (videoFile) {
         formData.append("video", videoFile);
       }

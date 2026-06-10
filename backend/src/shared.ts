@@ -29,8 +29,6 @@ export interface Event {
   videoUrl: string;
   thumbnailUrl?: string;
   duration?: number;
-  price?: number;
-  trimRanges?: string;
   price?: number;          // USD, minimum 0.50
   trimRanges?: string;
   status: EventStatus;
@@ -94,8 +92,6 @@ export interface CreateEventRequest {
   category: EventCategory;
   description?: string;
   duration?: number;
-  price?: number;
-  trimRanges?: string;
   price?: number;          // USD, minimum 0.50
   trimRanges?: string;
   status?: EventStatus;
@@ -106,8 +102,6 @@ export interface UpdateEventRequest {
   category?: EventCategory;
   description?: string;
   duration?: number;
-  price?: number;
-  trimRanges?: string;
   price?: number;          // USD, minimum 0.50
   trimRanges?: string;
   status?: EventStatus;
