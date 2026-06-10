@@ -1,6 +1,9 @@
 import { auth } from "@/lib/auth";
 import { NextResponse } from "next/server";
 
+// Routes that require authentication
+const protectedRoutes = ["/result", "/history", "/admin"];
+
 export default auth((req) => {
   if (process.env.NODE_ENV === "development") return NextResponse.next();
   const isLoggedIn = !!req.auth;
@@ -10,14 +13,15 @@ export default auth((req) => {
     req.nextUrl.pathname.startsWith("/_next") ||
     req.nextUrl.pathname.startsWith("/favicon") ||
     req.nextUrl.pathname.match(/\.(svg|png|jpg|jpeg|gif|ico)$/);
+  const isProtected = protectedRoutes.some(r => req.nextUrl.pathname.startsWith(r));
 
   // Allow public assets and auth routes
   if (isPublicAsset || isAuthRoute) {
     return NextResponse.next();
   }
 
-  // Redirect to login if not authenticated
-  if (!isLoggedIn && !isLoginPage) {
+  // Redirect to login only for protected routes when not authenticated
+  if (!isLoggedIn && isProtected) {
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
