@@ -40,13 +40,7 @@ export default function ResultPage({
           : "Your AI-generated moment"}
       </p>
 
-      {job?.status === "completed" && job.outputVideoUrl ? (
-        <div className="rounded-lg overflow-hidden bg-black">
-          <video src={job.outputVideoUrl} controls className="w-full" />
-        </div>
-      ) : (
-        <JobStatusDisplay job={job} loading={loading} error={error} />
-      )}
+      <JobStatusDisplay job={job} loading={loading} error={error} />
 
       {job?.status === "completed" && (
         <div className="mt-8 flex items-center justify-center gap-4">

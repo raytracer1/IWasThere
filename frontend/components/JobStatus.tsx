@@ -71,6 +71,8 @@ export function JobStatusDisplay({
   loading: boolean;
   error: string | null;
 }) {
+  const [downloadMsg, setDownloadMsg] = useState<string | null>(null);
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-12">
@@ -122,27 +124,45 @@ export function JobStatusDisplay({
       {/* Completed */}
       {job.status === "completed" && job.outputVideoUrl && (
         <div className="overflow-hidden rounded-xl border border-white/10">
-          <video
-            src={job.outputVideoUrl}
-            controls
-            autoPlay
-            loop
-            muted
-            className="w-full"
-          >
-            Your browser does not support the video tag.
-          </video>
+          <div className="relative">
+            <video
+              src={job.outputVideoUrl}
+              controls
+              autoPlay
+              loop
+              muted
+              className="w-full block"
+            >
+              Your browser does not support the video tag.
+            </video>
+            <div className="pointer-events-none absolute bottom-10 right-3 rounded bg-black/50 px-2 py-0.5 text-xs text-white/60 z-10">
+              IWasThere.Ai
+            </div>
+          </div>
 
           <div className="flex items-center gap-3 border-t border-white/10 p-4">
-            <a
-              href={job.outputVideoUrl}
-              download
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-700 transition-colors"
+            <button
+              onClick={async () => {
+                setDownloadMsg("Loading...");
+                try {
+                  const { downloadWithWatermark } = await import("@/lib/watermark");
+                  await downloadWithWatermark(job.outputVideoUrl!, setDownloadMsg);
+                } catch {
+                  setDownloadMsg("Download failed");
+                }
+              }}
+              disabled={!!downloadMsg}
+              className="inline-flex items-center gap-2 rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-700 transition-colors disabled:opacity-50"
             >
-              ⬇ Download
-            </a>
+              {downloadMsg ? (
+                <span className="flex items-center gap-1">
+                  {downloadMsg !== "Download failed" && <span className="animate-spin">⏳</span>}
+                  {downloadMsg}
+                </span>
+              ) : (
+                "⬇ Download"
+              )}
+            </button>
             <button
               onClick={() => {
                 navigator.clipboard.writeText(job.outputVideoUrl!);
