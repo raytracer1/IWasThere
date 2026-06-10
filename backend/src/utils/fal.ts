@@ -18,11 +18,25 @@ export async function submitSwapJob(
       mode: "person",
       keyframe_id: keyframeId,
       seed,
-      resolution,
+      resolution: resolution as "720p" | "540p" | "360p" | undefined,
     },
   });
 
-  return result.requestId;
+  console.log(`fal.submit raw: ${JSON.stringify(result)}`);
+
+  // Try all possible paths for request_id
+  const r = result as unknown as Record<string, unknown>;
+  const requestId =
+    (r.requestId as string) ??
+    (r.request_id as string) ??
+    (r.data as Record<string, unknown> | undefined)?.request_id as string ??
+    (r.data as Record<string, unknown> | undefined)?.requestId as string;
+
+  if (!requestId) {
+    throw new Error(`Could not extract requestId from fal response: ${JSON.stringify(result)}`);
+  }
+
+  return requestId;
 }
 
 export async function pollSwapStatus(
@@ -36,25 +50,54 @@ export async function pollSwapStatus(
     logs: true,
   });
 
-  const s = statusResp as { status: string; response_url?: string };
+  // Log raw response for debugging
+  console.log(`fal.status raw: ${JSON.stringify(statusResp)}`);
+
+  // Try multiple paths for status
+  const raw = statusResp as unknown as Record<string, unknown>;
+  const status: string =
+    (raw.status as string) ??
+    (raw.data as Record<string, unknown> | undefined)?.status as string ??
+    'UNKNOWN';
 
   let videoUrl: string | undefined;
-  if (s.status === 'COMPLETED') {
+  if (status === 'COMPLETED') {
     try {
       const result = await fal.queue.result("fal-ai/pixverse/swap", { requestId });
-      const r = result as { data?: { video?: { url: string } } };
-      videoUrl = r.data?.video?.url;
-    } catch {
-      // fallback: try response_url
-      if (s.response_url) {
-        try {
-          const res = await fetch(s.response_url);
-          const d = await res.json() as { video?: { url: string } };
-          videoUrl = d.video?.url;
-        } catch {}
+      console.log(`fal.result raw: ${JSON.stringify(result)}`);
+
+      const r = result as unknown as Record<string, unknown>;
+
+      // Try multiple paths for video URL (always extract .url from nested objects)
+      const videoObj = (r.video as { url?: string } | undefined) ??
+        (r.data as Record<string, unknown> | undefined)?.video as { url?: string } | undefined;
+      if (videoObj && typeof videoObj === 'object' && 'url' in videoObj) {
+        videoUrl = videoObj.url as string;
       }
+      // Also try direct string paths
+      if (!videoUrl) {
+        videoUrl = (r.data as Record<string, unknown> | undefined)?.video_url as string | undefined;
+      }
+
+      // Fallback: try response_url
+      if (!videoUrl) {
+        const responseUrl = (raw.response_url as string) ?? (r.response_url as string);
+        if (responseUrl) {
+          try {
+            const res = await fetch(responseUrl);
+            const d = await res.json() as Record<string, unknown>;
+            const vObj = (d.video as { url?: string } | undefined) ??
+              (d.data as Record<string, unknown> | undefined)?.video as { url?: string } | undefined;
+            if (vObj && typeof vObj === 'object') {
+              videoUrl = (vObj as { url: string }).url;
+            }
+          } catch {}
+        }
+      }
+    } catch (err) {
+      console.error('fal.result error:', err);
     }
   }
 
-  return { status: s.status, videoUrl };
+  return { status, videoUrl };
 }

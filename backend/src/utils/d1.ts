@@ -13,7 +13,7 @@ export class D1Helper {
   async first<T>(query: string, ...params: unknown[]): Promise<T | null> {
     const stmt = this.db.prepare(query);
     if (params.length > 0) {
-      const result = await stmt.bind(...params).first<T>();
+      const result = await stmt.bind(...params.map(v => v === undefined ? null : v)).first<T>();
       return result ?? null;
     }
     return await stmt.first<T>() ?? null;
@@ -22,7 +22,7 @@ export class D1Helper {
   async all<T>(query: string, ...params: unknown[]): Promise<{ results: T[]; success: boolean }> {
     const stmt = this.db.prepare(query);
     if (params.length > 0) {
-      return stmt.bind(...params).all<T>();
+      return stmt.bind(...params.map(v => v === undefined ? null : v)).all<T>();
     }
     return stmt.all<T>();
   }
@@ -30,7 +30,7 @@ export class D1Helper {
   async run(query: string, ...params: unknown[]): Promise<D1Result> {
     const stmt = this.db.prepare(query);
     if (params.length > 0) {
-      return stmt.bind(...params).run();
+      return stmt.bind(...params.map(v => v === undefined ? null : v)).run();
     }
     return stmt.run();
   }

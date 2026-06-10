@@ -7,7 +7,6 @@ import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { JobStatusDisplay } from "@/components/JobStatus";
 import { useJobPolling } from "@/components/JobStatus";
-import { CompositePlayer } from "@/components/CompositePlayer";
 
 export default function ResultPage({
   params,
@@ -41,13 +40,10 @@ export default function ResultPage({
           : "Your AI-generated moment"}
       </p>
 
-      {job?.status === "completed" && job.event?.trimRanges && job.outputVideoUrl ? (
-        <CompositePlayer
-          originalUrl={job.event.originalVideoUrl || ""}
-          generatedUrl={job.outputVideoUrl}
-          fps={(() => { try { const r = JSON.parse(job.event.trimRanges)[0]; return 24; } catch { return 24; } })()}
-          ranges={(() => { try { const r = JSON.parse(job.event.trimRanges); return r.map((x: { startFrame: number; endFrame: number }) => ({ start: x.startFrame / 24, end: x.endFrame / 24 })); } catch { return []; } })()}
-        />
+      {job?.status === "completed" && job.outputVideoUrl ? (
+        <div className="rounded-lg overflow-hidden bg-black">
+          <video src={job.outputVideoUrl} controls className="w-full" />
+        </div>
       ) : (
         <JobStatusDisplay job={job} loading={loading} error={error} />
       )}

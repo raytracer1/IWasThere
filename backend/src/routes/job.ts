@@ -31,6 +31,7 @@ jobRouter.get('/:id', async (c) => {
   }
 
   // If still in progress, poll fal.ai for update
+  console.log(`Poll check: status=${job.status}, falRequestId=${job.falRequestId}, hasApiKey=${!!falApiKey}`);
   if ((job.status === 'queued' || job.status === 'processing') && job.falRequestId && falApiKey) {
     try {
       const falStatus = await pollSwapStatus(falApiKey, job.falRequestId);
@@ -56,6 +57,14 @@ jobRouter.get('/:id', async (c) => {
       }
     } catch (err) {
       console.error('fal.ai poll error:', err);
+    }
+  } else if (job.status === 'processing' && !job.falRequestId) {
+    // Stuck job: was updated to processing but fal_request_id was lost (D1 error)
+    const age = Date.now() / 1000 - job.createdAt;
+    if (age > 600) { // 10 minutes
+      await db.updateJobStatus(jobId, 'failed', undefined, 'Job stuck without fal request ID. Please try again.');
+      job.status = 'failed';
+      job.errorMessage = 'Job stuck without fal request ID. Please try again.';
     }
   }
 
