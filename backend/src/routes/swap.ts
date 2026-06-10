@@ -76,6 +76,13 @@ swapRouter.post('/', async (c) => {
     status: 'queued',
   });
 
+  // Check if user has enough credits
+  const eventPrice = event.price ?? 0.50;
+  const freshUser = await db.getUserById(user.id);
+  if (freshUser && freshUser.credits < eventPrice) {
+    return c.json({ success: false, error: `Insufficient credits. Need ${eventPrice} 💎, you have ${freshUser.credits} 💎.` }, 402);
+  }
+
   // Parse trimRanges for keyframe_id (in frame)
   let keyframeId = 1;
   if (event.trimRanges) {
@@ -108,8 +115,8 @@ swapRouter.post('/', async (c) => {
   // Update job with fal request ID and set to processing
   await db.updateJobFalRequestId(jobId, falRequestId);
 
-  // Deduct credits
-  await db.deductCredits(user.id, 1);
+  // Deduct credits based on event price
+  await db.deductCredits(user.id, eventPrice);
 
   // Increment rate limit counter
   await db.incrementGenerationCount(user.id);

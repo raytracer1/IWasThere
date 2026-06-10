@@ -18,7 +18,7 @@ export default function CreatePage({
   params: Promise<{ eventId: string }>;
 }) {
   const { eventId } = use(params);
-  const { status } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
 
   const [event, setEvent] = useState<Event | null>(null);
@@ -30,6 +30,8 @@ export default function CreatePage({
   const [uploading, setUploading] = useState(false);
   const [generating, setGenerating] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
+  const userCredits = (session?.user as { credits?: number } | undefined)?.credits ?? 0;
+  const priceInsufficient = (event?.price ?? 0) > userCredits;
 
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -180,7 +182,7 @@ export default function CreatePage({
           <Button
             size="lg"
             className="w-full"
-            disabled={!selectedFile || uploading || generating}
+            disabled={!selectedFile || uploading || generating || priceInsufficient}
             onClick={handleGenerate}
           >
             {generating ? (
@@ -195,8 +197,13 @@ export default function CreatePage({
               "✨ Generate My Video"
             )}
           </Button>
+          {priceInsufficient && (
+            <p className="mt-2 text-center text-sm text-red-400">
+              Insufficient credits. Need {event?.price ?? 0} 💎, you have {userCredits} 💎.
+            </p>
+          )}
           <p className="mt-2 text-center text-xs text-gray-500">
-            Costs ~$0.50 per generation. Limited to 10 per day.
+            {event?.price ?? "?"} 💎 per generation · {userCredits} 💎 available
           </p>
         </div>
       </div>

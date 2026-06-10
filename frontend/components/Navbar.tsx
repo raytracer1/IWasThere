@@ -41,6 +41,9 @@ export function Navbar() {
             )}
             <span className="hidden text-sm text-gray-300 sm:block">
               {session?.user?.name ?? "User"}
+              {(session?.user as { credits?: number } | undefined)?.credits !== undefined && (
+                <> · {(session?.user as { credits: number }).credits} 💎</>
+              )}
             </span>
           </div>
           <button
