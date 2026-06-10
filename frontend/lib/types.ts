@@ -116,9 +116,6 @@ export interface UploadResponse {
 
 // ─── Constants ──────────────────────────────────────────
 
-/** Daily generation limit per user */
-export const DAILY_GENERATION_LIMIT = 10;
-
 /** Estimated cost per generation in USD */
 export const COST_PER_GENERATION = 0.5;
 

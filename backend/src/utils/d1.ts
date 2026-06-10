@@ -1,5 +1,5 @@
 import type { D1Database, D1Result } from '@cloudflare/workers-types';
-import { COST_PER_GENERATION, type User, type Event, type Job, type JobStatus, type RateLimit } from '../shared';
+import { COST_PER_GENERATION, type User, type Event, type Job, type JobStatus } from '../shared';
 
 /**
  * Typed wrapper around Cloudflare D1 binding.
@@ -238,31 +238,11 @@ export class D1Helper {
 
   // ─── Rate Limits ──────────────────────────────────────
 
-  async getTodayGenerationCount(userId: string): Promise<number> {
-    const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
-    const row = await this.first<{ count: number }>(
-      'SELECT count FROM rate_limits WHERE user_id = ? AND date = ?',
-      userId,
-      today
-    );
-    return row?.count ?? 0;
-  }
-
   async deductCredits(userId: string, amount: number): Promise<void> {
     await this.run(
       'UPDATE users SET credits = MAX(0, credits - ?) WHERE id = ?',
       amount,
       userId
-    );
-  }
-
-  async incrementGenerationCount(userId: string): Promise<void> {
-    const today = new Date().toISOString().slice(0, 10);
-    await this.run(
-      `INSERT INTO rate_limits (user_id, date, count) VALUES (?, ?, 1)
-       ON CONFLICT(user_id, date) DO UPDATE SET count = count + 1`,
-      userId,
-      today
     );
   }
 

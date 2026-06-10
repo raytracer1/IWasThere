@@ -2,15 +2,11 @@ import { Hono } from 'hono';
 import { D1Helper } from '../utils/d1';
 import { submitSwapJob } from '../utils/fal';
 import { generateSignedUrl } from '../utils/r2';
-import { rateLimitMiddleware } from '../middleware/rate-limit';
-import { DAILY_GENERATION_LIMIT, DEFAULT_RESOLUTION } from '../shared';
+import { DEFAULT_RESOLUTION } from '../shared';
 import type { SwapRequest } from '../shared';
 import type { Bindings } from '../types';
 
 const swapRouter = new Hono<{ Bindings: Bindings }>();
-
-// Apply rate limiting middleware
-swapRouter.use('*', rateLimitMiddleware());
 
 /**
  * POST /swap — Trigger a fal.ai swap job.
@@ -37,15 +33,6 @@ swapRouter.post('/', async (c) => {
 
   if (!body.eventId || !body.imageKey) {
     return c.json({ success: false, error: 'eventId and imageKey are required' }, 400);
-  }
-
-  // Check rate limit
-  const todayCount = await db.getTodayGenerationCount(user.id);
-  if (todayCount >= DAILY_GENERATION_LIMIT) {
-    return c.json({
-      success: false,
-      error: `Daily generation limit reached (${DAILY_GENERATION_LIMIT}/day). Please try again tomorrow.`,
-    }, 429);
   }
 
   // Get event
@@ -117,9 +104,6 @@ swapRouter.post('/', async (c) => {
 
   // Deduct credits based on event price
   await db.deductCredits(user.id, eventPrice);
-
-  // Increment rate limit counter
-  await db.incrementGenerationCount(user.id);
 
   return c.json({
     success: true,

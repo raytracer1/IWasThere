@@ -54,12 +54,6 @@ export interface Job {
 }
 
 // ─── Rate Limit ─────────────────────────────────────────
-export interface RateLimit {
-  userId: string;
-  date: string;
-  count: number;
-}
-
 // ─── API Response Wrappers ──────────────────────────────
 export interface ApiResponse<T = unknown> {
   success: boolean;
@@ -118,7 +112,6 @@ export interface UploadResponse {
 
 // ─── Constants ──────────────────────────────────────────
 
-export const DAILY_GENERATION_LIMIT = 10;
 export const COST_PER_GENERATION = 0.5;
 export const DEFAULT_RESOLUTION = '720p';
 export const MAX_SELFIE_SIZE = 10 * 1024 * 1024;
