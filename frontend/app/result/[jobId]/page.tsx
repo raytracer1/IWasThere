@@ -29,13 +29,13 @@ export default function ResultPage({
     <div className="mx-auto max-w-4xl px-4 py-8">
       <button
         onClick={() => router.push("/")}
-        className="mb-6 text-sm text-gray-400 hover:text-white transition-colors"
+        className="mb-6 text-sm text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
       >
         ← Back to Events
       </button>
 
-      <h1 className="mb-2 text-2xl font-bold text-white">Your Generated Video</h1>
-      <p className="mb-8 text-gray-400">
+      <h1 className="mb-2 text-2xl font-bold text-gray-900 dark:text-white">Your Generated Video</h1>
+      <p className="mb-8 text-gray-500 dark:text-gray-400">
         {job?.event?.title
           ? `You in: ${job.event.title}`
           : "Your AI-generated moment"}
