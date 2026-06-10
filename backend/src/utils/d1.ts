@@ -47,15 +47,16 @@ export class D1Helper {
 
   async upsertUser(user: Omit<User, 'createdAt' | 'role'>): Promise<void> {
     await this.run(
-      `INSERT INTO users (id, email, name, image, created_at)
-       VALUES (?, ?, ?, ?, unixepoch())
+      `INSERT INTO users (id, email, name, image, credits, created_at)
+       VALUES (?, ?, ?, ?, ?, unixepoch())
        ON CONFLICT(email) DO UPDATE SET
          name = excluded.name,
          image = excluded.image`,
       user.id,
       user.email,
       user.name ?? null,
-      user.image ?? null
+      user.image ?? null,
+      user.credits ?? 0
     );
   }
 
@@ -245,6 +246,14 @@ export class D1Helper {
       today
     );
     return row?.count ?? 0;
+  }
+
+  async deductCredits(userId: string, amount: number): Promise<void> {
+    await this.run(
+      'UPDATE users SET credits = MAX(0, credits - ?) WHERE id = ?',
+      amount,
+      userId
+    );
   }
 
   async incrementGenerationCount(userId: string): Promise<void> {

@@ -20,6 +20,8 @@ export function useSession() {
           email: "dev@localhost",
           name: "Dev Admin",
           image: undefined,
+          role: "admin" as const,
+          credits: 999,
         },
         accessToken: process.env.NEXT_PUBLIC_DEV_TOKEN,
         expires: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),

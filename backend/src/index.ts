@@ -1,6 +1,7 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
-import { authMiddleware, requireAdmin } from './middleware/auth';
+import { authMiddleware, jwtMiddleware, requireAdmin } from './middleware/auth';
+import { D1Helper } from './utils/d1';
 import eventsRouter from './routes/events';
 import uploadRouter from './routes/upload';
 import swapRouter from './routes/swap';
@@ -63,6 +64,31 @@ app.get('/assets/:key{.*}', async (c) => {
 // ─── Health Check ───────────────────────────────────────
 app.get('/health', (c) => {
   return c.json({ success: true, data: { status: 'ok', env: c.env.ENVIRONMENT } });
+});
+
+// ─── Current User (registration happens here) ─────────────
+app.get('/me', jwtMiddleware(), async (c) => {
+  const payload = c.get('jwtPayload') as { sub: string; email: string; name?: string; picture?: string };
+  const db = new D1Helper(c.env.DB);
+  const adminEmails = (c.env.ADMIN_EMAILS ?? '').split(',').map(e => e.trim().toLowerCase());
+  const role = adminEmails.includes(payload.email?.toLowerCase() ?? '') ? 'admin' : 'user';
+
+  // Check if user already exists
+  let user = await db.getUserByEmail(payload.email);
+
+  if (!user) {
+    // New user — create in DB
+    await db.upsertUser({
+      id: payload.sub,
+      email: payload.email,
+      name: payload.name,
+      image: payload.picture,
+      credits: 0,
+    });
+    user = await db.getUserByEmail(payload.email);
+  }
+
+  return c.json({ success: true, data: { id: payload.sub, email: payload.email, role, credits: user?.credits ?? 0 } });
 });
 
 // ─── Protected Routes ───────────────────────────────────

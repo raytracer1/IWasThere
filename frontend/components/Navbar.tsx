@@ -23,7 +23,9 @@ export function Navbar() {
         <div className="flex items-center gap-6">
           <NavLink href="/" active={pathname === "/"} label="Home" />
           <NavLink href="/history" active={pathname === "/history"} label="History" />
-          <NavLink href="/admin" active={pathname.startsWith("/admin")} label="Admin" />
+          {(session?.user as { role?: string } | undefined)?.role === "admin" && (
+            <NavLink href="/admin" active={pathname.startsWith("/admin")} label="Admin" />
+          )}
         </div>
 
         {/* User Menu */}

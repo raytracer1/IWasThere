@@ -108,6 +108,9 @@ swapRouter.post('/', async (c) => {
   // Update job with fal request ID and set to processing
   await db.updateJobFalRequestId(jobId, falRequestId);
 
+  // Deduct credits
+  await db.deductCredits(user.id, 1);
+
   // Increment rate limit counter
   await db.incrementGenerationCount(user.id);
 

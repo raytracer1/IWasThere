@@ -61,6 +61,21 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           name: token.name as string | null,
           image: token.picture as string | null,
         });
+
+        // Register/update user in backend and fetch role
+        if (token.accessToken) {
+          try {
+            const workerUrl = process.env.NEXT_PUBLIC_WORKER_URL ?? "http://localhost:8787";
+            const res = await fetch(`${workerUrl}/me`, {
+              headers: { Authorization: `Bearer ${token.accessToken}` },
+            });
+            if (res.ok) {
+              const data = await res.json() as { success: boolean; data: { role: string; credits: number } };
+              token.role = data.data?.role ?? "user";
+              token.credits = data.data?.credits ?? 0;
+            }
+          } catch { /* backend unreachable, keep default */ }
+        }
       }
 
       return token;
@@ -72,9 +87,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.name = (token.name as string) ?? "";
         session.user.image = (token.picture as string) ?? "";
       }
-      // Expose the access token to the client for Worker API calls
       return {
         ...session,
+        user: { ...session.user, role: (token.role as string) ?? "user", credits: (token.credits as number) ?? 0 },
         accessToken: token.accessToken as string,
       };
     },
