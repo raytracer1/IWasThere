@@ -89,7 +89,7 @@ swapRouter.post('/', async (c) => {
     try {
       const ranges = JSON.parse(event.trimRanges) as { startFrame: number; endFrame: number }[];
       if (ranges.length > 0) {
-        keyframeId = ranges[0].startFrame;
+        keyframeId = ranges[0].startFrame + 1;
       }
     } catch { /* keep default */ }
   }
