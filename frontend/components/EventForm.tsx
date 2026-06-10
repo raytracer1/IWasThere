@@ -47,6 +47,7 @@ export function EventForm({ event, initialVideo, initialThumbnail }: EventFormPr
       const result = await compressVideo(file, (msg) => setCompressMsg(msg));
       setCompressedVideo(result.blob);
     } catch (err) {
+      console.error("Compression failed:", err);
       setCompressMsg("Compression failed, will upload original");
       setCompressedVideo(file);
     }
