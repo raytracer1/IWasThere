@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { authMiddleware, jwtMiddleware, requireAdmin } from './middleware/auth';
 import { D1Helper } from './utils/d1';
+import authRouter from './routes/auth';
 import eventsRouter from './routes/events';
 import uploadRouter from './routes/upload';
 import swapRouter from './routes/swap';
@@ -90,6 +91,9 @@ app.get('/me', jwtMiddleware(), async (c) => {
 
   return c.json({ success: true, data: { id: payload.sub, email: payload.email, role, credits: user?.credits ?? 0 } });
 });
+
+// ─── Google Auth (native clients) ───────────────────────
+app.route('/auth', authRouter);
 
 // ─── Protected Routes ───────────────────────────────────
 const api = new Hono();
