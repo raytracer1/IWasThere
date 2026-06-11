@@ -41,8 +41,5 @@ class ApiConfig {
   static const List<String> categories = [
     'sports',
     'music',
-    'movies',
-    'news',
-    'other',
   ];
 }

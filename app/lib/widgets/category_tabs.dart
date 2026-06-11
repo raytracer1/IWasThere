@@ -16,9 +16,6 @@ class CategoryTabs extends StatelessWidget {
     {'key': null, 'label': 'All', 'icon': Icons.grid_view},
     {'key': 'sports', 'label': 'Sports', 'icon': Icons.sports_soccer},
     {'key': 'music', 'label': 'Music', 'icon': Icons.music_note},
-    {'key': 'movies', 'label': 'Movies', 'icon': Icons.movie},
-    {'key': 'news', 'label': 'News', 'icon': Icons.newspaper},
-    {'key': 'other', 'label': 'Other', 'icon': Icons.more_horiz},
   ];
 
   @override
