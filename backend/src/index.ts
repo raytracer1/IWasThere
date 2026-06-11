@@ -47,16 +47,55 @@ app.get('/assets/:key{.*}', async (c) => {
     return c.json({ success: false, error: 'Invalid or expired link' }, 401);
   }
 
-  // Serve from R2
+  // Get object metadata (without body) to know total size
+  const head = await c.env.ASSETS.head(key);
+  if (!head) {
+    return c.json({ success: false, error: 'File not found' }, 404);
+  }
+
+  const fileSize = head.size;
+  const contentType = head.httpMetadata?.contentType ?? 'application/octet-stream';
+  const rangeHeader = c.req.header('Range');
+
+  const headers = new Headers();
+  headers.set('Accept-Ranges', 'bytes');
+  headers.set('Content-Type', contentType);
+
+  if (rangeHeader) {
+    // Parse Range header (e.g., "bytes=0-1023")
+    const match = rangeHeader.match(/^bytes=(\d+)-(\d*)$/);
+    if (match) {
+      const start = parseInt(match[1], 10);
+      const end = match[2] ? parseInt(match[2], 10) : fileSize - 1;
+      const length = end - start + 1;
+
+      // Fetch only the requested range from R2
+      const object = await c.env.ASSETS.get(key, {
+        range: { offset: start, length },
+      });
+
+      if (!object) {
+        return c.json({ success: false, error: 'File not found' }, 404);
+      }
+
+      headers.set('Content-Range', `bytes ${start}-${end}/${fileSize}`);
+      headers.set('Content-Length', String(length));
+      headers.set('Cache-Control', 'public, max-age=31536000, immutable');
+
+      return new Response(object.body, {
+        status: 206,
+        headers,
+      });
+    }
+  }
+
+  // No Range header — serve full file
   const object = await c.env.ASSETS.get(key);
   if (!object) {
     return c.json({ success: false, error: 'File not found' }, 404);
   }
 
-  const headers = new Headers();
-  if (object.httpMetadata?.contentType) {
-    headers.set('Content-Type', object.httpMetadata.contentType);
-  }
+  headers.set('Content-Length', String(fileSize));
   headers.set('Cache-Control', 'public, max-age=31536000, immutable');
 
   return new Response(object.body, { headers });
