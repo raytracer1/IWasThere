@@ -34,7 +34,7 @@ class CategoryTabs extends StatelessWidget {
           final icon = cat['icon'] as IconData;
           final isSelected = selectedCategory == key;
 
-          return FilterChip(
+          return ChoiceChip(
             selected: isSelected,
             label: Row(
               mainAxisSize: MainAxisSize.min,

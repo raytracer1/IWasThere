@@ -5,6 +5,8 @@ import 'auth_provider.dart';
 
 /// State for the events list screen.
 class EventsState {
+  static const _sentinel = Object();
+
   final List<Event> events;
   final bool isLoading;
   final String? error;
@@ -27,7 +29,7 @@ class EventsState {
     List<Event>? events,
     bool? isLoading,
     String? error,
-    String? selectedCategory,
+    Object? selectedCategory = _sentinel,
     int? page,
     int? total,
     bool? hasMore,
@@ -37,7 +39,7 @@ class EventsState {
       events: events ?? this.events,
       isLoading: isLoading ?? this.isLoading,
       error: clearError ? null : (error ?? this.error),
-      selectedCategory: selectedCategory ?? this.selectedCategory,
+      selectedCategory: selectedCategory != _sentinel ? selectedCategory as String? : this.selectedCategory,
       page: page ?? this.page,
       total: total ?? this.total,
       hasMore: hasMore ?? this.hasMore,

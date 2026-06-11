@@ -44,14 +44,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     super.dispose();
   }
 
-  Future<void> _goToLogin() async {
-    final result = await Navigator.of(context).pushNamed('/login');
-    // Refresh events after login (in case credits changed, etc.)
-    if (result == true && mounted) {
-      setState(() {});
-    }
-  }
-
   Future<void> _signOut() async {
     await ref.read(authProvider.notifier).signOut();
     if (mounted) setState(() {});
