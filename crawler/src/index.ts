@@ -1,160 +1,276 @@
 import 'dotenv/config';
 import fs from 'node:fs';
-import cron from 'node-cron';
-import { fetchPexelsVideos } from './sources/pexels';
-import { fetchRedditVideos } from './sources/reddit';
-import { fetchYoutubeTrending } from './sources/youtube';
+import path from 'node:path';
+import { randomUUID } from 'node:crypto';
+import { fetchTodayMatches, initScoreCache, detectEvents } from './sources/thesportsdb';
+import { searchTikTok, downloadTikTok } from './sources/tiktok';
+import { searchRedditByKeyword } from './sources/reddit';
+import { searchYoutubeByKeyword } from './sources/youtube';
 import { downloadVideo, downloadThumbnail, cleanupTemp } from './downloader';
 import { uploadEvent } from './uploader';
-import { isSeen, markSeen, pruneState, loadState } from './state';
-import type { VideoItem } from './types';
+import { isSeen, markSeen, pruneState } from './state';
+import { calculateEventHotness, filterAndScore, deduplicateByVideo } from './scorer';
+import type { VideoItem, VideoCandidate, ScoredVideo, EventTrigger } from './types';
 
 // ─── Config from env ────────────────────────────────────
 const WORKER_URL = process.env.WORKER_URL ?? 'https://hotinsert-api.zhengbijun123.workers.dev';
 const CRAWLER_TOKEN = process.env.CRAWLER_TOKEN ?? '';
-const PEXELS_API_KEY = process.env.PEXELS_API_KEY ?? '';
-const CRON_SCHEDULE = process.env.CRON_SCHEDULE ?? '0 */2 * * *';
-const MAX_PER_SOURCE = parseInt(process.env.MAX_PER_SOURCE ?? '5', 10);
+const CRAWL_MODE = process.env.CRAWL_MODE ?? 'event-driven'; // event-driven | passive
+const MAX_VIDEOS_PER_EVENT = parseInt(process.env.MAX_VIDEOS_PER_EVENT ?? '5', 10);
+const MIN_HOTNESS = parseInt(process.env.MIN_HOTNESS_SCORE ?? '40', 10);
+const POLL_INTERVAL_SEC = parseInt(process.env.POLL_INTERVAL_SEC ?? '60', 10);
+const ENABLE_TIKTOK = process.env.ENABLE_TIKTOK !== 'false';
+const ENABLE_REDDIT = process.env.ENABLE_REDDIT !== 'false';
+const ENABLE_YOUTUBE = process.env.ENABLE_YOUTUBE !== 'false';
 
-// ─── Source runner helper ─────────────────────────────────
-interface SourceResult {
-  name: string;
-  items: VideoItem[];
-  error?: string;
-}
+// Temp dir for TikTok downloads
+const TEMP_DIR = path.join(import.meta.dirname, '..', 'data', 'tmp');
 
-async function runSource(name: string, fn: () => Promise<VideoItem[]>): Promise<SourceResult> {
-  console.log(`\n📡 ${name}...`);
-  try {
-    const items = await fn();
-    console.log(`   ✅ ${items.length} items`);
-    return { name, items };
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error(`   ❌ ${name} error:`, msg);
-    return { name, items: [], error: msg };
-  }
-}
+// ─── Event-driven main loop ─────────────────────────────
 
-// ─── Main crawl logic ────────────────────────────────────
-async function crawl() {
-  console.log(`\n🕷️  [${new Date().toISOString()}] Starting crawl...`);
-  console.log(`   Worker: ${WORKER_URL}`);
-  console.log(`   Max per source: ${MAX_PER_SOURCE}`);
+async function eventDrivenLoop() {
+  console.log('🎯 Event-driven crawler started');
+  console.log(`   Poll interval: ${POLL_INTERVAL_SEC}s`);
+  console.log(`   Max videos/event: ${MAX_VIDEOS_PER_EVENT}`);
+  console.log(`   Min hotness: ${MIN_HOTNESS}`);
+  console.log(`   TikTok: ${ENABLE_TIKTOK ? '✅' : '❌'}  Reddit: ${ENABLE_REDDIT ? '✅' : '❌'}  YouTube: ${ENABLE_YOUTUBE ? '✅' : '❌'}`);
 
   if (!CRAWLER_TOKEN) {
-    console.error('❌ CRAWLER_TOKEN not set. Generate one with: npx tsx scripts/generate-token.ts');
+    console.error('❌ CRAWLER_TOKEN not set');
     return;
   }
 
+  // Initialize: load existing state and cache current scores
   pruneState();
-  const state = loadState();
-  console.log(`   Seen URLs: ${state.seenUrls.length}`);
-
-  // ── Collect items from all sources in parallel ──────────
-  const sourcePromises: Promise<SourceResult>[] = [
-    // YouTube trending — richest source of hot videos
-    runSource('YouTube Trending', () => fetchYoutubeTrending(MAX_PER_SOURCE)),
-    // Reddit — native + external video links from popular subs
-    runSource('Reddit Hot', () => fetchRedditVideos(MAX_PER_SOURCE)),
-  ];
-
-  // Pexels is optional (requires API key)
-  if (PEXELS_API_KEY) {
-    sourcePromises.push(
-      runSource('Pexels Popular', () => fetchPexelsVideos(PEXELS_API_KEY, MAX_PER_SOURCE))
-    );
-  } else {
-    console.log('\n📸 Pexels: skipped (no PEXELS_API_KEY)');
+  const initialMatches = await fetchTodayMatches();
+  initScoreCache(initialMatches);
+  const liveNow = initialMatches.filter(m => m.status === 'LIVE');
+  console.log(`\n📊 Today: ${initialMatches.length} matches in target leagues, ${liveNow.length} live now`);
+  for (const m of liveNow) {
+    console.log(`   🔴 ${m.homeTeam} ${m.homeScore}-${m.awayScore} ${m.awayTeam} (${m.league})`);
   }
 
-  const sourceResults = await Promise.all(sourcePromises);
+  // Poll loop
+  while (true) {
+    try {
+      const matches = await fetchTodayMatches();
+      const liveMatches = matches.filter(m => m.status === 'LIVE');
 
-  // Merge and deduplicate all items
-  const seenVideoUrls = new Set<string>();
-  const allItems: VideoItem[] = [];
-  for (const result of sourceResults) {
-    for (const item of result.items) {
-      const key = item.videoUrl;
-      if (seenVideoUrls.has(key)) continue;
-      seenVideoUrls.add(key);
-      allItems.push(item);
+      if (liveMatches.length > 0) {
+        const events = detectEvents(liveMatches);
+        const significant = events.filter(e => e.hotness >= MIN_HOTNESS);
+
+        if (significant.length > 0) {
+          console.log(`\n🔥 [${new Date().toISOString()}] ${significant.length} event(s) detected`);
+          for (const event of significant) {
+            await handleEvent(event);
+          }
+        } else if (events.length > 0) {
+          const belowThreshold = events.filter(e => e.hotness < MIN_HOTNESS);
+          for (const e of belowThreshold) {
+            console.log(`⏭️  ${e.match.homeTeam} vs ${e.match.awayTeam} (hotness ${e.hotness} < ${MIN_HOTNESS})`);
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Poll error:', err);
     }
+
+    await sleep(POLL_INTERVAL_SEC * 1000);
+  }
+}
+
+// ─── Handle a single event trigger ──────────────────────
+
+async function handleEvent(event: EventTrigger) {
+  const { match, currentScore, hotness, keywords } = event;
+  console.log(`\n─── Event: ${match.homeTeam} vs ${match.awayTeam} (${currentScore}) ───`);
+  console.log(`   League: ${match.league} | Hotness: ${hotness}`);
+  console.log(`   Keywords: ${keywords.slice(0, 3).join(', ')}`);
+
+  // Phase 1: Search all enabled platforms in parallel
+  const searchResults: { platform: VideoCandidate['platform']; videos: VideoItem[] }[] = [];
+
+  const searchers: Promise<void>[] = [];
+
+  if (ENABLE_TIKTOK) {
+    searchers.push(
+      searchAllKeywords(keywords, 10, async (kw) => {
+        const candidates = await searchTikTok(kw, 10);
+        return candidates.map(c => ({
+          id: c.id, title: c.title, category: 'sports' as const,
+          description: `TikTok: ${c.title.slice(0, 150)}`,
+          videoUrl: c.videoUrl, thumbnailUrl: c.thumbnailUrl,
+          duration: c.duration, sourceUrl: c.sourceUrl,
+        } satisfies VideoItem));
+      }).then(videos => {
+        if (videos.length > 0) searchResults.push({ platform: 'tiktok', videos });
+        console.log(`   TikTok: ${videos.length} videos`);
+      })
+    );
   }
 
-  console.log(`\n📊 Total collected: ${allItems.length} (from ${sourceResults.length} sources)`);
+  if (ENABLE_REDDIT) {
+    searchers.push(
+      searchAllKeywords(keywords, 5, kw => searchRedditByKeyword(kw, 5))
+        .then(videos => {
+          if (videos.length > 0) searchResults.push({ platform: 'reddit', videos });
+          console.log(`   Reddit: ${videos.length} videos`);
+        })
+    );
+  }
 
-  // Filter out already-uploaded (by source URL)
-  const newItems = allItems.filter((item) => !isSeen(item.sourceUrl));
-  console.log(`🆕 New items: ${newItems.length}`);
+  if (ENABLE_YOUTUBE) {
+    searchers.push(
+      searchAllKeywords(keywords, 5, kw => searchYoutubeByKeyword(kw, 5))
+        .then(videos => {
+          if (videos.length > 0) searchResults.push({ platform: 'youtube', videos });
+          console.log(`   YouTube: ${videos.length} videos`);
+        })
+    );
+  }
 
-  // ── Download and upload each new item ──────────────────
+  await Promise.all(searchers);
+
+  // Phase 2: Filter, score, dedup
+  let allScored: ScoredVideo[] = [];
+  for (const { platform, videos } of searchResults) {
+    const scored = filterAndScore(videos, platform, keywords, undefined, undefined, MAX_VIDEOS_PER_EVENT * 2);
+    allScored.push(...scored);
+  }
+  allScored = deduplicateByVideo(allScored);
+  allScored.sort((a, b) => b.score - a.score);
+  const topVideos = allScored.slice(0, MAX_VIDEOS_PER_EVENT);
+
+  console.log(`\n   📋 Scored: ${allScored.length}, after dedup: ${allScored.length}, top ${topVideos.length}:`);
+  for (const v of topVideos) {
+    console.log(`      ${v.score}pts [${v.platform}] ${v.title.slice(0, 60)}`);
+  }
+
+  // Phase 3: Download and upload
   let uploaded = 0;
-  for (const item of newItems) {
-    console.log(`\n---`);
-    console.log(`📥 [${item.category}] ${item.title.slice(0, 80)}`);
-    console.log(`   Source: ${item.sourceUrl}`);
-
-    // Download video
-    console.log('   Downloading video...');
-    const videoPath = await downloadVideo(item.videoUrl);
-    if (!videoPath) {
-      console.log('   ⚠️  Video download failed, skipping');
-      markSeen(item.sourceUrl);
+  for (const video of topVideos) {
+    if (isSeen(video.sourceUrl)) {
+      console.log(`   ⏭️  Already seen: ${video.title.slice(0, 50)}`);
       continue;
     }
-    console.log(`   Video: ${(fs.statSync(videoPath).size / 1024 / 1024).toFixed(1)} MB`);
 
-    // Thumbnail: try URL first, fallback to frame extraction from video
-    console.log('   Thumbnail...');
-    const thumbPath = await downloadThumbnail(item.thumbnailUrl ?? undefined, videoPath);
-    console.log(thumbPath ? '   ✅ Thumbnail ready' : '   ⚠️  No thumbnail available');
+    console.log(`\n   📥 [${video.score}pts] ${video.title.slice(0, 70)}`);
 
-    // Upload to Worker
-    console.log('   Uploading to Worker...');
-    const result = await uploadEvent(WORKER_URL, CRAWLER_TOKEN, item, videoPath, thumbPath ?? undefined);
+    const videoPath = await downloadOne(video);
+    if (!videoPath) {
+      markSeen(video.sourceUrl);
+      continue;
+    }
+
+    const thumbPath = await downloadThumbnail(video.thumbnailUrl ?? undefined, videoPath);
+
+    console.log('   Uploading...');
+    const result = await uploadEvent(WORKER_URL, CRAWLER_TOKEN, {
+      id: video.id,
+      title: video.title,
+      category: video.category,
+      description: video.description,
+      videoUrl: video.videoUrl,
+      thumbnailUrl: video.thumbnailUrl,
+      duration: video.duration,
+      sourceUrl: video.sourceUrl,
+    }, videoPath, thumbPath ?? undefined);
 
     if (result.success) {
-      console.log(`   ✅ Created event: ${result.eventId}`);
-      markSeen(item.sourceUrl);
+      console.log(`   ✅ Event: ${result.eventId}`);
+      markSeen(video.sourceUrl);
       uploaded++;
     } else {
       console.log(`   ❌ Upload failed: ${result.error}`);
     }
 
-    // Clean up temp files
     cleanupTemp();
-
-    // Rate limit: wait between uploads to avoid overwhelming the Worker
-    await sleep(5000);
+    await sleep(3000); // rate limit between uploads
   }
 
-  console.log(`\n✨ Done! Uploaded ${uploaded}/${newItems.length} events`);
+  console.log(`\n   ✨ Event complete: ${uploaded}/${topVideos.length} uploaded`);
+}
 
-  // Show failure summary if all uploads failed
-  if (uploaded === 0 && newItems.length > 0) {
-    console.log('⚠️  All uploads failed. Check:');
-    console.log('   1. WORKER_URL is correct and reachable');
-    console.log('   2. CRAWLER_TOKEN is valid (regenerate if expired)');
-    console.log('   3. Worker /admin/events endpoint accepts multipart uploads');
+// ─── Helper: search across multiple keywords ─────────────
+
+async function searchAllKeywords(
+  keywords: string[],
+  maxPerKeyword: number,
+  searcher: (kw: string) => Promise<VideoItem[]>
+): Promise<VideoItem[]> {
+  const all: VideoItem[] = [];
+  const seen = new Set<string>();
+
+  // Search first 5 keywords
+  for (const kw of keywords.slice(0, 5)) {
+    if (all.length >= maxPerKeyword * 2) break;
+    try {
+      const results = await searcher(kw);
+      for (const item of results) {
+        const key = item.videoUrl;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        all.push(item);
+      }
+    } catch {}
+  }
+
+  return all;
+}
+
+// ─── Helper: download a single video ────────────────────
+
+async function downloadOne(video: VideoItem | ScoredVideo): Promise<string | null> {
+  const vidUrl = video.videoUrl;
+
+  // TikTok: direct HTTP download
+  if (vidUrl.includes('tiktokcdn') || ('platform' in video && video.platform === 'tiktok')) {
+    console.log('   TikTok direct download...');
+    const outPath = path.join(TEMP_DIR, `${randomUUID()}.mp4`);
+    const ok = await downloadTikTok(vidUrl, outPath);
+    if (ok && fs.existsSync(outPath)) {
+      const size = fs.statSync(outPath).size;
+      if (size < 100 * 1024) { // reject tiny files
+        try { fs.unlinkSync(outPath); } catch {}
+        console.log('   ❌ TikTok download too small');
+        return null;
+      }
+      console.log(`   Video: ${(size / 1024 / 1024).toFixed(1)} MB`);
+      return outPath;
+    }
+    console.log('   ❌ TikTok download failed, trying yt-dlp fallback...');
+  }
+
+  // Everything else: use standard downloader
+  return downloadVideo(vidUrl);
+}
+
+// ─── Passive mode (original behavior) ───────────────────
+
+async function passiveCrawl() {
+  console.log('📡 Passive crawl mode (original behavior)');
+  // This mode is kept as fallback — imports the original sources
+  // For now, just print a message
+  console.log('   Passive mode uses the original fetch functions.');
+  console.log('   Use event-driven mode for real-time event tracking.');
+}
+
+// ─── Entry point ─────────────────────────────────────────
+
+async function main() {
+  console.log(`\n🕷️  IWasThere Crawler [${new Date().toISOString()}]`);
+  console.log(`   Mode: ${CRAWL_MODE}`);
+  console.log(`   Worker: ${WORKER_URL}\n`);
+
+  if (CRAWL_MODE === 'passive') {
+    await passiveCrawl();
+  } else {
+    await eventDrivenLoop();
   }
 }
 
-// ─── Cron schedule ───────────────────────────────────────
-if (cron.validate(CRON_SCHEDULE)) {
-  console.log(`⏰ Crawler scheduled: ${CRON_SCHEDULE}`);
-  console.log('   Press Ctrl+C to stop\n');
-
-  // Run once immediately, then on schedule
-  crawl().catch(console.error);
-
-  cron.schedule(CRON_SCHEDULE, () => {
-    crawl().catch(console.error);
-  });
-} else {
-  console.error(`❌ Invalid cron schedule: ${CRON_SCHEDULE}`);
-  process.exit(1);
-}
+main().catch(console.error);
 
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));

@@ -252,6 +252,74 @@ export async function fetchRedditVideos(maxResults: number): Promise<VideoItem[]
   return deduped.slice(0, maxResults);
 }
 
+/** Sports-related subreddits for keyword search */
+const SPORTS_SUBREDDITS = [
+  'soccer', 'sports', 'nba', 'nfl', 'worldcup', 'mma', 'ufc',
+  'formula1', 'hockey', 'baseball', 'tennis', 'cricket',
+  'boxing', 'mls', 'nhl',
+];
+
+/**
+ * Search Reddit for videos matching a keyword across sports subreddits.
+ * Uses search.rss with sort=new for fastest event-related results.
+ */
+export async function searchRedditByKeyword(keyword: string, maxResults = 5): Promise<VideoItem[]> {
+  const items: VideoItem[] = [];
+  const subs = [...SPORTS_SUBREDDITS].sort(() => Math.random() - 0.5);
+
+  for (const sub of subs) {
+    if (items.length >= maxResults) break;
+
+    try {
+      const url = `https://www.reddit.com/r/${sub}/search.rss?q=${encodeURIComponent(keyword)}&sort=new&restrict_sr=on&limit=10`;
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (compatible; HotInsert-Crawler/1.0)',
+          'Accept': 'application/atom+xml, application/xml, text/xml',
+        },
+        signal: AbortSignal.timeout(10_000),
+      });
+
+      if (!response.ok) continue;
+
+      const xml = await response.text();
+      const entryMatches = xml.match(/<entry>[\s\S]*?<\/entry>/g) ?? [];
+
+      for (const entryXml of entryMatches) {
+        if (items.length >= maxResults) break;
+
+        const entry = parseEntry(entryXml);
+        if (!entry?.externalLink) continue;
+
+        const cleanedUrl = cleanUrl(entry.externalLink);
+        if (isYoutubeShort(cleanedUrl)) continue;
+
+        const domain = getDomain(cleanedUrl);
+        if (!isVideoDomain(domain)) continue;
+        if (domain === 'reddit.com' || domain === 'self.reddit.com') continue;
+
+        const category = guessCategory(entry.title, sub);
+
+        items.push({
+          id: `reddit-${Buffer.from(entry.commentsLink).toString('base64').slice(0, 20)}`,
+          title: entry.title.slice(0, 100),
+          category,
+          description: `r/${sub}: ${entry.title.slice(0, 150)}`,
+          videoUrl: cleanedUrl,
+          thumbnailUrl: entry.thumbnailUrl,
+          sourceUrl: entry.commentsLink,
+        });
+      }
+
+      await sleep(300); // short delay between subreddits
+    } catch (err) {
+      // Silently skip failed subreddits in keyword search mode
+    }
+  }
+
+  return items;
+}
+
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }

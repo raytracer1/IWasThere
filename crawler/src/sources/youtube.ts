@@ -249,6 +249,76 @@ function parseIsoDuration(duration: string): number | undefined {
   return h * 3600 + m * 60 + s;
 }
 
+// ─── Keyword Search (for event-driven mode) ───────────────
+
+/**
+ * Search YouTube by keyword, ordered by date (newest first).
+ * Requires YOUTUBE_API_KEY env variable.
+ */
+export async function searchYoutubeByKeyword(keyword: string, maxResults = 5): Promise<VideoItem[]> {
+  const apiKey = process.env.YOUTUBE_API_KEY;
+  if (!apiKey) return [];
+
+  const items: VideoItem[] = [];
+
+  try {
+    const url = new URL('https://www.googleapis.com/youtube/v3/search');
+    url.searchParams.set('part', 'snippet');
+    url.searchParams.set('q', keyword);
+    url.searchParams.set('type', 'video');
+    url.searchParams.set('order', 'date');
+    url.searchParams.set('maxResults', String(maxResults));
+    url.searchParams.set('relevanceLanguage', 'en');
+    url.searchParams.set('key', apiKey);
+
+    const response = await fetch(url.toString(), {
+      signal: AbortSignal.timeout(15_000),
+    });
+
+    if (!response.ok) return items;
+
+    const data = (await response.json()) as {
+      items?: Array<{
+        id: { videoId: string };
+        snippet: { title: string; description: string; thumbnails?: { medium?: { url: string } }; publishedAt: string };
+      }>;
+    };
+
+    for (const video of data.items ?? []) {
+      if (items.length >= maxResults) break;
+
+      const videoId = video.id?.videoId;
+      if (!videoId) continue;
+
+      // Skip shorts
+      if (video.snippet.title.toLowerCase().includes('#shorts')) continue;
+
+      items.push({
+        id: `yt-${videoId}`,
+        title: video.snippet.title.slice(0, 100),
+        category: guessCategory(video.snippet.title),
+        description: video.snippet.description.slice(0, 200),
+        videoUrl: `https://www.youtube.com/watch?v=${videoId}`,
+        thumbnailUrl: video.snippet.thumbnails?.medium?.url,
+        sourceUrl: `https://www.youtube.com/watch?v=${videoId}`,
+      });
+    }
+  } catch (err) {
+    console.warn(`YouTube search error (${keyword}):`, err);
+  }
+
+  return items;
+}
+
+function guessCategory(title: string): VideoItem['category'] {
+  const lower = title.toLowerCase();
+  if (/sport|football|soccer|basketball|nba|nfl|ufc|boxing/i.test(lower)) return 'sports';
+  if (/music|song|concert|performance/i.test(lower)) return 'music';
+  if (/movie|film|trailer|teaser/i.test(lower)) return 'movies';
+  if (/news|breaking|press|speech/i.test(lower)) return 'news';
+  return 'other';
+}
+
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
