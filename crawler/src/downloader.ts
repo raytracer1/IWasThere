@@ -96,10 +96,8 @@ async function downloadWithYtDlp(url: string, outputPath: string): Promise<boole
     '--socket-timeout', '30', '--retries', '3',
     '--no-check-certificates',
     '--user-agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-    // Abort slow downloads
     '--no-mtime',
   ];
-  // Add referer for sites that check it
   if (url.includes('reddit') || url.includes('redd.it')) {
     args.push('--referer', 'https://www.reddit.com/');
   }
@@ -113,29 +111,31 @@ async function downloadWithYtDlp(url: string, outputPath: string): Promise<boole
   }
 }
 
-/** Direct HTTP download (for CDN-hosted files like Pexels) */
-async function downloadDirect(url: string, outputPath: string, maxSize: number): Promise<boolean> {
-  try {
-    const r = await fetch(url, {
-      headers: { 'User-Agent': 'HotInsert-Crawler/1.0' },
-      signal: AbortSignal.timeout(120_000),
-    });
-    if (!r.ok || !r.body) return false;
-    const cl = parseInt(r.headers.get('content-length') ?? '0');
-    if (cl > maxSize) return false;
-    const chunks: Uint8Array[] = [];
-    let total = 0;
-    const reader = r.body.getReader();
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      total += value.length;
-      if (total > maxSize) return false;
-      chunks.push(value);
-    }
-    fs.writeFileSync(outputPath, Buffer.concat(chunks));
-    return true;
-  } catch { return false; }
+/** Direct HTTP download (for CDN-hosted files like Pexels, TikTok) */
+function downloadDirect(url: string, outputPath: string, maxSize: number): Promise<boolean> {
+  return (async () => {
+    try {
+      const r = await fetch(url, {
+        headers: { 'User-Agent': 'HotInsert-Crawler/1.0' },
+        signal: AbortSignal.timeout(120_000),
+      });
+      if (!r.ok || !r.body) return false;
+      const cl = parseInt(r.headers.get('content-length') ?? '0');
+      if (cl > maxSize) return false;
+      const chunks: Uint8Array[] = [];
+      let total = 0;
+      const reader = r.body.getReader();
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        total += value.length;
+        if (total > maxSize) return false;
+        chunks.push(value);
+      }
+      fs.writeFileSync(outputPath, Buffer.concat(chunks));
+      return true;
+    } catch { return false; }
+  })();
 }
 
 /** Extract a frame from video as thumbnail using ffmpeg */
@@ -143,9 +143,9 @@ async function extractThumbnail(videoPath: string, outputPath: string, offsetSec
   try {
     await execFileAsync('ffmpeg', [
       '-y', '-i', videoPath,
-      '-ss', `00:00:0${offsetSec}`,   // configurable offset
+      '-ss', `00:00:0${offsetSec}`,
       '-vframes', '1',
-      '-vf', 'scale=640:360',          // small thumbnail
+      '-vf', 'scale=640:360',
       outputPath,
     ], { timeout: 15_000 });
     return fs.existsSync(outputPath);
@@ -154,18 +154,63 @@ async function extractThumbnail(videoPath: string, outputPath: string, offsetSec
 
 // ─── Public API ──────────────────────────────────────────
 
+/**
+ * Quality-check and re-encode a downloaded video file.
+ * Runs ffprobe → quality check → re-encode (scale to 720p, cap at 24fps).
+ */
+export async function processVideoFile(filePath: string, isDirect = false): Promise<string | null> {
+  if (!fs.existsSync(filePath)) return null;
+
+  const size = fs.statSync(filePath).size;
+  const minSize = isDirect ? 1 * 1024 * 1024 : 1 * 1024 * 1024;
+  if (size < minSize) {
+    console.log(`   ❌ Too small (${(size / 1024).toFixed(0)} KB)`);
+    try { fs.unlinkSync(filePath); } catch {}
+    return null;
+  }
+
+  const info = await probeVideo(filePath);
+  if (!info) {
+    console.log('   ⚠️  Could not probe, using as-is');
+    return filePath;
+  }
+  console.log(`   📐 ${info.width}x${info.height} @ ${info.fps.toFixed(1)}fps`);
+
+  if (info.height < MIN_HEIGHT) {
+    console.log(`   ❌ < ${MIN_HEIGHT}p`);
+    try { fs.unlinkSync(filePath); } catch {}
+    return null;
+  }
+  if (info.fps < MIN_FPS - 0.5) {
+    console.log(`   ❌ < ${MIN_FPS}fps`);
+    try { fs.unlinkSync(filePath); } catch {}
+    return null;
+  }
+
+  if (info.height > TARGET_HEIGHT || info.fps > TARGET_FPS + 0.5) {
+    const msg = `${info.height}p→${TARGET_HEIGHT}p, ${info.fps.toFixed(1)}fps→${TARGET_FPS}fps`;
+    console.log(`   🔧 ${msg}`);
+    const out = path.join(TEMP_DIR, `${randomUUID()}.mp4`);
+    if (!(await reencode(filePath, out, info))) {
+      try { fs.unlinkSync(filePath); } catch {}
+      return null;
+    }
+    console.log(`   ✅ ${(fs.statSync(out).size / 1024 / 1024).toFixed(1)} MB`);
+    return out;
+  }
+  console.log(`   ✅ ${(size / 1024 / 1024).toFixed(1)} MB`);
+  return filePath;
+}
+
 export async function downloadVideo(url: string): Promise<string | null> {
   ensureTempDir();
   const rawPath = path.join(TEMP_DIR, `${randomUUID()}.mp4`);
 
-  // Route through yt-dlp for page-based sites, direct download for CDN URLs
   let ok: boolean;
   if (isPageUrl(url)) {
     ok = await downloadWithYtDlp(url, rawPath);
   } else {
-    // Try direct download first for CDN URLs
     ok = await downloadDirect(url, rawPath, MAX_VIDEO_SIZE);
-    // Fall back to yt-dlp if direct download fails (URL might redirect to a page)
     if (!ok) {
       console.log('   Direct download failed, trying yt-dlp...');
       ok = await downloadWithYtDlp(url, rawPath);
@@ -177,60 +222,17 @@ export async function downloadVideo(url: string): Promise<string | null> {
     return null;
   }
 
-  // Reject tiny files (< 1 MB for page-sourced videos, < 5 MB for direct downloads)
-  const size = fs.statSync(rawPath).size;
-  const minSize = isPageUrl(url) ? 1 * 1024 * 1024 : 5 * 1024 * 1024;
-  if (size < minSize) {
-    console.log(`   ❌ Too small (${(size / 1024).toFixed(0)} KB), not a real video`);
-    try { fs.unlinkSync(rawPath); } catch {}
-    return null;
-  }
-
-  const info = await probeVideo(rawPath);
-  if (!info) {
-    console.log('   ⚠️  Could not probe, using as-is');
-    return rawPath;
-  }
-  console.log(`   📐 ${info.width}x${info.height} @ ${info.fps.toFixed(1)}fps`);
-
-  // Quality filters
-  if (info.height < MIN_HEIGHT) {
-    console.log(`   ❌ < ${MIN_HEIGHT}p`);
-    try { fs.unlinkSync(rawPath); } catch {}
-    return null;
-  }
-  if (info.fps < MIN_FPS - 0.5) {
-    console.log(`   ❌ < ${MIN_FPS}fps`);
-    try { fs.unlinkSync(rawPath); } catch {}
-    return null;
-  }
-
-  // Re-encode if needed
-  if (info.height > TARGET_HEIGHT || info.fps > TARGET_FPS + 0.5) {
-    const msg = `${info.height}p→${TARGET_HEIGHT}p, ${info.fps.toFixed(1)}fps→${TARGET_FPS}fps`;
-    console.log(`   🔧 ${msg}`);
-    const out = path.join(TEMP_DIR, `${randomUUID()}.mp4`);
-    if (!(await reencode(rawPath, out, info))) {
-      try { fs.unlinkSync(rawPath); } catch {}
-      return null;
-    }
-    console.log(`   ✅ ${(fs.statSync(out).size / 1024 / 1024).toFixed(1)} MB`);
-    return out;
-  }
-  console.log(`   ✅ ${(fs.statSync(rawPath).size / 1024 / 1024).toFixed(1)} MB`);
-  return rawPath;
+  return processVideoFile(rawPath, !isPageUrl(url));
 }
 
 export async function downloadThumbnail(thumbnailUrl?: string, videoPath?: string): Promise<string | null> {
   ensureTempDir();
   const outPath = path.join(TEMP_DIR, `${randomUUID()}.jpg`);
 
-  // Strategy 1: download from URL
   if (thumbnailUrl) {
     if (await downloadDirect(thumbnailUrl, outPath, MAX_IMAGE_SIZE)) return outPath;
   }
 
-  // Strategy 2: extract frame from video (try multiple offsets)
   if (videoPath && fs.existsSync(videoPath)) {
     for (const offset of [1, 3, 5]) {
       if (await extractThumbnail(videoPath, outPath, offset)) {

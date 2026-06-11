@@ -6,7 +6,7 @@ import { fetchTodayMatches, initScoreCache, detectEvents } from './sources/thesp
 import { searchTikTok, downloadTikTok } from './sources/tiktok';
 import { searchRedditByKeyword } from './sources/reddit';
 import { searchYoutubeByKeyword } from './sources/youtube';
-import { downloadVideo, downloadThumbnail, cleanupTemp } from './downloader';
+import { downloadVideo, downloadThumbnail, cleanupTemp, processVideoFile } from './downloader';
 import { uploadEvent } from './uploader';
 import { isSeen, markSeen, pruneState } from './state';
 import { calculateEventHotness, filterAndScore, deduplicateByVideo } from './scorer';
@@ -230,14 +230,13 @@ async function downloadOne(video: VideoItem | ScoredVideo): Promise<string | nul
     const outPath = path.join(TEMP_DIR, `${randomUUID()}.mp4`);
     const ok = await downloadTikTok(vidUrl, outPath);
     if (ok && fs.existsSync(outPath)) {
-      const size = fs.statSync(outPath).size;
-      if (size < 100 * 1024) { // reject tiny files
-        try { fs.unlinkSync(outPath); } catch {}
-        console.log('   ❌ TikTok download too small');
-        return null;
+      // Run quality check + re-encode pipeline (scale to 720p, cap at 24fps)
+      const processed = await processVideoFile(outPath, true);
+      if (processed) {
+        console.log(`   Video: ${(fs.statSync(processed).size / 1024 / 1024).toFixed(1)} MB`);
+        return processed;
       }
-      console.log(`   Video: ${(size / 1024 / 1024).toFixed(1)} MB`);
-      return outPath;
+      return null;
     }
     console.log('   ❌ TikTok download failed, trying yt-dlp fallback...');
   }
