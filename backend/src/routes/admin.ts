@@ -166,9 +166,11 @@ async function handleEventUpdate(c: import('hono').Context<{ Bindings: import('.
       await uploadToR2(c.env.ASSETS, key, await file.arrayBuffer(), file.type);
       videoKeys.push(key);
     }
+    let thumbnailKey: string | null = null;
     if (thumbnailFile && typeof thumbnailFile !== 'string') {
       const tf = thumbnailFile as unknown as { name: string; type: string; arrayBuffer(): Promise<ArrayBuffer> };
-      await uploadToR2(c.env.ASSETS, `hot-events/${eventId}/thumbnail.jpg`, await tf.arrayBuffer(), tf.type);
+      thumbnailKey = `hot-events/${eventId}/thumbnail.jpg`;
+      await uploadToR2(c.env.ASSETS, thumbnailKey, await tf.arrayBuffer(), tf.type);
     }
 
     // Update metadata
@@ -179,6 +181,7 @@ async function handleEventUpdate(c: import('hono').Context<{ Bindings: import('.
     if (price) updates.price = parseFloat(price);
     if (status) updates.status = status;
     if (trimRanges) updates.trimRanges = trimRanges;
+    if (thumbnailKey) updates.thumbnailUrl = thumbnailKey;
     if (videoKeys.length > 0) {
       updates.videoUrl = videoKeys[0];
       updates.videoKeys = videoKeys.length > 1 ? JSON.stringify(videoKeys) : null;
