@@ -10,6 +10,8 @@ import { downloadVideo, downloadThumbnail, cleanupTemp, processVideoFile } from 
 import { uploadEvent } from './uploader';
 import { isSeen, markSeen, pruneState } from './state';
 import { calculateEventHotness, filterAndScore, deduplicateByVideo } from './scorer';
+import { startRecording, stopRecording, extractClipByUtc, reloadRecorder, isRecorderRunning } from './recorder';
+import { findLiveFixture, getGoalEvents, getCachedFixtureId, setCachedFixtureId, estimateGoalUtcMs } from './sources/api-football';
 import type { VideoItem, VideoCandidate, ScoredVideo, EventTrigger } from './types';
 
 // ─── Config from env ────────────────────────────────────
@@ -22,6 +24,7 @@ const POLL_INTERVAL_SEC = parseInt(process.env.POLL_INTERVAL_SEC ?? '60', 10);
 const ENABLE_TIKTOK = process.env.ENABLE_TIKTOK !== 'false';
 const ENABLE_REDDIT = process.env.ENABLE_REDDIT !== 'false';
 const ENABLE_YOUTUBE = process.env.ENABLE_YOUTUBE !== 'false';
+const ENABLE_CCTV5 = process.env.ENABLE_CCTV5 === 'true';  // 从 CCTV5 直播截取进球片段
 
 // Temp dir for TikTok downloads
 const TEMP_DIR = path.join(import.meta.dirname, '..', 'data', 'tmp');
@@ -33,11 +36,21 @@ async function eventDrivenLoop() {
   console.log(`   Poll interval: ${POLL_INTERVAL_SEC}s`);
   console.log(`   Max videos/event: ${MAX_VIDEOS_PER_EVENT}`);
   console.log(`   Min hotness: ${MIN_HOTNESS}`);
-  console.log(`   TikTok: ${ENABLE_TIKTOK ? '✅' : '❌'}  Reddit: ${ENABLE_REDDIT ? '✅' : '❌'}  YouTube: ${ENABLE_YOUTUBE ? '✅' : '❌'}`);
+  console.log(`   TikTok: ${ENABLE_TIKTOK ? '✅' : '❌'}  Reddit: ${ENABLE_REDDIT ? '✅' : '❌'}  YouTube: ${ENABLE_YOUTUBE ? '✅' : '❌'}  CCTV5: ${ENABLE_CCTV5 ? '✅' : '❌'}`);
 
   if (!CRAWLER_TOKEN) {
     console.error('❌ CRAWLER_TOKEN not set');
     return;
+  }
+
+  // Start CCTV5 recorder if enabled
+  if (ENABLE_CCTV5) {
+    try {
+      await startRecording();
+      console.log('   📡 CCTV5 recorder started');
+    } catch (err) {
+      console.error('   ❌ Failed to start CCTV5 recorder:', String(err).slice(0, 100));
+    }
   }
 
   // Initialize: load existing state and cache current scores
@@ -138,6 +151,11 @@ async function handleEvent(event: EventTrigger) {
 
   await Promise.all(searchers);
 
+  // Phase 1.5: CCTV5 live capture (runs in parallel with social search)
+  if (ENABLE_CCTV5 && isRecorderRunning()) {
+    await captureFromCCTV5(event);
+  }
+
   // Phase 2: Filter, score, dedup
   let allScored: ScoredVideo[] = [];
   for (const { platform, videos } of searchResults) {
@@ -196,6 +214,130 @@ async function handleEvent(event: EventTrigger) {
   }
 
   console.log(`\n   ✨ Event complete: ${uploaded}/${topVideos.length} uploaded`);
+}
+
+// ─── CCTV5 live capture ─────────────────────────────
+
+// 每个比赛有多少个已知进球（用于只取新进球）
+const knownGoalCount = new Map<string, number>(); // key: "home-away-date"
+
+async function captureFromCCTV5(event: EventTrigger) {
+  const { match, currentScore } = event;
+  console.log(`   🎥 CCTV5: ${match.homeTeam} vs ${match.awayTeam} (${currentScore})`);
+
+  try {
+    const today = match.date;
+    const matchKey = `${match.homeTeam}-${match.awayTeam}-${today}`;
+
+    // ── Step 1: 找到 API-Football 的 fixture ID ──
+    let fixtureId = getCachedFixtureId(match.homeTeam, match.awayTeam, today);
+    if (!fixtureId) {
+      console.log('   🔍 Looking up fixture in API-Football...');
+      const info = await findLiveFixture(match.homeTeam, match.awayTeam, today);
+      if (!info) {
+        console.log('   ⚠️  Fixture not found in API-Football, falling back to buffer estimate');
+        await fallbackCapture(match, currentScore);
+        return;
+      }
+      fixtureId = info.id;
+      setCachedFixtureId(match.homeTeam, match.awayTeam, today, info.id);
+      console.log(`   ✅ Fixture found: ${info.id} | Kickoff: ${info.kickoffUtc} | Status: ${info.status} (${info.elapsed}')`);
+      // 同时缓存开球时间
+      matchKickoffCache.set(matchKey, info.kickoffUtc);
+    }
+
+    // ── Step 2: 获取最新进球 ──
+    const prevCount = knownGoalCount.get(matchKey) ?? 0;
+    const newGoals = await getGoalEvents(fixtureId, prevCount);
+    if (newGoals.length === 0) {
+      console.log(`   ⚠️  No new goal events from API-Football (had ${prevCount}), falling back to buffer`);
+      await fallbackCapture(match, currentScore);
+      return;
+    }
+
+    // ── Step 3: 对每个新进球，计算 UTC 时间并截取 ──
+    const kickoffUtc = matchKickoffCache.get(matchKey);
+    if (!kickoffUtc) {
+      console.log('   ⚠️  No kickoff time cached, falling back');
+      await fallbackCapture(match, currentScore);
+      return;
+    }
+
+    for (const goal of newGoals) {
+      console.log(`\n   ⚽ Goal! ${goal.playerName} (${goal.teamName}) at ${goal.elapsed}'${goal.extra ? `+${goal.extra}` : ''} | ${goal.detail}`);
+
+      const goalUtcMs = estimateGoalUtcMs(kickoffUtc, goal.elapsed + (goal.extra ?? 0));
+      console.log(`   🕐 Estimated UTC: ${new Date(goalUtcMs).toISOString()}`);
+
+      // 截取进球前后：前 60s + 后 120s = 3 分钟
+      const clipPath = await extractClipByUtc(goalUtcMs, 60, 120);
+      if (!clipPath) {
+        console.log('   ⚠️  Failed to extract clip from buffer');
+        continue;
+      }
+
+      const sizeMB = (fs.statSync(clipPath).size / 1024 / 1024).toFixed(1);
+      console.log(`   📹 Clip: ${sizeMB} MB`);
+
+      const thumbPath = await downloadThumbnail(undefined, clipPath);
+      const title = `${goal.playerName} GOAL! ${match.homeTeam} ${currentScore} ${match.awayTeam} - ${match.league}`;
+      const desc = `CCTV5: ${goal.playerName} scores for ${goal.teamName} at ${goal.elapsed}' (${goal.detail}) | ${match.homeTeam} vs ${match.awayTeam} | ${match.league}`;
+
+      console.log('   📤 Uploading...');
+      const result = await uploadEvent(WORKER_URL, CRAWLER_TOKEN, {
+        id: `cctv5-${match.id}-goal-${goal.elapsed}`,
+        title,
+        category: 'sports',
+        description: desc,
+        videoUrl: '',
+        thumbnailUrl: '',
+        duration: 180,
+        sourceUrl: `https://tv.cctv.com/live/cctv5/`,
+      }, clipPath, thumbPath ?? undefined);
+
+      if (result.success) {
+        console.log(`   ✅ Event: ${result.eventId}`);
+      } else {
+        console.log(`   ❌ Upload failed: ${result.error}`);
+      }
+
+      try { fs.unlinkSync(clipPath); } catch {}
+      if (thumbPath) { try { fs.unlinkSync(thumbPath); } catch {} }
+    }
+
+    // 更新已知进球数
+    knownGoalCount.set(matchKey, prevCount + newGoals.length);
+  } catch (err) {
+    console.error('   ❌ CCTV5 capture error:', String(err).slice(0, 150));
+  }
+}
+
+/** 缓存 matchKey → kickoff ISO string */
+const matchKickoffCache = new Map<string, string>();
+
+/**
+ * 降级方案：没有 API-Football 数据时，从缓冲区盲取 3 分钟片段。
+ */
+async function fallbackCapture(match: any, currentScore: string) {
+  console.log('   🎲 Using buffer estimate (60-120s ago)...');
+  const clipPath = await extractClipByUtc(Date.now() - 90 * 1000, 60, 120);
+  if (!clipPath) return;
+
+  const thumbPath = await downloadThumbnail(undefined, clipPath);
+  const title = `${match.homeTeam} vs ${match.awayTeam} ${currentScore} - ${match.league}`;
+
+  const result = await uploadEvent(WORKER_URL, CRAWLER_TOKEN, {
+    id: `cctv5-fallback-${match.id}-${currentScore.replace(':', '-')}`,
+    title,
+    category: 'sports',
+    description: `CCTV5: ${match.homeTeam} ${currentScore} ${match.awayTeam}`,
+    videoUrl: '', thumbnailUrl: '', duration: 180,
+    sourceUrl: 'https://tv.cctv.com/live/cctv5/',
+  }, clipPath, thumbPath ?? undefined);
+
+  if (result.success) console.log(`   ✅ Fallback event: ${result.eventId}`);
+  try { fs.unlinkSync(clipPath); } catch {}
+  if (thumbPath) { try { fs.unlinkSync(thumbPath); } catch {} }
 }
 
 // ─── Helper: search across multiple keywords ─────────────
@@ -274,6 +416,18 @@ async function main() {
     await eventDrivenLoop();
   }
 }
+
+// Graceful shutdown: stop CCTV5 recorder
+process.on('SIGINT', () => {
+  console.log('\n🛑 Shutting down...');
+  stopRecording();
+  process.exit(0);
+});
+
+process.on('SIGTERM', () => {
+  stopRecording();
+  process.exit(0);
+});
 
 main().catch(console.error);
 
