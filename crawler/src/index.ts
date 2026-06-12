@@ -43,17 +43,7 @@ async function eventDrivenLoop() {
     return;
   }
 
-  // Start CCTV5 recorder if enabled
-  if (ENABLE_CCTV5) {
-    try {
-      await startRecording();
-      console.log('   📡 CCTV5 recorder started');
-    } catch (err) {
-      console.error('   ❌ Failed to start CCTV5 recorder:', String(err).slice(0, 100));
-    }
-  }
-
-  // Initialize: load existing state and cache current scores
+  // Initialize
   pruneState();
   const initialMatches = await fetchTodayMatches();
   initScoreCache(initialMatches);
@@ -63,11 +53,39 @@ async function eventDrivenLoop() {
     console.log(`   🔴 ${m.homeTeam} ${m.homeScore}-${m.awayScore} ${m.awayTeam} (${m.league})`);
   }
 
+  // 如果有正在直播的比赛，启动 CCTV5 录制
+  if (ENABLE_CCTV5 && liveNow.length > 0) {
+    const label = liveNow.map(m => `${m.homeTeam} vs ${m.awayTeam}`).join(', ');
+    try {
+      await startRecording(label);
+      console.log('   📡 CCTV5 recorder started');
+    } catch (err) {
+      console.error('   ❌ Failed to start CCTV5 recorder:', String(err).slice(0, 100));
+    }
+  }
+
   // Poll loop
   while (true) {
     try {
       const matches = await fetchTodayMatches();
       const liveMatches = matches.filter(m => isLiveStatus(m.status));
+
+      // 根据是否有直播比赛来启停 CCTV5 录制
+      if (ENABLE_CCTV5) {
+        const hasLive = liveMatches.length > 0;
+        if (hasLive && !isRecorderRunning()) {
+          const label = liveMatches.map(m => `${m.homeTeam} vs ${m.awayTeam}`).join(', ');
+          try {
+            await startRecording(label);
+            console.log('   📡 CCTV5 recorder started');
+          } catch (err) {
+            console.error('   ❌ Failed to start CCTV5 recorder:', String(err).slice(0, 100));
+          }
+        } else if (!hasLive && isRecorderRunning()) {
+          stopRecording();
+          console.log('   📡 CCTV5 recorder stopped (no live matches)');
+        }
+      }
 
       const now = new Date().toISOString();
       if (liveMatches.length > 0) {
