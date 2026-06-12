@@ -1,31 +1,26 @@
 /**
- * CCTV5 直播录制模块
- * 视频：Chrome screencast JPEG 帧 → 音频：HLS 流 → ffmpeg 合并编码为 mp4
+ * CCTV5 直播录制
+ * 一个 ffmpeg 进程：WebM(Canvas) + HLS 音频 → segment 轮转 mp4
+ * 无需重启，无间隙。
  */
 
 import { spawn, type ChildProcess } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { startScreencast, stopScreencast } from './sources/cctv5_browser';
+import { startCapture, stopCapture } from './sources/cctv5_browser';
 import { getCCTV5StreamUrl } from './sources/cctv5';
 
-const FILE_DURATION_SEC = 300;
-const KEEP_FILES = 2;
-const RESTART_INTERVAL_MS = 25 * 60 * 1000;
+const SEGMENT_TIME = 300;
+const SEGMENT_WRAP = 2;
 const HEARTBEAT_INTERVAL_MS = 15_000;
 
 const BUFFER_DIR = path.join(import.meta.dirname, '..', 'data', 'cctv5_buffer');
 
 let ffmpegProc: ChildProcess | null = null;
 let isRunning = false;
-let restartTimer: ReturnType<typeof setInterval> | null = null;
 let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
-let hlsUrlCache: string | null = null;
-
-const fileRecords: { file: string; utcMs: number }[] = [];
-
-// ─── 公开 API ──────────────────────────────────
+let fileRecords: { file: string; utcMs: number }[] = [];
 
 export async function startRecording(): Promise<void> {
   if (isRunning) return;
@@ -33,44 +28,33 @@ export async function startRecording(): Promise<void> {
   console.log('🎬 Starting CCTV5 recorder...');
 
   const { hlsUrl } = await getCCTV5StreamUrl();
-  hlsUrlCache = hlsUrl;
 
-  await startScreencastWithBuffer();
-  launchEncoder(hlsUrl);
+  await startCapture({
+    onChunk: (base64: string) => {
+      if (ffmpegProc?.stdin?.writable) {
+        ffmpegProc.stdin.write(Buffer.from(base64, 'base64'));
+      }
+    },
+  });
+
+  launchSegmentEncoder(hlsUrl);
   isRunning = true;
 
-  restartTimer = setInterval(async () => {
-    try {
-      console.log('🔄 Restarting...');
-      const { hlsUrl: newUrl } = await getCCTV5StreamUrl();
-      hlsUrlCache = newUrl;
-      await stopScreencast();
-      await new Promise(r => setTimeout(r, 2000));
-      await startScreencastWithBuffer();
-      killFfmpeg();
-      await new Promise(r => setTimeout(r, 500));
-      launchEncoder(newUrl);
-    } catch (err) {
-      console.error('Restart failed:', String(err).slice(0, 100));
-    }
-  }, RESTART_INTERVAL_MS);
-
   heartbeatTimer = setInterval(async () => {
-    const lastRec = fileRecords.length > 0 ? fileRecords[fileRecords.length - 1].utcMs : 0;
-    if (!isFfmpegAlive() && isRunning && Date.now() - lastRec > 60_000) {
-      console.warn('⚠️  Encoder stuck, restarting...');
+    if (!isFfmpegAlive() && isRunning) {
+      console.warn('⚠️  Encoder died, restarting...');
       killFfmpeg();
       await new Promise(r => setTimeout(r, 500));
-      if (hlsUrlCache) launchEncoder(hlsUrlCache);
+      const { hlsUrl: newUrl } = await getCCTV5StreamUrl();
+      launchSegmentEncoder(newUrl);
     }
   }, HEARTBEAT_INTERVAL_MS);
 }
 
 export function stopRecording(): void {
-  if (restartTimer) { clearInterval(restartTimer); restartTimer = null; }
   if (heartbeatTimer) { clearInterval(heartbeatTimer); heartbeatTimer = null; }
   killFfmpeg();
-  stopScreencast().catch(() => {});
+  stopCapture().catch(() => {});
   isRunning = false;
   console.log('⏹️  Stopped');
 }
@@ -83,9 +67,8 @@ export async function extractClipByUtc(
 
   const offsetSec = (goalUtcMs - rec.utcMs) / 1000 - beforeSec;
   const startSec = Math.max(0, offsetSec);
-  const durationSec = beforeSec + afterSec;
 
-  console.log(`  🎯 Goal ~${((Date.now() - goalUtcMs)/1000).toFixed(0)}s ago | offset ${startSec.toFixed(0)}s | duration ${durationSec}s`);
+  console.log(`  🎯 offset ${startSec.toFixed(0)}s | duration ${beforeSec + afterSec}s`);
 
   const outPath = path.join(BUFFER_DIR, `clip_${randomUUID()}.mp4`);
   const { execFile } = await import('node:child_process');
@@ -94,8 +77,7 @@ export async function extractClipByUtc(
   try {
     await promisify(execFile)('ffmpeg', [
       '-y', '-ss', String(startSec), '-i', rec.file,
-      '-t', String(durationSec), '-c', 'copy',
-      '-avoid_negative_ts', 'make_zero', outPath,
+      '-t', String(beforeSec + afterSec), '-c', 'copy', outPath,
     ], { timeout: 30_000 });
 
     if (fs.existsSync(outPath) && fs.statSync(outPath).size > 1024) {
@@ -114,11 +96,7 @@ export function isRecorderRunning(): boolean { return isRunning; }
 export async function reloadRecorder(): Promise<void> {
   killFfmpeg();
   const { hlsUrl } = await getCCTV5StreamUrl();
-  hlsUrlCache = hlsUrl;
-  await stopScreencast();
-  await new Promise(r => setTimeout(r, 2000));
-  await startScreencastWithBuffer();
-  launchEncoder(hlsUrl);
+  launchSegmentEncoder(hlsUrl);
 }
 
 // ─── 内部 ───────────────────────────────────────
@@ -127,44 +105,23 @@ function ensureBufferDir(): void {
   if (!fs.existsSync(BUFFER_DIR)) fs.mkdirSync(BUFFER_DIR, { recursive: true });
 }
 
-async function startScreencastWithBuffer(): Promise<void> {
-  const queue: Buffer[] = [];
-  let ready = false;
-
-  await startScreencast({
-    onFrame: (jpegBuf: Buffer) => {
-      if (ready && ffmpegProc?.stdin?.writable) {
-        ffmpegProc.stdin.write(jpegBuf);
-      } else if (queue.length < 100) {
-        queue.push(jpegBuf);
-      }
-    },
-  });
-
-  setTimeout(() => {
-    ready = true;
-    if (ffmpegProc?.stdin?.writable) {
-      for (const buf of queue) ffmpegProc.stdin.write(buf);
-      queue.length = 0;
-    }
-  }, 2000);
-}
-
-function launchEncoder(hlsUrl: string): void {
-  const outFile = path.join(BUFFER_DIR, `cctv5_${Date.now()}.mp4`);
-  fileRecords.push({ file: outFile, utcMs: Date.now() });
-  pruneFiles();
+function launchSegmentEncoder(hlsUrl: string): void {
+  // 清空旧记录
+  fileRecords = [];
+  cleanupSegments();
 
   ffmpegProc = spawn('ffmpeg', [
-    '-f', 'image2pipe', '-framerate', '10', '-i', 'pipe:0',
+    '-f', 'webm', '-i', 'pipe:0',
     '-i', hlsUrl,
     '-map', '0:v', '-map', '1:a:0',
-    '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '23', '-pix_fmt', 'yuv420p',
+    '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '23',
     '-c:a', 'aac', '-b:a', '128k',
-    '-t', String(FILE_DURATION_SEC),
-    '-shortest',
+    '-f', 'segment',
+    '-segment_time', String(SEGMENT_TIME),
+    '-segment_wrap', String(SEGMENT_WRAP),
+    '-reset_timestamps', '1',
     '-movflags', '+faststart',
-    '-y', outFile,
+    path.join(BUFFER_DIR, 'cctv5_%d.mp4'),
   ], { stdio: ['pipe', 'pipe', 'pipe'] });
 
   ffmpegProc.stderr?.on('data', (d: Buffer) => {
@@ -173,10 +130,7 @@ function launchEncoder(hlsUrl: string): void {
   });
 
   ffmpegProc.on('exit', (code) => {
-    if (code === 0) {
-      console.log(`  📄 Done → ${path.basename(outFile)}`);
-      if (isRunning && hlsUrlCache) launchEncoder(hlsUrlCache);
-    } else if (code !== null && code !== 143) {
+    if (code !== null && code !== 0 && code !== 143) {
       console.warn(`  ffmpeg exit ${code}`);
     }
   });
@@ -185,7 +139,36 @@ function launchEncoder(hlsUrl: string): void {
     if (e.code !== 'EPIPE') console.error('  stdin:', e.message);
   });
 
-  console.log(`  📡 Recording → ${path.basename(outFile)} (${FILE_DURATION_SEC}s)`);
+  // 追踪文件
+  trackSegments();
+
+  console.log(`  📡 Recording (segment ${SEGMENT_TIME}s, wrap ${SEGMENT_WRAP})`);
+}
+
+function trackSegments(): void {
+  const seen = new Set<string>();
+  const timer = setInterval(() => {
+    if (!isRunning || !isFfmpegAlive()) {
+      clearInterval(timer);
+      return;
+    }
+    try {
+      for (const f of fs.readdirSync(BUFFER_DIR)) {
+        if (f.match(/^cctv5_\d+\.mp4$/) && !seen.has(f)) {
+          seen.add(f);
+          fileRecords.push({
+            file: path.join(BUFFER_DIR, f),
+            utcMs: Date.now(),
+          });
+          console.log(`  📄 New segment: ${f}`);
+        }
+      }
+      // 只保留最近几个记录
+      if (fileRecords.length > SEGMENT_WRAP + 2) {
+        fileRecords = fileRecords.slice(-(SEGMENT_WRAP + 2));
+      }
+    } catch {}
+  }, 5000);
 }
 
 function killFfmpeg(): void {
@@ -212,16 +195,11 @@ function findFileForTime(targetUtcMs: number): typeof fileRecords[0] | null {
   return best;
 }
 
-function pruneFiles(): void {
-  while (fileRecords.length > KEEP_FILES) {
-    const old = fileRecords.shift();
-    if (old) try { fs.unlinkSync(old.file); } catch {}
-  }
+function cleanupSegments(): void {
   try {
     for (const f of fs.readdirSync(BUFFER_DIR)) {
-      if (f.startsWith('clip_')) {
-        const full = path.join(BUFFER_DIR, f);
-        if (Date.now() - fs.statSync(full).mtimeMs > 10 * 60 * 1000) fs.unlinkSync(full);
+      if (f.match(/^cctv5_\d+\.mp4$/) || f.startsWith('clip_')) {
+        fs.unlinkSync(path.join(BUFFER_DIR, f));
       }
     }
   } catch {}
