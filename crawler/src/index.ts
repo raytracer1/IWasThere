@@ -2,7 +2,7 @@ import 'dotenv/config';
 import fs from 'node:fs';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { fetchTodayMatches, initScoreCache, detectEvents } from './sources/thesportsdb';
+import { fetchTodayMatches, initScoreCache, detectEvents, isLiveStatus } from './sources/thesportsdb';
 import { searchTikTok, downloadTikTok } from './sources/tiktok';
 import { searchRedditByKeyword } from './sources/reddit';
 import { searchYoutubeByKeyword } from './sources/youtube';
@@ -44,7 +44,7 @@ async function eventDrivenLoop() {
   pruneState();
   const initialMatches = await fetchTodayMatches();
   initScoreCache(initialMatches);
-  const liveNow = initialMatches.filter(m => m.status === 'LIVE');
+  const liveNow = initialMatches.filter(m => isLiveStatus(m.status));
   console.log(`\n📊 Today: ${initialMatches.length} matches in target leagues, ${liveNow.length} live now`);
   for (const m of liveNow) {
     console.log(`   🔴 ${m.homeTeam} ${m.homeScore}-${m.awayScore} ${m.awayTeam} (${m.league})`);
@@ -54,23 +54,29 @@ async function eventDrivenLoop() {
   while (true) {
     try {
       const matches = await fetchTodayMatches();
-      const liveMatches = matches.filter(m => m.status === 'LIVE');
+      const liveMatches = matches.filter(m => isLiveStatus(m.status));
 
+      const now = new Date().toISOString();
       if (liveMatches.length > 0) {
         const events = detectEvents(liveMatches);
         const significant = events.filter(e => e.hotness >= MIN_HOTNESS);
 
+        console.log(`⏱️  [${now}] ${liveMatches.length} live, ${significant.length} triggered`);
+
         if (significant.length > 0) {
-          console.log(`\n🔥 [${new Date().toISOString()}] ${significant.length} event(s) detected`);
           for (const event of significant) {
             await handleEvent(event);
           }
         } else if (events.length > 0) {
-          const belowThreshold = events.filter(e => e.hotness < MIN_HOTNESS);
-          for (const e of belowThreshold) {
+          for (const e of events) {
             console.log(`⏭️  ${e.match.homeTeam} vs ${e.match.awayTeam} (hotness ${e.hotness} < ${MIN_HOTNESS})`);
           }
         }
+      } else if (matches.length > 0) {
+        const upcoming = matches.filter(m => m.status === 'NS');
+        console.log(`⏱️  [${now}] No live matches. ${matches.length} today, ${upcoming.length} upcoming`);
+      } else {
+        console.log(`⏱️  [${now}] No matches found today`);
       }
     } catch (err) {
       console.error('Poll error:', err);
