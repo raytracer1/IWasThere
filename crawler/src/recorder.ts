@@ -38,7 +38,7 @@ export async function startRecording(matchLabel?: string): Promise<void> {
     },
   });
 
-  currentFile = path.join(BUFFER_DIR, `cctv5_${Date.now()}.mp4`);
+  currentFile = path.join(BUFFER_DIR, `cctv5_${Date.now()}.ts`);
   fileStartUtcMs = Date.now();
   launchEncoder(hlsUrl);
   isRunning = true;
@@ -84,8 +84,12 @@ export async function extractClipByUtc(
   try {
     await promisify(execFile)('ffmpeg', [
       '-y', '-ss', String(startSec), '-i', currentFile,
-      '-t', String(durationSec), '-c', 'copy', outPath,
-    ], { timeout: 30_000 });
+      '-t', String(durationSec),
+      '-c:v', 'libx264', '-preset', 'fast', '-crf', '23',
+      '-c:a', 'aac', '-b:a', '128k',
+      '-movflags', '+faststart',
+      outPath,
+    ], { timeout: 60_000 });
 
     if (fs.existsSync(outPath) && fs.statSync(outPath).size > 1024) {
       console.log(`     Output: ${(fs.statSync(outPath).size / 1024 / 1024).toFixed(1)} MB`);
@@ -125,7 +129,7 @@ function launchEncoder(hlsUrl: string): void {
     '-map', '0:v', '-map', '1:a:0',
     '-c:v', 'libx264', '-preset', 'veryfast', '-crf', '23',
     '-c:a', 'aac', '-b:a', '128k',
-    '-movflags', '+faststart',
+    '-f', 'mpegts',
     '-y', currentFile,
   ], { stdio: ['pipe', 'pipe', 'pipe'] });
 

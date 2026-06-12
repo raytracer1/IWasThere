@@ -50,9 +50,9 @@ async function apiGet(path: string): Promise<any> {
   const r = await fetch(`${API_BASE}${path}`, {
     headers: {
       'X-Auth-Token': API_KEY,
-      'X-Unfold-Goals': 'true', // 展开 goals 数据
+      'X-Unfold-Goals': 'true',
     },
-    signal: AbortSignal.timeout(10_000),
+    signal: AbortSignal.timeout(30_000),
   });
   return r.json();
 }

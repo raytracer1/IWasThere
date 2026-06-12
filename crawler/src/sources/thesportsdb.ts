@@ -82,14 +82,27 @@ export async function fetchTodayMatches(): Promise<MatchEvent[]> {
   const today = new Date().toISOString().slice(0, 10);
   const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
 
-  // 一次请求拿今明两天
+  // 一次请求拿今明两天，最多重试 2 次
   const url = `${API_BASE}/matches?dateFrom=${today}&dateTo=${tomorrow}`;
+  let data: any = null;
   try {
-    const r = await fetch(url, {
-      headers: { 'X-Auth-Token': API_KEY },
-      signal: AbortSignal.timeout(10_000),
-    });
-    const data = await r.json() as any;
+    for (let attempt = 0; attempt < 3; attempt++) {
+      try {
+        const r = await fetch(url, {
+          headers: { 'X-Auth-Token': API_KEY, 'Accept': 'application/json' },
+          signal: AbortSignal.timeout(30_000),
+        });
+        data = await r.json();
+        break;
+      } catch (err) {
+        if (attempt < 2) {
+          console.warn(`   Football-Data attempt ${attempt + 1} failed, retrying...`);
+          await new Promise(r => setTimeout(r, 2000));
+        } else {
+          throw err;
+        }
+      }
+    }
     const allMatches = data?.matches ?? [];
 
     const matches: MatchEvent[] = [];
