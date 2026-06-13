@@ -194,10 +194,9 @@ export default function AdminPage() {
           </label>
           {thumbnailPreview && (
             <div className="col-span-2 rounded-lg overflow-hidden border border-white/10">
-              <img src={thumbnailPreview} alt="Thumbnail preview" className="w-full h-32 object-cover" />
+              <img src={thumbnailPreview} alt="Thumbnail preview" className="w-full" />
             </div>
           )}
-          {thumbnailFile && <p className="col-span-2 text-xs text-green-400">📎 {thumbnailFile.name} ({(thumbnailFile.size / 1024).toFixed(0)} KB)</p>}
           {form.thumbnailUrl && !thumbnailFile && (
             <p className="col-span-2 text-xs text-gray-500">Has thumbnail (upload a new one to replace)</p>
           )}
