@@ -20,12 +20,14 @@ eventsRouter.get('/', async (c) => {
 
   const { events, total } = await db.getActiveEvents(sportType, page, pageSize);
 
-  // Sign thumbnail URLs
+  // Resolve thumbnail URLs (R2 key → signed URL, external URL → pass through)
   const signed = await Promise.all(
     events.map(async (ev) => ({
       ...ev,
       thumbnailUrl: ev.thumbnailUrl
-        ? await generateSignedUrl(ev.thumbnailUrl, secret, workerUrl)
+        ? ev.thumbnailUrl.startsWith('http')
+          ? ev.thumbnailUrl
+          : await generateSignedUrl(ev.thumbnailUrl, secret, workerUrl)
         : undefined,
     }))
   );
@@ -57,7 +59,9 @@ eventsRouter.get('/:id', async (c) => {
     data: {
       ...event,
       thumbnailUrl: event.thumbnailUrl
-        ? await generateSignedUrl(event.thumbnailUrl, secret, workerUrl)
+        ? event.thumbnailUrl.startsWith('http')
+          ? event.thumbnailUrl
+          : await generateSignedUrl(event.thumbnailUrl, secret, workerUrl)
         : undefined,
     },
   });

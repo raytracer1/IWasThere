@@ -82,7 +82,7 @@ adminRouter.post('/events', async (c) => {
     captionTemplates: body.captionTemplates as string | undefined,
     hashtags: body.hashtags as string | undefined,
     viralScore: (body.viralScore as number) ?? 5.0,
-    thumbnailUrl: thumbnailKey,
+    thumbnailUrl: (body.thumbnailUrl as string) || thumbnailKey,
     status: (body.status as 'active' | 'draft' | 'archived') || 'active',
   });
 
@@ -101,10 +101,35 @@ adminRouter.put('/events/:id', async (c) => {
     return c.json({ success: false, error: 'Event not found' }, 404);
   }
 
-  const body = await c.req.json<Record<string, unknown>>();
+  let thumbnailKey: string | undefined;
+  let body: Record<string, unknown>;
+
+  const contentType = c.req.header('Content-Type') ?? '';
+
+  if (contentType.includes('multipart/form-data')) {
+    const formData = await c.req.formData();
+    const metadataStr = formData.get('metadata') as string;
+    body = metadataStr ? JSON.parse(metadataStr) : {};
+    const thumbnail = formData.get('thumbnail');
+
+    if (thumbnail && typeof thumbnail !== 'string') {
+      const file = thumbnail as unknown as UploadedFile;
+      if (file.size > MAX_THUMBNAIL_SIZE) {
+        return c.json({ success: false, error: 'Thumbnail too large' }, 400);
+      }
+      thumbnailKey = `events/${crypto.randomUUID()}.${file.name.split('.').pop() || 'jpg'}`;
+      await uploadToR2(c.env.ASSETS, thumbnailKey, await file.arrayBuffer(), file.type);
+    }
+  } else {
+    body = await c.req.json<Record<string, unknown>>();
+  }
 
   if (body.sportType && !SPORT_TYPES.includes(body.sportType as typeof SPORT_TYPES[number])) {
     return c.json({ success: false, error: `Invalid sportType` }, 400);
+  }
+
+  if (thumbnailKey) {
+    body.thumbnailUrl = thumbnailKey;
   }
 
   await db.updateEvent(id, body);

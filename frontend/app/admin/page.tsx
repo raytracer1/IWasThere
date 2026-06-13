@@ -28,6 +28,7 @@ export default function AdminPage() {
   const [editing, setEditing] = useState<Event | null>(null);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
 
   // Form state
   const [form, setForm] = useState({
@@ -77,7 +78,8 @@ export default function AdminPage() {
   // --- Logged in ---
   const resetForm = () => {
     setEditing(null);
-    setForm({ id: "", title: "", year: new Date().getFullYear(), location: "", sportType: "football", description: "", keyMoment: "", eraClothing: "", imagePrompt: "", captionTemplates: "[]", hashtags: "", viralScore: 5.0, status: "active" });
+    setThumbnailFile(null);
+    setForm({ id: "", title: "", year: new Date().getFullYear(), location: "", sportType: "football", description: "", keyMoment: "", eraClothing: "", imagePrompt: "", captionTemplates: "[]", hashtags: "", viralScore: 5.0, thumbnailUrl: "", status: "active" });
   };
 
   const startEdit = (ev: Event) => {
@@ -88,6 +90,7 @@ export default function AdminPage() {
       keyMoment: ev.keyMoment || "", eraClothing: ev.eraClothing || "",
       imagePrompt: ev.imagePrompt, captionTemplates: ev.captionTemplates || "[]",
       hashtags: ev.hashtags || "", viralScore: ev.viralScore,
+      thumbnailUrl: ev.thumbnailUrl || "",
       status: ev.status as "active" | "draft",
     });
   };
@@ -96,18 +99,38 @@ export default function AdminPage() {
     setSaving(true);
     setMsg(null);
     try {
-      if (editing) {
-        await adminFetch(`/admin/events/${editing.id}`, session, {
-          method: "PUT", body: JSON.stringify(form),
-        });
-        setMsg("✅ Event updated");
+      if (thumbnailFile) {
+        // Create or update with file upload
+        const fd = new FormData();
+        fd.append("thumbnail", thumbnailFile);
+        fd.append("metadata", JSON.stringify(form));
+        if (editing) {
+          await adminFetch(`/admin/events/${editing.id}`, session, {
+            method: "PUT", body: fd,
+          });
+          setMsg("✅ Event updated with new thumbnail");
+        } else {
+          await adminFetch("/admin/events", session, {
+            method: "POST", body: fd,
+          });
+          setMsg("✅ Event created with thumbnail");
+        }
       } else {
-        await adminFetch("/admin/events", session, {
-          method: "POST", body: JSON.stringify(form),
-        });
-        setMsg("✅ Event created");
+        // No file — send JSON
+        if (editing) {
+          await adminFetch(`/admin/events/${editing.id}`, session, {
+            method: "PUT", body: JSON.stringify(form),
+          });
+          setMsg("✅ Event updated");
+        } else {
+          await adminFetch("/admin/events", session, {
+            method: "POST", body: JSON.stringify(form),
+          });
+          setMsg("✅ Event created");
+        }
       }
       resetForm();
+      setThumbnailFile(null);
       loadEvents();
     } catch (err) {
       setMsg(`❌ ${err instanceof Error ? err.message : "Failed"}`);
@@ -157,6 +180,17 @@ export default function AdminPage() {
           <textarea placeholder="Image Prompt (img2img)" value={form.imagePrompt} onChange={e => setForm({...form, imagePrompt: e.target.value})} rows={4} className="col-span-2 rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-white font-mono" />
           <textarea placeholder='Caption Templates (JSON array)' value={form.captionTemplates} onChange={e => setForm({...form, captionTemplates: e.target.value})} rows={2} className="col-span-2 rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-white font-mono" />
           <input placeholder="Hashtags" value={form.hashtags} onChange={e => setForm({...form, hashtags: e.target.value})} className="col-span-2 rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-white" />
+          <label className="col-span-2 flex items-center gap-2 rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-gray-400 cursor-pointer hover:text-white hover:border-cyan-500/30 transition-colors">
+            📁 {form.thumbnailUrl ? "Change thumbnail" : "Upload thumbnail"}
+            <input type="file" accept="image/*" className="hidden" onChange={e => {
+              const f = e.target.files?.[0];
+              if (f) setThumbnailFile(f);
+            }} />
+          </label>
+          {thumbnailFile && <p className="col-span-2 text-xs text-green-400">📎 {thumbnailFile.name} ({(thumbnailFile.size / 1024).toFixed(0)} KB) — will be uploaded on save</p>}
+          {form.thumbnailUrl && !thumbnailFile && (
+            <p className="col-span-2 text-xs text-gray-500">Current: {form.thumbnailUrl}</p>
+          )}
           <input placeholder="Description" value={form.description} onChange={e => setForm({...form, description: e.target.value})} className="col-span-2 rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-white" />
         </div>
         <div className="flex gap-2 mt-4">
