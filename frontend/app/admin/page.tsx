@@ -198,7 +198,9 @@ export default function AdminPage() {
             </div>
           )}
           {form.thumbnailUrl && !thumbnailFile && (
-            <p className="col-span-2 text-xs text-gray-500">Has thumbnail (upload a new one to replace)</p>
+            <div className="col-span-2 rounded-lg overflow-hidden border border-white/10">
+              <img src={form.thumbnailUrl} alt="Current thumbnail" className="w-full" />
+            </div>
           )}
           <input placeholder="Description" value={form.description} onChange={e => setForm({...form, description: e.target.value})} className="col-span-2 rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-white" />
         </div>

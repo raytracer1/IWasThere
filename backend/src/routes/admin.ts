@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { D1Helper } from '../utils/d1';
-import { uploadToR2, deleteFromR2 } from '../utils/r2';
+import { uploadToR2, deleteFromR2, generateSignedUrl } from '../utils/r2';
 import { SPORT_TYPES, MAX_THUMBNAIL_SIZE, DEFAULT_PAGE_SIZE } from '../shared';
 import type { Bindings } from '../types';
 
@@ -18,11 +18,22 @@ interface UploadedFile {
  */
 adminRouter.get('/events', async (c) => {
   const db = new D1Helper(c.env.DB);
+  const secret = c.env.AUTH_SECRET ?? 'dev-secret';
+  const workerUrl = new URL(c.req.url).origin;
   const page = parseInt(c.req.query('page') ?? '1', 10);
   const pageSize = parseInt(c.req.query('pageSize') ?? String(DEFAULT_PAGE_SIZE), 10);
 
   const { events, total } = await db.getAllEvents(page, pageSize);
-  return c.json({ success: true, data: events, total, page, pageSize });
+
+  // Sign thumbnail R2 keys
+  const signed = await Promise.all(events.map(async (ev) => ({
+    ...ev,
+    thumbnailUrl: ev.thumbnailUrl && !ev.thumbnailUrl.startsWith('http')
+      ? await generateSignedUrl(ev.thumbnailUrl, secret, workerUrl)
+      : ev.thumbnailUrl,
+  })));
+
+  return c.json({ success: true, data: signed, total, page, pageSize });
 });
 
 /**
