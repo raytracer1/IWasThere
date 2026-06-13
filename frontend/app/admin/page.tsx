@@ -131,7 +131,7 @@ export default function AdminPage() {
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-xl font-bold text-white">⚙️ Event Admin</h1>
         <div className="flex items-center gap-3">
-          <span className="text-xs text-gray-400">{session.user?.email}</span>
+          <span className="text-xs text-gray-400">{session?.user?.email}</span>
           <button onClick={() => signOut()} className="text-xs text-red-400 hover:underline">Sign out</button>
         </div>
       </div>
