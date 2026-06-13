@@ -70,7 +70,7 @@ export function UploadSelfie({ onUpload, uploading, disabled }: UploadSelfieProp
         className={`relative flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-8 transition-colors ${
           disabled ? "opacity-50 cursor-not-allowed border-white/10" :
           dragOver
-            ? "border-purple-500 bg-purple-500/10"
+            ? "border-cyan-500 bg-cyan-500/10"
             : "border-white/20 hover:border-white/40"
         }`}
       >

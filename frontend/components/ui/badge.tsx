@@ -1,9 +1,9 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
-import type { EventCategory, JobStatus } from "@/lib/types";
+import type { GenerationStatus, SportType } from "@/lib/types";
 
 interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
-  variant?: JobStatus | EventCategory;
+  variant?: GenerationStatus | SportType | "queued" | "processing" | "completed" | "failed";
 }
 
 const variantStyles: Record<string, string> = {
@@ -11,10 +11,13 @@ const variantStyles: Record<string, string> = {
   processing: "bg-yellow-500/20 text-yellow-400",
   queued: "bg-gray-500/20 text-gray-400",
   failed: "bg-red-500/20 text-red-400",
-  sports: "bg-blue-500/20 text-blue-400",
-  music: "bg-pink-500/20 text-pink-400",
-  movies: "bg-orange-500/20 text-orange-400",
-  news: "bg-cyan-500/20 text-cyan-400",
+  football: "bg-green-500/20 text-green-400",
+  basketball: "bg-orange-500/20 text-orange-400",
+  tennis: "bg-yellow-500/20 text-yellow-300",
+  athletics: "bg-red-500/20 text-red-400",
+  cricket: "bg-blue-500/20 text-blue-400",
+  boxing: "bg-red-500/20 text-red-300",
+  american_football: "bg-amber-500/20 text-amber-400",
   other: "bg-purple-500/20 text-purple-400",
 };
 

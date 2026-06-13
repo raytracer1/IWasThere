@@ -6,11 +6,15 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "hotinsert-api.zhengbijun123.workers.dev",
+        hostname: "**.workers.dev",
       },
       {
         protocol: "https",
-        hostname: "lh3.googleusercontent.com", // Google user avatars
+        hostname: "**.vercel.app",
+      },
+      {
+        protocol: "https",
+        hostname: "lh3.googleusercontent.com",
       },
     ],
   },

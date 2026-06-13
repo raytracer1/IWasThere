@@ -1,8 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
 import { useSession, signOut } from "@/lib/useAppSession";
-import { useCreditsStore } from "@/lib/store";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ThemeToggle } from "./ThemeToggle";
@@ -10,13 +8,6 @@ import { ThemeToggle } from "./ThemeToggle";
 export function Navbar() {
   const { data: session } = useSession();
   const pathname = usePathname();
-  const { credits, refresh } = useCreditsStore();
-
-  // Refresh credits on mount and when auth state changes
-  const isLoggedIn = !!session?.user;
-  useEffect(() => {
-    if (isLoggedIn) refresh();
-  }, [isLoggedIn, refresh]);
 
   if (pathname === "/login") return null;
 
@@ -25,7 +16,9 @@ export function Navbar() {
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 relative">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2">
-          <span className="text-xl font-bold text-white">🔥 HotInsert AI</span>
+          <span className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
+            ⚡ IfIWasThere
+          </span>
         </Link>
 
         {/* Navigation Links */}
@@ -54,7 +47,6 @@ export function Navbar() {
                 )}
                 <span className="hidden text-sm text-gray-300 sm:block">
                   {session.user.name ?? "User"}
-                  <> · ${credits.toFixed(2)}</>
                 </span>
               </div>
               <button
@@ -67,7 +59,7 @@ export function Navbar() {
           ) : (
             <Link
               href="/login"
-              className="rounded-lg px-3 py-1.5 text-sm text-purple-400 hover:bg-white/10 hover:text-purple-300 transition-colors"
+              className="rounded-lg px-3 py-1.5 text-sm text-cyan-400 hover:bg-white/10 hover:text-cyan-300 transition-colors"
             >
               Sign in
             </Link>
@@ -92,7 +84,7 @@ function NavLink({
       href={href}
       className={`text-sm font-medium transition-colors ${
         active
-          ? "text-white"
+          ? "text-cyan-400"
           : "text-gray-400 hover:text-white"
       }`}
     >

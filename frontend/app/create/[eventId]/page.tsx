@@ -3,15 +3,9 @@
 import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/useAppSession";
-import Image from "next/image";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
+import { fetchEvent, uploadSelfie, triggerGenerate } from "@/lib/api";
+import type { Event, UploadResponse } from "@/lib/types";
 import { UploadSelfie } from "@/components/UploadSelfie";
-import { fetchEvent, uploadSelfie, triggerSwap } from "@/lib/api";
-import { useCreditsStore } from "@/lib/store";
-import { formatDuration } from "@/lib/format";
-import type { Event } from "@/lib/types";
 
 export default function CreatePage({
   params,
@@ -19,203 +13,165 @@ export default function CreatePage({
   params: Promise<{ eventId: string }>;
 }) {
   const { eventId } = use(params);
-  const { data: session, status } = useSession();
   const router = useRouter();
+  const { data: session } = useSession();
 
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  // Upload + Generate state
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [selfieFile, setSelfieFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [generating, setGenerating] = useState(false);
-  const [generateError, setGenerateError] = useState<string | null>(null);
-  const { credits: userCredits, refresh: refreshCredits } = useCreditsStore();
-  const authenticated = status === "authenticated";
-  const priceInsufficient = authenticated && (event?.price ?? 0) > userCredits;
+  const [uploadResult, setUploadResult] = useState<UploadResponse | null>(null);
+  const [genError, setGenError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (status === "loading") return;
+    async function load() {
+      try {
+        const res = await fetchEvent(eventId);
+        if (res.data) setEvent(res.data);
+        else setError("Event not found");
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load");
+      } finally {
+        setLoading(false);
+      }
+    }
+    load();
+  }, [eventId]);
 
-    setLoading(true);
-    fetchEvent(eventId)
-      .then((res) => {
-        if (res.success && res.data) {
-          setEvent(res.data);
-        } else {
-          setError("Event not found");
-        }
-      })
-      .catch((err) => {
-        console.error("Failed to fetch event:", err);
-        setError("Failed to load event");
-      })
-      .finally(() => setLoading(false));
-  }, [eventId, status]);
+  const handleSelfieUpload = async (file: File) => {
+    setSelfieFile(file);
+    setUploading(true);
+    setGenError(null);
+    try {
+      const res = await uploadSelfie(file);
+      if (res.data) setUploadResult(res.data);
+    } catch (err) {
+      setGenError(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleGenerate = async () => {
-    if (!selectedFile || !event) return;
-
-    setGenerateError(null);
-    setUploading(true);
-
+    if (!uploadResult) return;
+    setGenerating(true);
+    setGenError(null);
     try {
-      // 1. Upload selfie to R2
-      const uploadRes = await uploadSelfie(selectedFile);
-      if (!uploadRes.success || !uploadRes.data) {
-        throw new Error(uploadRes.error ?? "Upload failed");
-      }
-
-      setUploading(false);
-      setGenerating(true);
-
-      // 2. Trigger swap job
-      const swapRes = await triggerSwap({
-        eventId: event.id,
-        imageKey: uploadRes.data.key,
+      const res = await triggerGenerate({
+        eventId,
+        imageKey: uploadResult.key,
       });
-
-      if (!swapRes.success || !swapRes.data) {
-        throw new Error(swapRes.error ?? "Generation failed");
+      if (res.data?.generationId) {
+        router.push(`/result/${res.data.generationId}`);
       }
-
-      // 3. Refresh credits
-      await refreshCredits();
-
-      // 4. Redirect to result page
-      router.push(`/result/${swapRes.data.jobId}`);
     } catch (err) {
-      setUploading(false);
+      setGenError(err instanceof Error ? err.message : "Generation failed");
       setGenerating(false);
-      setGenerateError(err instanceof Error ? err.message : "Something went wrong");
     }
   };
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-4xl px-4 py-8">
-        <Skeleton className="mb-4 h-8 w-64" />
-        <Skeleton className="aspect-video w-full rounded-xl" />
+      <div className="mx-auto max-w-lg px-4 py-12 animate-pulse space-y-4">
+        <div className="h-8 bg-gray-800 rounded w-3/4" />
+        <div className="aspect-video bg-gray-800 rounded-xl" />
+        <div className="h-4 bg-gray-800 rounded w-full" />
       </div>
     );
   }
 
   if (error || !event) {
     return (
-      <div className="mx-auto max-w-4xl px-4 py-20 text-center">
-        <span className="text-6xl">🔍</span>
-        <p className="mt-4 text-lg text-gray-400">{error ?? "Event not found"}</p>
-        <Button className="mt-4" onClick={() => router.push("/")}>
-          Back to Events
-        </Button>
+      <div className="mx-auto max-w-lg px-4 py-16 text-center">
+        <span className="text-5xl">😔</span>
+        <p className="mt-4 text-gray-400">{error || "Event not found"}</p>
+        <button onClick={() => router.push("/")} className="mt-3 text-sm text-cyan-400 hover:underline">
+          Back to events
+        </button>
       </div>
     );
   }
 
+  const SPORT_ICON: Record<string, string> = {
+    football: "⚽", basketball: "🏀", tennis: "🎾", athletics: "🏃",
+    cricket: "🏏", boxing: "🥊", american_football: "🏈", other: "🏟️",
+  };
+
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8">
-      {/* Back link */}
-      <button
-        onClick={() => router.back()}
-        className="mb-6 text-sm text-gray-400 hover:text-white transition-colors"
-      >
-        ← Back
-      </button>
-
-      {/* Event Info */}
-      <div className="mb-8 grid gap-6 md:grid-cols-2">
-        {/* Video Player */}
-        <div className="relative aspect-video overflow-hidden rounded-xl bg-gray-800">
-          {(event.originalVideoUrl || event.videoUrl) ? (
-            <video
-              src={event.originalVideoUrl || event.videoUrl}
-              poster={event.thumbnailUrl}
-              controls
-              preload="metadata"
-              className="h-full w-full object-contain"
-            />
-          ) : event.thumbnailUrl ? (
-            <Image
-              src={event.thumbnailUrl}
-              alt={event.title}
-              fill
-              className="object-cover"
-            />
-          ) : (
-            <div className="flex h-full items-center justify-center text-6xl">🎬</div>
-          )}
-          {event.duration && (
-            <div className="absolute right-3 bottom-3 rounded-md bg-black/70 px-2 py-0.5 text-xs text-white">
-              {formatDuration(event.duration)}
-            </div>
-          )}
+    <div className="mx-auto max-w-lg px-4 py-6 pb-20">
+      {/* Event Header */}
+      <div className="text-center mb-6">
+        <div className="inline-flex items-center gap-2 rounded-full bg-cyan-500/10 border border-cyan-500/20 px-3 py-1 text-xs text-cyan-300 mb-3">
+          {SPORT_ICON[event.sportType] || ""} {event.sportType.replace("_", " ")} · {event.year}
         </div>
-
-        {/* Event Details */}
-        <div className="flex flex-col justify-center">
-          <div className="mb-3">
-            <Badge variant={event.category}>{event.category}</Badge>
+        <h1 className="text-xl font-bold text-white">{event.title}</h1>
+        {event.location && (
+          <p className="text-sm text-gray-400 mt-1">📍 {event.location}</p>
+        )}
+        {event.keyMoment && (
+          <div className="mt-4 rounded-xl bg-gray-900/60 border border-white/10 p-4 text-left">
+            <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">The Moment</p>
+            <p className="text-sm text-gray-200 leading-relaxed">{event.keyMoment}</p>
           </div>
-          <h1 className="text-2xl font-bold text-white">{event.title}</h1>
-          {event.description && (
-            <p className="mt-2 text-gray-400">{event.description}</p>
-          )}
-          <p className="mt-4 text-sm text-gray-500">
-            Upload your selfie and AI will insert you into this video.
-          </p>
-        </div>
+        )}
       </div>
 
-      {/* Upload Section */}
-      <div className="rounded-xl border border-white/10 bg-white/5 p-6">
-        <h2 className="mb-4 text-lg font-semibold text-white">Your Selfie</h2>
-
+      {/* Selfie Upload */}
+      <div className="mb-6">
+        <h2 className="text-sm font-semibold text-white mb-3">
+          📸 Upload your selfie
+        </h2>
         <UploadSelfie
-          onUpload={setSelectedFile}
+          onUpload={handleSelfieUpload}
           uploading={uploading}
         />
-
-        {generateError && (
-          <p className="mt-4 text-sm text-red-400">{generateError}</p>
+        {uploadResult && !uploading && (
+          <p className="mt-2 text-xs text-green-400">✅ Photo ready</p>
         )}
-
-        <div className="mt-6">
-          <Button
-            size="lg"
-            className="w-full"
-            disabled={!authenticated || !selectedFile || uploading || generating || priceInsufficient}
-            onClick={handleGenerate}
-          >
-            {!authenticated ? (
-              "🔒 Login to Generate"
-            ) : generating ? (
-              <span className="flex items-center gap-2">
-                <span className="animate-spin">⏳</span> Generating...
-              </span>
-            ) : uploading ? (
-              <span className="flex items-center gap-2">
-                <span className="animate-spin">⏳</span> Uploading...
-              </span>
-            ) : (
-              "✨ Generate My Video"
-            )}
-          </Button>
-          {!authenticated && (
-            <p className="mt-2 text-center text-sm text-gray-400">
-              <button onClick={() => router.push("/login")} className="text-purple-400 hover:underline">Sign in</button> to generate your video.
-            </p>
-          )}
-          {priceInsufficient && (
-            <p className="mt-2 text-center text-sm text-red-400">
-              Insufficient credits. Need ${event?.price?.toFixed(2) ?? "0.00"}, have ${userCredits.toFixed(2)}.
-            </p>
-          )}
-          <p className="mt-2 text-center text-xs text-gray-500">
-            ${event?.price?.toFixed(2) ?? "?"} per generation · ${userCredits.toFixed(2)} available
-          </p>
-        </div>
       </div>
+
+      {/* Error */}
+      {genError && (
+        <div className="mb-4 rounded-lg bg-red-500/10 border border-red-500/20 p-3 text-sm text-red-400">
+          {genError}
+        </div>
+      )}
+
+      {/* Generate Button */}
+      {!session?.user ? (
+        <div className="rounded-xl bg-gray-900/60 border border-white/10 p-5 text-center">
+          <p className="text-sm text-gray-300 mb-3">Sign in to step into history</p>
+          <a
+            href="/login"
+            className="inline-block rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 px-6 py-2.5 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
+          >
+            Sign in with Google
+          </a>
+        </div>
+      ) : (
+        <button
+          onClick={handleGenerate}
+          disabled={!uploadResult || generating}
+          className={`w-full rounded-xl py-3.5 text-sm font-bold transition-all ${
+            uploadResult && !generating
+              ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white hover:opacity-90 shadow-lg shadow-cyan-500/25"
+              : "bg-gray-800 text-gray-500 cursor-not-allowed"
+          }`}
+        >
+          {generating ? (
+            <span className="flex items-center justify-center gap-2">
+              <span className="animate-spin">⏳</span>
+              Generating...
+            </span>
+          ) : uploadResult ? (
+            `⚡ Step Into ${event.year}`
+          ) : (
+            "Upload a selfie to continue"
+          )}
+        </button>
+      )}
     </div>
   );
 }

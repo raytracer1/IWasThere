@@ -10,50 +10,57 @@ export interface User {
 }
 
 // ─── Event ──────────────────────────────────────────────
-export const EVENT_CATEGORIES = [
-  'sports',
-  'music',
-  'movies',
-  'news',
+export const SPORT_TYPES = [
+  'football',
+  'basketball',
+  'tennis',
+  'athletics',
+  'cricket',
+  'boxing',
+  'american_football',
   'other',
 ] as const;
 
-export type EventCategory = (typeof EVENT_CATEGORIES)[number];
+export type SportType = (typeof SPORT_TYPES)[number];
 
 export type EventStatus = 'active' | 'draft' | 'archived';
 
 export interface Event {
   id: string;
   title: string;
-  category: EventCategory;
+  year: number;
+  location?: string;
+  sportType: SportType;
   description?: string;
-  videoUrl: string;
-  thumbnailUrl?: string;
-  duration?: number;
-  price?: number;          // USD, minimum 0.50
-  trimRanges?: string;
+  keyMoment?: string;
+  eraClothing?: string;
+  imagePrompt: string;
+  captionTemplates: string;   // JSON string
+  hashtags: string;
+  viralScore: number;         // 1.0-10.0
+  thumbnailUrl?: string;      // R2 key
   status: EventStatus;
-  createdBy: string;
   createdAt: number;
 }
 
-// ─── Job ────────────────────────────────────────────────
-export type JobStatus = 'queued' | 'processing' | 'completed' | 'failed';
+// ─── Generation ─────────────────────────────────────────
+export type GenerationStatus = 'queued' | 'processing' | 'completed' | 'failed';
 
-export interface Job {
+export interface Generation {
   id: string;
   userId: string;
   eventId: string;
-  falRequestId?: string;
-  inputImage: string;
-  outputVideo?: string;
-  status: JobStatus;
+  inputImage: string;         // R2 key
+  outputImage?: string;       // R2 key
+  agnesJobId?: string;
+  status: GenerationStatus;
   errorMessage?: string;
+  captions?: string;          // JSON string
+  selectedCaption?: string;
   createdAt: number;
   completedAt?: number;
 }
 
-// ─── Rate Limit ─────────────────────────────────────────
 // ─── API Response Wrappers ──────────────────────────────
 export interface ApiResponse<T = unknown> {
   success: boolean;
@@ -69,36 +76,46 @@ export interface PaginatedResponse<T> {
   pageSize: number;
 }
 
-export interface JobWithEvent extends Job {
+export interface GenerationWithEvent extends Generation {
   eventTitle?: string;
-  eventCategory?: EventCategory;
+  eventYear?: number;
+  eventSportType?: SportType;
   eventThumbnail?: string;
 }
 
 // ─── Request Bodies ─────────────────────────────────────
-export interface SwapRequest {
+export interface GenerateRequest {
   eventId: string;
   imageKey: string;
-  resolution?: string;
 }
 
 export interface CreateEventRequest {
   title: string;
-  category: EventCategory;
+  year: number;
+  location?: string;
+  sportType: SportType;
   description?: string;
-  duration?: number;
-  price?: number;          // USD, minimum 0.50
-  trimRanges?: string;
+  keyMoment?: string;
+  eraClothing?: string;
+  imagePrompt: string;
+  captionTemplates?: string;
+  hashtags?: string;
+  viralScore?: number;
   status?: EventStatus;
 }
 
 export interface UpdateEventRequest {
   title?: string;
-  category?: EventCategory;
+  year?: number;
+  location?: string;
+  sportType?: SportType;
   description?: string;
-  duration?: number;
-  price?: number;          // USD, minimum 0.50
-  trimRanges?: string;
+  keyMoment?: string;
+  eraClothing?: string;
+  imagePrompt?: string;
+  captionTemplates?: string;
+  hashtags?: string;
+  viralScore?: number;
   status?: EventStatus;
 }
 
@@ -111,11 +128,7 @@ export interface UploadResponse {
 }
 
 // ─── Constants ──────────────────────────────────────────
-
-export const COST_PER_GENERATION = 0.5;
-export const DEFAULT_RESOLUTION = '720p';
 export const MAX_SELFIE_SIZE = 10 * 1024 * 1024;
-export const MAX_VIDEO_SIZE = 100 * 1024 * 1024;
 export const MAX_THUMBNAIL_SIZE = 5 * 1024 * 1024;
 export const SIGNED_URL_EXPIRY = 900;
 export const POLL_INTERVAL_MS = 3000;
@@ -128,7 +141,7 @@ export const ACCEPTED_IMAGE_TYPES = [
 ] as const;
 
 export const R2_DIRS = {
-  HOT_EVENTS: 'hot-events',
   UPLOADS: 'uploads',
   OUTPUTS: 'outputs',
+  EVENTS: 'events',
 } as const;

@@ -5,9 +5,9 @@ import { D1Helper } from './utils/d1';
 import authRouter from './routes/auth';
 import eventsRouter from './routes/events';
 import uploadRouter from './routes/upload';
-import swapRouter from './routes/swap';
-import jobRouter from './routes/job';
-import historyRouter from './routes/history';
+import generateRouter from './routes/generate';
+import generationRouter from './routes/generation';
+import generationsRouter from './routes/generations';
 import adminRouter from './routes/admin';
 import { verifySignedToken } from './utils/r2';
 import type { Bindings } from './types';
@@ -37,7 +37,6 @@ app.get('/assets/:key{.*}', async (c) => {
   const expires = parseInt(c.req.query('expires') ?? '0', 10);
   const secret = c.env.AUTH_SECRET ?? 'dev-secret';
 
-  // Verify signed token
   if (!token || !expires) {
     return c.json({ success: false, error: 'Missing token or expiry' }, 401);
   }
@@ -47,7 +46,6 @@ app.get('/assets/:key{.*}', async (c) => {
     return c.json({ success: false, error: 'Invalid or expired link' }, 401);
   }
 
-  // Get object metadata (without body) to know total size
   const head = await c.env.ASSETS.head(key);
   if (!head) {
     return c.json({ success: false, error: 'File not found' }, 404);
@@ -62,14 +60,12 @@ app.get('/assets/:key{.*}', async (c) => {
   headers.set('Content-Type', contentType);
 
   if (rangeHeader) {
-    // Parse Range header (e.g., "bytes=0-1023")
     const match = rangeHeader.match(/^bytes=(\d+)-(\d*)$/);
     if (match) {
       const start = parseInt(match[1], 10);
       const end = match[2] ? parseInt(match[2], 10) : fileSize - 1;
       const length = end - start + 1;
 
-      // Fetch only the requested range from R2
       const object = await c.env.ASSETS.get(key, {
         range: { offset: start, length },
       });
@@ -89,7 +85,6 @@ app.get('/assets/:key{.*}', async (c) => {
     }
   }
 
-  // No Range header — serve full file
   const object = await c.env.ASSETS.get(key);
   if (!object) {
     return c.json({ success: false, error: 'File not found' }, 404);
@@ -106,18 +101,16 @@ app.get('/health', (c) => {
   return c.json({ success: true, data: { status: 'ok', env: c.env.ENVIRONMENT } });
 });
 
-// ─── Current User (registration happens here) ─────────────
+// ─── Current User (registration happens here) ───────────
 app.get('/me', jwtMiddleware(), async (c) => {
   const payload = c.get('jwtPayload') as { sub: string; email: string; name?: string; picture?: string };
   const db = new D1Helper(c.env.DB);
   const adminEmails = (c.env.ADMIN_EMAILS ?? '').split(',').map(e => e.trim().toLowerCase());
   const role = adminEmails.includes(payload.email?.toLowerCase() ?? '') ? 'admin' : 'user';
 
-  // Check if user already exists
   let user = await db.getUserByEmail(payload.email);
 
   if (!user) {
-    // New user — create in DB with $1 welcome credit
     await db.upsertUser({
       id: payload.sub,
       email: payload.email,
@@ -128,29 +121,32 @@ app.get('/me', jwtMiddleware(), async (c) => {
     user = await db.getUserByEmail(payload.email);
   }
 
-  return c.json({ success: true, data: { id: payload.sub, email: payload.email, role, credits: user?.credits ?? 0 } });
+  return c.json({
+    success: true,
+    data: { id: payload.sub, email: payload.email, role, credits: user?.credits ?? 0 },
+  });
 });
 
 // ─── Google Auth (native clients) ───────────────────────
 app.route('/auth', authRouter);
 
+// ─── Public Events ──────────────────────────────────────
+app.route('/events', eventsRouter);
+
 // ─── Protected Routes ───────────────────────────────────
 const api = new Hono();
 
-// Routes that require authentication
 api.use('/upload/*', authMiddleware());
-api.use('/swap/*', authMiddleware());
-api.use('/job/*', authMiddleware());
-api.use('/history/*', authMiddleware());
+api.use('/generate/*', authMiddleware());
+api.use('/generation/*', authMiddleware());
+api.use('/generations/*', authMiddleware());
 api.use('/admin/*', authMiddleware());
 api.use('/admin/*', requireAdmin());
 
-// Mount route modules
-api.route('/events', eventsRouter);
 api.route('/upload', uploadRouter);
-api.route('/swap', swapRouter);
-api.route('/job', jobRouter);
-api.route('/history', historyRouter);
+api.route('/generate', generateRouter);
+api.route('/generation', generationRouter);
+api.route('/generations', generationsRouter);
 api.route('/admin', adminRouter);
 
 app.route('/', api);

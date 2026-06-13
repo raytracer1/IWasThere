@@ -1,4 +1,4 @@
-name = "hotinsert-api"
+name = "ifiwasthere-api"
 main = "src/index.ts"
 compatibility_date = "2025-06-01"
 compatibility_flags = ["nodejs_compat"]
@@ -12,11 +12,12 @@ database_id = "34e0ca98-b64e-4c50-a66a-d8b61e784cb2"
 # R2 Bucket
 [[r2_buckets]]
 binding = "ASSETS"
-bucket_name = "hotinsert-assets"
+bucket_name = "ifiwasthere-assets"
 
-# Environment Variables (secrets)
-# Set via: wrangler secret put FAL_API_KEY
-# Set via: wrangler secret put AUTH_SECRET
+# Secrets (set via wrangler secret put):
+#   AGNES_API_KEY — Agnes AI API key
+#   AUTH_SECRET   — JWT signing secret (shared with NextAuth)
+
 [vars]
 ENVIRONMENT = "development"
 ADMIN_EMAILS = "zhengbijun123@gmail.com"

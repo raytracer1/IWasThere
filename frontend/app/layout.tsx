@@ -15,9 +15,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "HotInsert AI — Put Yourself in the Moment",
+  title: "IfIWasThere — Step into historic sports moments",
   description:
-    "Insert your selfie into trending hot event videos using AI. World Cup, concerts, Oscars, and more.",
+    "Upload your selfie and see yourself at history's greatest sports moments. AI-powered sports imagination. Free.",
 };
 
 export default function RootLayout({

@@ -5,18 +5,19 @@ import { auth } from "@/lib/auth";
 export default async function LoginPage() {
   const session = await auth();
 
-  // Already logged in — redirect to home
   if (session?.user) {
     redirect("/");
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-gray-900 via-purple-950 to-gray-900">
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-gray-900 via-cyan-950 to-gray-900">
       <div className="w-full max-w-md rounded-2xl bg-white/5 p-8 backdrop-blur-xl border border-white/10">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-white mb-2">HotInsert AI</h1>
-          <p className="text-gray-400">
-            Put yourself in the hottest moments. Sign in to get started.
+          <h1 className="text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500 mb-2">
+            ⚡ IfIWasThere
+          </h1>
+          <p className="text-gray-400 text-sm">
+            Step into historic sports moments. Sign in to start.
           </p>
         </div>
 
@@ -52,7 +53,7 @@ export default async function LoginPage() {
           </button>
         </form>
 
-        <p className="mt-6 text-center text-sm text-gray-500">
+        <p className="mt-6 text-center text-xs text-gray-500">
           By signing in, you agree to our Terms of Service and Privacy Policy.
         </p>
       </div>

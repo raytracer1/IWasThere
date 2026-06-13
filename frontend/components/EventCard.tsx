@@ -1,53 +1,72 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import type { Event } from "@/lib/types";
-import { formatDuration } from "@/lib/format";
 
-interface EventCardProps {
-  event: Event;
+function fireEmoji(viral: number): string {
+  if (viral >= 9) return "🔥🔥🔥";
+  if (viral >= 8) return "🔥🔥";
+  if (viral >= 7) return "🔥";
+  return "⭐";
 }
 
-export function EventCard({ event }: EventCardProps) {
+const SPORT_ICON: Record<string, string> = {
+  football: "⚽",
+  basketball: "🏀",
+  tennis: "🎾",
+  athletics: "🏃",
+  cricket: "🏏",
+  boxing: "🥊",
+  american_football: "🏈",
+  other: "🏟️",
+};
+
+export function EventCard({ event }: { event: Event }) {
   return (
-    <Link href={`/create/${event.id}`}>
-      <Card className="group overflow-hidden transition-all hover:border-purple-500/50 hover:shadow-lg hover:shadow-purple-500/10 cursor-pointer">
-        <div className="relative aspect-video overflow-hidden bg-gray-800">
-          {event.thumbnailUrl ? (
-            <Image
-              src={event.thumbnailUrl}
-              alt={event.title}
-              fill
-              className="object-cover transition-transform group-hover:scale-105"
-              sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-            />
-          ) : (
-            <div className="flex h-full items-center justify-center text-gray-600">
-              <span className="text-4xl">🎬</span>
-            </div>
-          )}
-
-          <div className="absolute left-3 top-3">
-            <Badge variant={event.category}>{event.category}</Badge>
+    <Link
+      href={`/create/${event.id}`}
+      className="group block rounded-2xl border border-white/10 bg-gray-900/60 backdrop-blur-sm overflow-hidden hover:border-cyan-500/40 hover:shadow-lg hover:shadow-cyan-500/10 transition-all duration-300"
+    >
+      {/* Thumbnail */}
+      <div className="aspect-[4/3] bg-gradient-to-br from-gray-800 to-gray-900 relative overflow-hidden">
+        {event.thumbnailUrl ? (
+          <img
+            src={event.thumbnailUrl}
+            alt={event.title}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+            loading="lazy"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-5xl bg-gradient-to-br from-cyan-900/50 to-blue-900/50">
+            {SPORT_ICON[event.sportType] || "🏟️"}
           </div>
-
-          {event.duration && (
-            <div className="absolute right-3 bottom-3 rounded-md bg-black/70 px-2 py-0.5 text-xs text-white">
-              {formatDuration(event.duration)}
-            </div>
-          )}
+        )}
+        {/* Year Badge */}
+        <div className="absolute top-3 left-3 rounded-lg bg-black/70 backdrop-blur-sm px-2.5 py-1 text-xs font-bold text-white">
+          {event.year}
         </div>
+        {/* Viral Badge */}
+        <div className="absolute top-3 right-3 rounded-lg bg-black/70 backdrop-blur-sm px-2 py-1 text-xs">
+          {fireEmoji(event.viralScore)} {event.viralScore}
+        </div>
+      </div>
 
-        <CardContent>
-          <h3 className="font-semibold text-white line-clamp-1">{event.title}</h3>
-          {event.description && (
-            <p className="mt-1 text-sm text-gray-400 line-clamp-2">{event.description}</p>
-          )}
-        </CardContent>
-      </Card>
+      {/* Content */}
+      <div className="p-4">
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-xs text-cyan-400 font-medium">
+            {SPORT_ICON[event.sportType] || ""} {event.sportType.replace("_", " ")}
+          </span>
+        </div>
+        <h3 className="text-sm font-semibold text-white line-clamp-2 leading-snug group-hover:text-cyan-300 transition-colors">
+          {event.title}
+        </h3>
+        {event.keyMoment && (
+          <p className="mt-1.5 text-xs text-gray-400 line-clamp-1">
+            {event.keyMoment}
+          </p>
+        )}
+      </div>
     </Link>
   );
 }

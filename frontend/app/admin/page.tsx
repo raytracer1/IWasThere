@@ -2,162 +2,107 @@
 
 import { useState, useEffect } from "react";
 import { useSession } from "@/lib/useAppSession";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import { fetchAdminEvents, deleteEvent, updateEvent } from "@/lib/api";
-import { formatDate } from "@/lib/utils";
+import { fetchAdminEvents, deleteEvent } from "@/lib/api";
 import type { Event } from "@/lib/types";
 
 export default function AdminPage() {
-  const { status } = useSession();
-  const router = useRouter();
+  const { data: session } = useSession();
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/login");
-      return;
-    }
-    if (status !== "authenticated") return;
+  const isAdmin = (session?.user as { role?: string } | undefined)?.role === "admin";
 
+  useEffect(() => {
+    if (!isAdmin) return;
     loadEvents();
-  }, [status, router]);
+  }, [isAdmin]);
 
   async function loadEvents() {
     setLoading(true);
     try {
       const res = await fetchAdminEvents();
-      if (res.success) {
-        setEvents(res.data);
-      } else {
-        setError("Failed to load events. Check admin permissions.");
-      }
+      setEvents(res.data);
     } catch (err) {
-      console.error("Admin API error:", err);
-      setError(err instanceof Error ? err.message : "Admin API not available. Check your permissions.");
+      setError(err instanceof Error ? err.message : "Failed to load");
     } finally {
       setLoading(false);
     }
   }
 
-  async function handleDelete(eventId: string) {
-    if (!confirm("Are you sure? This also deletes the R2 files.")) return;
+  async function handleDelete(id: string) {
+    if (!confirm("Delete this event?")) return;
     try {
-      await deleteEvent(eventId);
-      setEvents((prev) => prev.filter((e) => e.id !== eventId));
+      await deleteEvent(id);
+      setEvents((prev) => prev.filter((e) => e.id !== id));
     } catch (err) {
-      setError("Failed to delete event");
+      alert(err instanceof Error ? err.message : "Delete failed");
     }
   }
 
-  async function handleApprove(eventId: string) {
-    try {
-      await updateEvent(eventId, { status: 'active' });
-      setEvents((prev) =>
-        prev.map((e) => (e.id === eventId ? { ...e, status: 'active' } : e))
-      );
-    } catch (err) {
-      setError("Failed to approve event");
-    }
-  }
-
-  if (loading) {
+  if (!session?.user) {
     return (
-      <div className="mx-auto max-w-6xl px-4 py-8">
-        <Skeleton className="mb-8 h-8 w-48" />
-        <Skeleton className="h-96 w-full rounded-xl" />
+      <div className="mx-auto max-w-lg px-4 py-16 text-center">
+        <p className="text-gray-400">Sign in required.</p>
+      </div>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <div className="mx-auto max-w-lg px-4 py-16 text-center">
+        <p className="text-gray-400">Admin access only.</p>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8">
-      <div className="mb-8 flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Admin Panel</h1>
-          <p className="mt-1 text-gray-400">Manage hot events</p>
-        </div>
-        <Link href="/admin/events/new">
-          <Button size="lg">+ New Event</Button>
-        </Link>
+    <div className="mx-auto max-w-2xl px-4 py-6">
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-xl font-bold text-white">⚙️ Event Admin</h1>
+        <button
+          onClick={loadEvents}
+          className="text-sm text-cyan-400 hover:underline"
+        >
+          Refresh
+        </button>
       </div>
 
-      {error && (
-        <div className="mb-6 rounded-xl border border-red-500/30 bg-red-500/10 p-4">
-          <p className="text-red-400">{error}</p>
+      {loading ? (
+        <div className="space-y-2">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <div key={i} className="h-16 rounded-xl bg-gray-900/60 animate-pulse" />
+          ))}
         </div>
-      )}
-
-      {events.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center">
-          <span className="text-6xl">📋</span>
-          <h3 className="mt-4 text-lg font-medium text-gray-900 dark:text-white">No events yet</h3>
-          <p className="mt-1 text-gray-400">Create your first event to get started.</p>
-        </div>
+      ) : error ? (
+        <p className="text-red-400 text-sm">{error}</p>
       ) : (
-        <div className="overflow-hidden rounded-xl border border-white/10">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-white/10 bg-white/5">
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-400">Title</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-400 hidden sm:table-cell">Category</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-400 hidden md:table-cell">Status</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-400 hidden lg:table-cell">Created</th>
-                <th className="px-4 py-3 text-right text-sm font-medium text-gray-400">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-white/5">
-              {events.map((event) => (
-                <tr key={event.id} className="hover:bg-white/5">
-                  <td className="px-4 py-3">
-                    <p className="font-medium text-gray-900 dark:text-white line-clamp-1">{event.title}</p>
-                    <p className="text-xs text-gray-500 line-clamp-1">{event.id}</p>
-                  </td>
-                  <td className="px-4 py-3 hidden sm:table-cell">
-                    <Badge variant={event.category}>{event.category}</Badge>
-                  </td>
-                  <td className="px-4 py-3 hidden md:table-cell">
-                    <Badge variant={event.status === "active" ? "completed" : event.status === "draft" ? "queued" : "failed"}>
-                      {event.status}
-                    </Badge>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-400 hidden lg:table-cell">
-                    {formatDate(event.createdAt)}
-                  </td>
-                  <td className="px-4 py-3 text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      {event.status === 'draft' && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-green-400 hover:text-green-300"
-                          onClick={() => handleApprove(event.id)}
-                        >
-                          ✅ Approve
-                        </Button>
-                      )}
-                      <Link href={`/admin/events/${event.id}/edit`}>
-                        <Button variant="ghost" size="sm">Edit</Button>
-                      </Link>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="text-red-400 hover:text-red-300"
-                        onClick={() => handleDelete(event.id)}
-                      >
-                        Delete
-                      </Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <div className="space-y-2">
+          {events.map((event) => (
+            <div
+              key={event.id}
+              className="flex items-center gap-4 rounded-xl border border-white/10 bg-gray-900/60 p-4"
+            >
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-white truncate">{event.title}</p>
+                <p className="text-xs text-gray-400">
+                  {event.sportType} · {event.year} · Viral: {event.viralScore} ·{" "}
+                  <span className={
+                    event.status === "active" ? "text-green-400" :
+                    event.status === "draft" ? "text-yellow-400" : "text-gray-500"
+                  }>
+                    {event.status}
+                  </span>
+                </p>
+              </div>
+              <button
+                onClick={() => handleDelete(event.id)}
+                className="shrink-0 text-xs text-red-400 hover:text-red-300 transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          ))}
         </div>
       )}
     </div>

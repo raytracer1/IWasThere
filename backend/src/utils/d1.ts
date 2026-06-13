@@ -1,9 +1,8 @@
 import type { D1Database, D1Result } from '@cloudflare/workers-types';
-import { COST_PER_GENERATION, type User, type Event, type Job, type JobStatus } from '../shared';
+import type { User, Event, Generation, GenerationStatus, SportType } from '../shared';
 
 /**
  * Typed wrapper around Cloudflare D1 binding.
- * Usage: const db = new D1Helper(env.DB);
  */
 export class D1Helper {
   constructor(private db: D1Database) {}
@@ -63,23 +62,23 @@ export class D1Helper {
   // ─── Events ───────────────────────────────────────────
 
   async getActiveEvents(
-    category?: string,
+    sportType?: string,
     page = 1,
     pageSize = 20
   ): Promise<{ events: Event[]; total: number }> {
     const offset = (page - 1) * pageSize;
-    const categoryFilter = category ? 'AND category = ?' : '';
-    const params = category ? [category, pageSize, offset] : [pageSize, offset];
+    const sportFilter = sportType ? 'AND sport_type = ?' : '';
+    const params = sportType ? [sportType, pageSize, offset] : [pageSize, offset];
 
     const countResult = await this.first<{ count: number }>(
-      `SELECT COUNT(*) as count FROM events WHERE status = 'active' ${categoryFilter}`,
-      ...(category ? [category] : [])
+      `SELECT COUNT(*) as count FROM events WHERE status = 'active' ${sportFilter}`,
+      ...(sportType ? [sportType] : [])
     );
 
     const rows = await this.all<Record<string, unknown>>(
       `SELECT * FROM events
-       WHERE status = 'active' ${categoryFilter}
-       ORDER BY created_at DESC
+       WHERE status = 'active' ${sportFilter}
+       ORDER BY viral_score DESC, created_at DESC
        LIMIT ? OFFSET ?`,
       ...params
     );
@@ -116,27 +115,26 @@ export class D1Helper {
 
   async createEvent(event: Omit<Event, 'createdAt'>): Promise<void> {
     await this.run(
-      `INSERT INTO events (id, title, category, description, video_url, thumbnail_url, duration, price, trim_ranges, video_keys, status, created_by, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, unixepoch())`,
+      `INSERT INTO events (id, title, year, location, sport_type, description, key_moment, era_clothing, image_prompt, caption_templates, hashtags, viral_score, thumbnail_url, status, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, unixepoch())`,
       event.id,
       event.title,
-      event.category,
+      event.year,
+      event.location ?? null,
+      event.sportType,
       event.description ?? null,
-      event.videoUrl,
+      event.keyMoment ?? null,
+      event.eraClothing ?? null,
+      event.imagePrompt,
+      event.captionTemplates ?? null,
+      event.hashtags ?? null,
+      event.viralScore ?? 5.0,
       event.thumbnailUrl ?? null,
-      event.duration ?? null,
-      event.price ?? COST_PER_GENERATION,
-      event.trimRanges ?? null,
-      (event as { videoKeys?: string }).videoKeys ?? null,
-      event.status,
-      event.createdBy
+      event.status
     );
   }
 
-  async updateEvent(
-    id: string,
-    updates: Partial<Pick<Event, 'title' | 'category' | 'description' | 'duration' | 'status'>>
-  ): Promise<void> {
+  async updateEvent(id: string, updates: Record<string, unknown>): Promise<void> {
     const fields: string[] = [];
     const values: unknown[] = [];
 
@@ -148,7 +146,6 @@ export class D1Helper {
     }
 
     if (fields.length === 0) return;
-
     values.push(id);
     await this.run(`UPDATE events SET ${fields.join(', ')} WHERE id = ?`, ...values);
   }
@@ -157,93 +154,92 @@ export class D1Helper {
     await this.run('DELETE FROM events WHERE id = ?', id);
   }
 
-  // ─── Jobs ──────────────────────────────────────────────
+  // ─── Generations ──────────────────────────────────────
 
-  async createJob(
-    job: Omit<Job, 'createdAt' | 'completedAt'>
-  ): Promise<void> {
+  async createGeneration(gen: Omit<Generation, 'createdAt' | 'completedAt'>): Promise<void> {
     await this.run(
-      `INSERT INTO jobs (id, user_id, event_id, fal_request_id, input_image, output_video, status, error_message, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, unixepoch())`,
-      job.id,
-      job.userId,
-      job.eventId,
-      job.falRequestId ?? null,
-      job.inputImage,
-      job.outputVideo ?? null,
-      job.status,
-      job.errorMessage ?? null
+      `INSERT INTO generations (id, user_id, event_id, input_image, output_image, agnes_job_id, status, error_message, captions, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, unixepoch())`,
+      gen.id,
+      gen.userId,
+      gen.eventId,
+      gen.inputImage,
+      gen.outputImage ?? null,
+      gen.agnesJobId ?? null,
+      gen.status,
+      gen.errorMessage ?? null,
+      gen.captions ?? null
     );
   }
 
-  async getJobById(id: string): Promise<Job | null> {
+  async getGenerationById(id: string): Promise<Generation | null> {
     const row = await this.first<Record<string, unknown>>(
-      'SELECT * FROM jobs WHERE id = ?',
+      'SELECT * FROM generations WHERE id = ?',
       id
     );
-    return row ? this.mapJob(row) : null;
+    return row ? this.mapGeneration(row) : null;
   }
 
-  async updateJobStatus(
+  async updateGeneration(id: string, updates: Partial<Generation>): Promise<void> {
+    const fields: string[] = [];
+    const values: unknown[] = [];
+
+    for (const [key, value] of Object.entries(updates)) {
+      if (value !== undefined) {
+        fields.push(`${camelToSnake(key)} = ?`);
+        values.push(value);
+      }
+    }
+
+    if (fields.length === 0) return;
+    values.push(id);
+    await this.run(`UPDATE generations SET ${fields.join(', ')} WHERE id = ?`, ...values);
+  }
+
+  async updateGenerationStatus(
     id: string,
-    status: JobStatus,
-    outputVideo?: string,
-    errorMessage?: string
+    status: GenerationStatus,
+    outputImage?: string,
+    errorMessage?: string,
+    captions?: string
   ): Promise<void> {
     await this.run(
-      `UPDATE jobs SET
+      `UPDATE generations SET
         status = ?,
-        output_video = COALESCE(?, output_video),
+        output_image = COALESCE(?, output_image),
         error_message = ?,
+        captions = COALESCE(?, captions),
         completed_at = CASE WHEN ? IN ('completed', 'failed') THEN unixepoch() ELSE completed_at END
        WHERE id = ?`,
       status,
-      outputVideo ?? null,
+      outputImage ?? null,
       errorMessage ?? null,
+      captions ?? null,
       status,
       id
     );
   }
 
-  async updateJobFalRequestId(id: string, falRequestId: string): Promise<void> {
-    await this.run(
-      'UPDATE jobs SET fal_request_id = ?, status = ? WHERE id = ?',
-      falRequestId,
-      'processing',
-      id
-    );
-  }
-
-  async getUserJobs(
+  async getUserGenerations(
     userId: string,
     page = 1,
     pageSize = 20
-  ): Promise<{ jobs: Job[]; total: number }> {
+  ): Promise<{ generations: Generation[]; total: number }> {
     const offset = (page - 1) * pageSize;
     const countResult = await this.first<{ count: number }>(
-      'SELECT COUNT(*) as count FROM jobs WHERE user_id = ?',
+      'SELECT COUNT(*) as count FROM generations WHERE user_id = ?',
       userId
     );
     const rows = await this.all<Record<string, unknown>>(
-      'SELECT * FROM jobs WHERE user_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?',
+      'SELECT g.*, e.title as event_title, e.year as event_year, e.sport_type as event_sport_type, e.thumbnail_url as event_thumbnail FROM generations g LEFT JOIN events e ON g.event_id = e.id WHERE g.user_id = ? ORDER BY g.created_at DESC LIMIT ? OFFSET ?',
       userId,
       pageSize,
       offset
     );
     return {
-      jobs: rows.results.map((row) => this.mapJob(row)),
+      generations: rows.results.map((row) => this.mapGeneration(row)),
       total: countResult?.count ?? 0,
     };
-  }
-
-  // ─── Rate Limits ──────────────────────────────────────
-
-  async deductCredits(userId: string, amount: number): Promise<void> {
-    await this.run(
-      'UPDATE users SET credits = MAX(0, credits - ?) WHERE id = ?',
-      amount,
-      userId
-    );
   }
 
   // ─── Row Mappers ──────────────────────────────────────
@@ -252,31 +248,46 @@ export class D1Helper {
     return {
       id: row.id as string,
       title: row.title as string,
-      category: row.category as Event['category'],
+      year: row.year as number,
+      location: (row.location as string) ?? undefined,
+      sportType: row.sport_type as SportType,
       description: (row.description as string) ?? undefined,
-      videoUrl: row.video_url as string,
+      keyMoment: (row.key_moment as string) ?? undefined,
+      eraClothing: (row.era_clothing as string) ?? undefined,
+      imagePrompt: row.image_prompt as string,
+      captionTemplates: (row.caption_templates as string) ?? '[]',
+      hashtags: (row.hashtags as string) ?? '',
+      viralScore: row.viral_score as number,
       thumbnailUrl: (row.thumbnail_url as string) ?? undefined,
-      duration: (row.duration as number) ?? undefined,
-      price: (row.price as number) ?? 0.50,
-      trimRanges: (row.trim_ranges as string) ?? undefined,
       status: row.status as Event['status'],
-      createdBy: row.created_by as string,
       createdAt: row.created_at as number,
     };
   }
 
-  private mapJob(row: Record<string, unknown>): Job {
+  private mapGeneration(row: Record<string, unknown>): Generation {
     return {
       id: row.id as string,
       userId: row.user_id as string,
       eventId: row.event_id as string,
-      falRequestId: (row.fal_request_id as string) ?? undefined,
       inputImage: row.input_image as string,
-      outputVideo: (row.output_video as string) ?? undefined,
-      status: row.status as JobStatus,
+      outputImage: (row.output_image as string) ?? undefined,
+      agnesJobId: (row.agnes_job_id as string) ?? undefined,
+      status: row.status as GenerationStatus,
       errorMessage: (row.error_message as string) ?? undefined,
+      captions: (row.captions as string) ?? undefined,
+      selectedCaption: (row.selected_caption as string) ?? undefined,
       createdAt: row.created_at as number,
       completedAt: (row.completed_at as number) ?? undefined,
+      // Joined fields
+      eventTitle: (row as { event_title?: string }).event_title,
+      eventYear: (row as { event_year?: number }).event_year,
+      eventSportType: (row as { event_sport_type?: string }).event_sport_type,
+      eventThumbnail: (row as { event_thumbnail?: string }).event_thumbnail,
+    } as Generation & {
+      eventTitle?: string;
+      eventYear?: number;
+      eventSportType?: string;
+      eventThumbnail?: string;
     };
   }
 }

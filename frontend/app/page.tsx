@@ -1,110 +1,111 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useSession } from "@/lib/useAppSession";
-import { useRouter } from "next/navigation";
-import { EventCard } from "@/components/EventCard";
-import { Tabs } from "@/components/ui/tabs";
-import { Skeleton } from "@/components/ui/skeleton";
+import { useState, useEffect, useCallback } from "react";
 import { fetchEvents } from "@/lib/api";
+import { SPORT_TYPES } from "@/lib/types";
 import type { Event } from "@/lib/types";
+import { EventCard } from "@/components/EventCard";
 
-const CATEGORIES = [
-  { value: "", label: "All" },
-  { value: "sports", label: "Sports" },
-  { value: "music", label: "Music" },
-  { value: "movies", label: "Movies" },
-  { value: "news", label: "News" },
-  { value: "other", label: "Other" },
+const SPORT_TABS: { key: string; label: string }[] = [
+  { key: "", label: "All" },
+  ...SPORT_TYPES.map((s) => ({
+    key: s,
+    label: s.charAt(0).toUpperCase() + s.slice(1).replace("_", " "),
+  })),
 ];
 
 export default function HomePage() {
-  const { data: session, status } = useSession();
-  const router = useRouter();
   const [events, setEvents] = useState<Event[]>([]);
-  const [category, setCategory] = useState("");
+  const [sportType, setSportType] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (status === "loading") return;
-
+  const loadEvents = useCallback(async (sport?: string) => {
     setLoading(true);
     setError(null);
+    try {
+      const res = await fetchEvents(sport || undefined);
+      setEvents(res.data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load events");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-    fetchEvents(category || undefined)
-      .then((res) => {
-        if (res.success) {
-          setEvents(res.data);
-        }
-      })
-      .catch((err) => {
-        console.error("Failed to fetch events:", err);
-        setError("Failed to load events. The API might not be running yet.");
-      })
-      .finally(() => setLoading(false));
-  }, [category, status]);
-
-  if (status === "loading") {
-    return (
-      <div className="mx-auto max-w-7xl px-4 py-12">
-        <Skeleton className="mb-8 h-8 w-48" />
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="space-y-3">
-              <Skeleton className="aspect-video w-full rounded-xl" />
-              <Skeleton className="h-5 w-3/4" />
-              <Skeleton className="h-4 w-1/2" />
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
+  useEffect(() => {
+    loadEvents(sportType);
+  }, [sportType, loadEvents]);
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">🔥 Trending Hot Events</h1>
-        <p className="mt-2 text-gray-400">
-          Choose a trending event and put yourself in the moment with AI.
+    <div className="mx-auto max-w-2xl px-4 py-6">
+      {/* Hero */}
+      <div className="text-center mb-8">
+        <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
+          Step into historic{" "}
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
+            sports moments
+          </span>
+        </h1>
+        <p className="mt-3 text-sm text-gray-400 max-w-md mx-auto">
+          Upload a selfie and see yourself at the greatest games ever played.
+          Free. No sign-up needed to browse.
         </p>
       </div>
 
-      <Tabs
-        value={category}
-        onValueChange={setCategory}
-        items={CATEGORIES}
-        className="mb-8"
-      />
-
-      {error && (
-        <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-6 text-center">
-          <p className="text-red-400">{error}</p>
-          <p className="mt-2 text-sm text-gray-400">
-            Make sure the Cloudflare Worker is running on{" "}
-            <code className="rounded bg-white/10 px-1.5 py-0.5">
-              {process.env.NEXT_PUBLIC_WORKER_URL ?? "http://localhost:8787"}
-            </code>
-          </p>
-        </div>
-      )}
-
-      {!loading && !error && events.length === 0 && (
-        <div className="flex flex-col items-center justify-center py-20 text-center">
-          <span className="text-6xl">📭</span>
-          <h3 className="mt-4 text-lg font-medium text-gray-900 dark:text-white">No events yet</h3>
-          <p className="mt-1 text-gray-400">
-            Check back soon for trending hot events, or visit the admin panel to add some.
-          </p>
-        </div>
-      )}
-
-      <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {events.map((event) => (
-          <EventCard key={event.id} event={event} />
+      {/* Sport Tabs */}
+      <div className="flex gap-1.5 overflow-x-auto pb-2 mb-6 no-scrollbar">
+        {SPORT_TABS.map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setSportType(tab.key)}
+            className={`shrink-0 rounded-full px-4 py-1.5 text-xs font-medium transition-colors ${
+              sportType === tab.key
+                ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30"
+                : "bg-white/5 text-gray-400 border border-white/10 hover:text-white hover:bg-white/10"
+            }`}
+          >
+            {tab.label}
+          </button>
         ))}
       </div>
+
+      {/* Event Grid */}
+      {loading ? (
+        <div className="grid grid-cols-2 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="rounded-2xl bg-gray-900/60 animate-pulse">
+              <div className="aspect-[4/3] bg-gray-800 rounded-t-2xl" />
+              <div className="p-4 space-y-2">
+                <div className="h-3 bg-gray-800 rounded w-1/2" />
+                <div className="h-4 bg-gray-800 rounded w-full" />
+                <div className="h-3 bg-gray-800 rounded w-3/4" />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : error ? (
+        <div className="text-center py-12">
+          <p className="text-red-400 text-sm">{error}</p>
+          <button
+            onClick={() => loadEvents(sportType)}
+            className="mt-3 text-sm text-cyan-400 hover:underline"
+          >
+            Try again
+          </button>
+        </div>
+      ) : events.length === 0 ? (
+        <div className="text-center py-16">
+          <span className="text-5xl">🏟️</span>
+          <p className="mt-4 text-gray-400 text-sm">No events found.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 gap-4">
+          {events.map((event) => (
+            <EventCard key={event.id} event={event} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

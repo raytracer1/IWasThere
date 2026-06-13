@@ -1,147 +1,118 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSession } from "@/lib/useAppSession";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import { Button } from "@/components/ui/button";
-import { fetchHistory } from "@/lib/api";
-import { formatDate, formatRelativeTime } from "@/lib/utils";
-import type { JobWithEvent } from "@/lib/types";
+import { useSession } from "@/lib/useAppSession";
+import { fetchGenerations } from "@/lib/api";
+import type { Generation } from "@/lib/types";
 
 export default function HistoryPage() {
-  const { status } = useSession();
   const router = useRouter();
-  const [jobs, setJobs] = useState<JobWithEvent[]>([]);
-  const [total, setTotal] = useState(0);
+  const { data: session } = useSession();
+  const [generations, setGenerations] = useState<Generation[]>([]);
   const [loading, setLoading] = useState(true);
-  const [page, setPage] = useState(1);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/login");
-      return;
+    if (!session?.user) return;
+    async function load() {
+      try {
+        const res = await fetchGenerations();
+        setGenerations(res.data);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "Failed to load");
+      } finally {
+        setLoading(false);
+      }
     }
-    if (status !== "authenticated") return;
+    load();
+  }, [session?.user]);
 
-    setLoading(true);
-    fetchHistory(page)
-      .then((res) => {
-        if (res.success) {
-          setJobs(res.data);
-          setTotal(res.total);
-        }
-      })
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, [page, status, router]);
-
-  if (status === "loading" || loading) {
+  if (!session?.user) {
     return (
-      <div className="mx-auto max-w-4xl px-4 py-8">
-        <Skeleton className="mb-8 h-8 w-48" />
-        <div className="space-y-4">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton key={i} className="h-24 w-full rounded-xl" />
-          ))}
-        </div>
+      <div className="mx-auto max-w-lg px-4 py-16 text-center">
+        <p className="text-gray-400">Sign in to view your history.</p>
+        <a href="/login" className="mt-3 inline-block text-sm text-cyan-400 hover:underline">
+          Sign in
+        </a>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8">
-      <h1 className="mb-2 text-3xl font-bold text-gray-900 dark:text-white">Your History</h1>
-      <p className="mb-8 text-gray-500 dark:text-gray-400">
-        {total} generation{total !== 1 ? "s" : ""} total
-      </p>
+    <div className="mx-auto max-w-lg px-4 py-6">
+      <h1 className="text-xl font-bold text-white mb-6">📜 Your History</h1>
 
-      {jobs.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center">
-          <span className="text-6xl">📼</span>
-          <h3 className="mt-4 text-lg font-medium text-white">No generations yet</h3>
-          <p className="mt-1 text-gray-400">
-            Go create your first AI video!
-          </p>
-          <Button className="mt-4" onClick={() => router.push("/")}>
-            Browse Events
-          </Button>
+      {loading ? (
+        <div className="space-y-3">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="h-24 rounded-xl bg-gray-900/60 animate-pulse" />
+          ))}
+        </div>
+      ) : error ? (
+        <div className="text-center py-12">
+          <p className="text-red-400 text-sm">{error}</p>
+        </div>
+      ) : generations.length === 0 ? (
+        <div className="text-center py-16">
+          <span className="text-5xl">⚡</span>
+          <p className="mt-4 text-gray-400 text-sm">No generations yet.</p>
+          <button onClick={() => router.push("/")} className="mt-3 text-sm text-cyan-400 hover:underline">
+            Browse events
+          </button>
         </div>
       ) : (
-        <div className="space-y-4">
-          {jobs.map((job) => (
-            <Link key={job.id} href={`/result/${job.id}`}>
-              <Card className="group flex items-center gap-4 p-4 transition-all hover:border-purple-500/50">
-                {/* Thumbnail */}
-                <div className="h-16 w-28 flex-shrink-0 overflow-hidden rounded-lg bg-gray-800">
-                  {job.eventThumbnail ? (
-                    <img
-                      src={job.eventThumbnail}
-                      alt={job.eventTitle}
-                      className="h-full w-full object-cover"
-                    />
-                  ) : (
-                    <div className="flex h-full items-center justify-center text-xl">🎬</div>
-                  )}
-                </div>
-
-                {/* Info */}
-                <div className="flex-1 min-w-0">
-                  <h3 className="font-medium text-white line-clamp-1">
-                    {job.eventTitle ?? "Unknown Event"}
-                  </h3>
-                  <div className="mt-1 flex items-center gap-2">
-                    <Badge variant={job.status}>{job.status}</Badge>
-                    {job.eventCategory && (
-                      <Badge variant={job.eventCategory}>{job.eventCategory}</Badge>
-                    )}
+        <div className="space-y-3">
+          {generations.map((gen) => (
+            <button
+              key={gen.id}
+              onClick={() => router.push(`/result/${gen.id}`)}
+              className="w-full text-left rounded-xl border border-white/10 bg-gray-900/60 p-4 hover:border-cyan-500/30 transition-colors"
+            >
+              <div className="flex items-center gap-4">
+                {gen.outputImageUrl ? (
+                  <img
+                    src={gen.outputImageUrl}
+                    alt=""
+                    className="w-16 h-16 rounded-lg object-cover shrink-0"
+                  />
+                ) : (
+                  <div className="w-16 h-16 rounded-lg bg-gray-800 flex items-center justify-center shrink-0">
+                    ⚡
                   </div>
-                </div>
-
-                {/* Time */}
-                <div className="flex-shrink-0 text-right">
-                  <p className="text-sm text-gray-400">
-                    {formatRelativeTime(job.createdAt)}
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="text-sm font-medium text-white truncate">
+                    {gen.eventTitle || "Historic Moment"}
                   </p>
-                  <p className="text-xs text-gray-500">
-                    {formatDate(job.createdAt)}
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {gen.eventYear && `${gen.eventYear} · `}
+                    <span className={`inline-flex items-center gap-1 ${
+                      gen.status === "completed" ? "text-green-400" :
+                      gen.status === "failed" ? "text-red-400" :
+                      "text-yellow-400"
+                    }`}>
+                      {gen.status === "completed" ? "✅" : gen.status === "failed" ? "❌" : "⏳"}
+                      {gen.status}
+                    </span>
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {formatTime(gen.createdAt)}
                   </p>
                 </div>
-
-                <span className="flex-shrink-0 text-gray-600 group-hover:text-purple-400 transition-colors">
-                  →
-                </span>
-              </Card>
-            </Link>
+              </div>
+            </button>
           ))}
-
-          {/* Pagination */}
-          {total > 20 && (
-            <div className="flex items-center justify-center gap-4 pt-4">
-              <Button
-                variant="outline"
-                disabled={page <= 1}
-                onClick={() => setPage(page - 1)}
-              >
-                Previous
-              </Button>
-              <span className="text-sm text-gray-400">
-                Page {page} of {Math.ceil(total / 20)}
-              </span>
-              <Button
-                variant="outline"
-                disabled={page >= Math.ceil(total / 20)}
-                onClick={() => setPage(page + 1)}
-              >
-                Next
-              </Button>
-            </div>
-          )}
         </div>
       )}
     </div>
   );
+}
+
+function formatTime(ts: number): string {
+  const diff = (Date.now() / 1000) - ts;
+  if (diff < 60) return "Just now";
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+  return `${Math.floor(diff / 86400)}d ago`;
 }
