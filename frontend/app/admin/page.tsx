@@ -35,7 +35,7 @@ export default function AdminPage() {
     id: "", title: "", year: new Date().getFullYear(), location: "",
     sportType: "football" as SportType, description: "", keyMoment: "",
     eraClothing: "", imagePrompt: "", captionTemplates: "[]", hashtags: "",
-    viralScore: 5.0, status: "active" as "active" | "draft",
+    viralScore: 5.0, thumbnailUrl: "", status: "active" as "active" | "draft",
   });
 
   const loadEvents = useCallback(async () => {
