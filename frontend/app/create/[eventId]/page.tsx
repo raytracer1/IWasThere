@@ -2,8 +2,8 @@
 
 import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
-import { fetchEvent, uploadSelfie, triggerGenerate } from "@/lib/api";
-import type { Event, UploadResponse } from "@/lib/types";
+import { fetchEvent, triggerGenerate } from "@/lib/api";
+import type { Event } from "@/lib/types";
 import { UploadSelfie } from "@/components/UploadSelfie";
 
 export default function CreatePage({
@@ -17,10 +17,10 @@ export default function CreatePage({
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [selfieFile, setSelfieFile] = useState<File | null>(null);
-  const [uploading, setUploading] = useState(false);
+  const [imageBase64, setImageBase64] = useState<string | null>(null);
+  const [selfiePreview, setSelfiePreview] = useState<string | null>(null);
+  const [converting, setConverting] = useState(false);
   const [generating, setGenerating] = useState(false);
-  const [uploadResult, setUploadResult] = useState<UploadResponse | null>(null);
   const [genError, setGenError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -39,28 +39,29 @@ export default function CreatePage({
   }, [eventId]);
 
   const handleSelfieUpload = async (file: File) => {
-    setSelfieFile(file);
-    setUploading(true);
+    setConverting(true);
     setGenError(null);
-    try {
-      const res = await uploadSelfie(file);
-      if (res.data) setUploadResult(res.data);
-    } catch (err) {
-      setGenError(err instanceof Error ? err.message : "Upload failed");
-    } finally {
-      setUploading(false);
-    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result as string;
+      setSelfiePreview(result);
+      // Strip the data:image/...;base64, prefix for cleaner transport
+      setImageBase64(result);
+      setConverting(false);
+    };
+    reader.onerror = () => {
+      setGenError("Failed to read image");
+      setConverting(false);
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleGenerate = async () => {
-    if (!uploadResult) return;
+    if (!imageBase64) return;
     setGenerating(true);
     setGenError(null);
     try {
-      const res = await triggerGenerate({
-        eventId,
-        imageKey: uploadResult.key,
-      });
+      const res = await triggerGenerate({ eventId, imageBase64 });
       if (res.data?.generationId) {
         router.push(`/result/${res.data.generationId}`);
       }
@@ -123,10 +124,16 @@ export default function CreatePage({
         </h2>
         <UploadSelfie
           onUpload={handleSelfieUpload}
-          uploading={uploading}
+          uploading={converting}
         />
-        {uploadResult && !uploading && (
+        {selfiePreview && !converting && (
           <p className="mt-2 text-xs text-green-400">✅ Photo ready</p>
+        )}
+        {converting && (
+          <div className="flex items-center justify-center gap-2 mt-2 text-sm text-cyan-400">
+            <span className="animate-spin">⏳</span>
+            Reading photo...
+          </div>
         )}
       </div>
 
@@ -140,9 +147,9 @@ export default function CreatePage({
       {/* Generate Button */}
       <button
         onClick={handleGenerate}
-        disabled={!uploadResult || generating}
+        disabled={!imageBase64 || generating}
         className={`w-full rounded-xl py-3.5 text-sm font-bold transition-all ${
-          uploadResult && !generating
+          imageBase64 && !generating
             ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white hover:opacity-90 shadow-lg shadow-cyan-500/25"
             : "bg-gray-800 text-gray-500 cursor-not-allowed"
         }`}
@@ -152,7 +159,7 @@ export default function CreatePage({
             <span className="animate-spin">⏳</span>
             Generating...
           </span>
-        ) : uploadResult ? (
+        ) : imageBase64 ? (
           `⚡ Step Into ${event.year}`
         ) : (
           "Upload a selfie to continue"

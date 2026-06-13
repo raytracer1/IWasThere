@@ -85,7 +85,7 @@ export interface PaginatedResponse<T> {
 // ─── Request Bodies ─────────────────────────────────────
 export interface GenerateRequest {
   eventId: string;
-  imageKey: string;
+  imageBase64: string;
 }
 
 // ─── Upload Response ────────────────────────────────────
