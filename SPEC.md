@@ -1,340 +1,392 @@
-# HotInsert AI - Technical Specification (spec.md)
+# IfIWasThere — Technical Specification
 
-## Project Overview
-**Product Name**: HotInsert AI (Web Prototype)
-**Version**: 1.0 Prototype
+## Product Overview
+
+**Product Name**: IfIWasThere
+**Tagline**: "Step into historic sports moments"
+**Version**: 1.0 MVP
 **Date**: June 2026
-**Description**: A web application that allows users to insert their selfie into trending hot event videos (World Cup, concerts, Oscars, news, etc.) using AI face/person swap via fal.ai pixverse/swap API.
 
-**Core Flow**:
-1. Login with Google account (required).
-2. Browse trending hot events with reference videos.
-3. Upload selfie photo.
-4. Call fal.ai swap API to generate output video (async, poll for result).
-5. Preview, download, and share the result.
-6. View generation history.
+**Description**: An AI-powered sports imagination generator. Users select a historic sports moment, upload a selfie, and get a photorealistic image of themselves inside that scene — plus viral captions for sharing.
 
-**Deployment Goal**: Fast, low-cost, globally distributed serverless architecture.
+**This is**: A sports imagination generator / viral content creation tool / POV experience engine
+**This is NOT**: A photo editor / a video editor / a real attendance simulator
+
+Never imply the user actually attended the event. Frame everything as "What if / POV / imagination".
+
+**Core Flow** (3 clicks):
+1. Browse historic sports moments (sorted by viral potential)
+2. Upload selfie + tap "Step Into History"
+3. Get AI image + viral captions + share to social
+
+---
 
 ## Tech Stack
 
 ### Frontend
-- **Framework**: Next.js 15 (latest, App Router, React Server Components)
-- **Language**: TypeScript
-- **Styling**: Tailwind CSS + shadcn/ui
-- **Authentication**: NextAuth.js v5 (Auth.js) with Google OAuth provider
-- **Deployment**: Vercel (automatic previews, edge functions, analytics)
-- **Features**: Responsive design, PWA-ready, optimized for mobile
+- **Framework**: Next.js 16 (App Router, React 19)
+- **Language**: TypeScript 5
+- **Styling**: Tailwind CSS v4, custom dark theme
+- **Authentication**: NextAuth.js v5 (Auth.js) with Google OAuth
+- **State Management**: Zustand, React hooks
+- **Deployment**: Vercel
 
 ### Backend
 - **Runtime**: Cloudflare Workers
-- **Language**: TypeScript (with wrangler)
-- **Deployment**: Cloudflare (global edge network, low latency)
-- **API Routes**: REST endpoints for events, uploads, swap jobs, admin operations
-- **Communication**: Frontend (Vercel) calls Cloudflare Workers directly — no Vercel API proxy layer
+- **Framework**: Hono
+- **Language**: TypeScript
+- **Deployment**: Cloudflare edge network
 
 ### Storage & Data
 - **Structured Data**: Cloudflare D1 (SQLite-compatible)
-  - Tables: `users`, `events`, `jobs`, `sessions` (NextAuth adapter)
-  - Migrations managed via `wrangler d1 migrations`
+  - Tables: `users`, `events`, `generations`
 - **File Storage**: Cloudflare R2
-  - `hot-events/` — reference videos and thumbnails (uploaded by admin)
   - `uploads/` — user selfie images
-  - `outputs/` — generated swap videos from fal.ai
-  - Signed URLs with short expiration for secure access
-- **Caching**: Cloudflare Cache + KV (for session tokens, rate limit counters)
+  - `outputs/` — AI-generated images
+  - Signed URLs with 15-minute expiration for secure access
 
 ### AI Integration
-- **Primary Model**: [fal.ai pixverse/swap](https://fal.ai/models/fal-ai/pixverse/swap)
-- **Parameters**:
-  - `video_url`: R2 signed URL of reference hot event video
-  - `image_url`: R2 signed URL of user selfie
-  - `mode`: `"person"`
-  - `keyframe_id`: 1 (configurable)
-  - `resolution`: `"540p"` (balance quality/cost)
-- **Execution**: Async — submit job via fal.ai API, poll `GET /fal/queue/:requestId` until status is `COMPLETED`
-- **Response**: A direct video URL to the generated output
-- **Error Handling**: Phase 1 — display failure to user, no automatic retry
-- **Cost**: ~$0.50 per generation (rate limit per user daily)
+- **Provider**: Agnes AI
+- **Model**: `agnes-image-2.0-flash` (image-to-image mode)
+- **Endpoint**: `POST https://apihub.agnes-ai.com/v1/images/generations`
+- **Protocol**: OpenAI-compatible
+- **Pricing**: Free (unlimited)
+- **Execution**: Async (submit → poll pattern, for UX and resilience)
 
-### Other Services
-- **Admin Panel**: Built into the same Next.js app (`/admin`) for managing hot events
-  - Admin role checked via D1 `users` table `role` field
-  - Upload reference videos + thumbnails to R2, create event records in D1
-- **Analytics**: Vercel Analytics + Cloudflare Web Analytics
-- **Monitoring**: Cloudflare Logs + Sentry (optional)
-- **Watermark**: Not implemented in Phase 1
+### Auth
+- **Method**: HS256 JWT (signed with AUTH_SECRET)
+- **Provider**: Google OAuth via NextAuth
+- **Storage**: JWT in HTTP-only cookies (NextAuth session)
+- **Admin**: Determined by ADMIN_EMAILS env var
 
-## Architecture Diagram (Text)
+---
+
+## Architecture
 
 ```
-┌─────────────────────────────────────────────────────────┐
-│  User Browser                                           │
-│  (localhost:3000 / Vercel)                              │
-└──────────┬──────────────────────────────────────────────┘
-           │ HTTPS
-           ▼
-┌──────────────────────────────────────────────────────────┐
-│  Next.js 15 (Vercel)                                     │
-│  - SSR/SSG pages                                         │
-│  - NextAuth.js (Google OAuth)                            │
-│  - Client components call Workers directly via fetch()    │
-└──────────┬──────────────────────────────────────────────┘
-           │ HTTPS (direct from browser or server)
-           ▼
-┌──────────────────────────────────────────────────────────┐
-│  Cloudflare Workers API                                  │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌────────────┐  │
-│  │ /events  │ │ /upload  │ │  /swap   │ │ /admin     │  │
-│  │ GET      │ │ POST     │ │ POST     │ │ CRUD       │  │
-│  └────┬─────┘ └────┬─────┘ └────┬─────┘ └─────┬──────┘  │
-│       │            │            │              │         │
-│       ▼            ▼            ▼              ▼         │
-│  ┌────────┐  ┌─────────┐  ┌──────────┐  ┌──────────┐   │
-│  │  D1    │  │   R2    │  │ fal.ai   │  │  Auth    │   │
-│  │ (SQL)  │  │ (Files) │  │ (Async)  │  │ (JWT)    │   │
-│  └────────┘  └─────────┘  └──────────┘  └──────────┘   │
-└──────────────────────────────────────────────────────────┘
+User Browser (Mobile-First)
+    │
+    ▼
+Next.js 16 (Vercel)
+├── SSR/SSG pages
+├── NextAuth.js (Google OAuth)
+└── Client components → fetch() Workers API
+    │
+    ▼
+Cloudflare Workers API (Hono)
+├── /events         → D1 events table
+├── /upload         → R2 uploads/
+├── /generate       → Agnes AI + D1 generations
+├── /generation/:id → Poll status
+├── /generations    → User history
+└── /admin/events   → Admin CRUD
+    │
+    ├── D1 (SQLite)  — users, events, generations
+    ├── R2 (Object)  — uploads/, outputs/
+    └── Agnes AI     — Image generation (img2img)
 ```
 
-## Project Structure
+---
 
-```
-/hotinsert-ai
-├── frontend/                    # Next.js app (Vercel)
-│   ├── app/
-│   │   ├── page.tsx             # Home / Trending events
-│   │   ├── layout.tsx           # Root layout + AuthProvider
-│   │   ├── create/[eventId]/    # Upload selfie + Generate
-│   │   ├── result/[jobId]/      # Preview + Download + Share
-│   │   ├── history/             # User's generation history
-│   │   ├── admin/               # Admin panel (event CRUD, upload)
-│   │   ├── api/auth/            # NextAuth API route ([...nextauth])
-│   │   └── login/               # Login page
-│   ├── components/
-│   │   ├── ui/                  # shadcn/ui components
-│   │   ├── EventCard.tsx
-│   │   ├── UploadSelfie.tsx
-│   │   ├── VideoPlayer.tsx
-│   │   ├── JobStatus.tsx        # Polling UI for async generation
-│   │   └── Navbar.tsx
-│   ├── lib/
-│   │   ├── auth.ts              # NextAuth config
-│   │   ├── api.ts               # Worker API client (fetch wrapper)
-│   │   └── utils.ts
-│   └── public/
-│
-├── backend/                     # Cloudflare Workers
-│   ├── src/
-│   │   ├── index.ts             # Router entry point
-│   │   ├── routes/
-│   │   │   ├── events.ts        # GET /events, admin CRUD
-│   │   │   ├── upload.ts        # POST /upload (R2 presigned)
-│   │   │   ├── swap.ts          # POST /swap (fal.ai trigger)
-│   │   │   ├── job.ts           # GET /job/:id (poll status)
-│   │   │   ├── admin.ts         # Admin-only event management
-│   │   │   └── history.ts       # GET /history (user's jobs)
-│   │   ├── middleware/
-│   │   │   └── auth.ts          # JWT verification, admin check
-│   │   └── utils/
-│   │       ├── r2.ts            # R2 helpers (signed URLs)
-│   │       ├── d1.ts            # D1 query helpers
-│   │       └── fal.ts           # fal.ai API client
-│   ├── migrations/              # D1 SQL migrations
-│   ├── wrangler.toml
-│   └── package.json
-│
-├── shared/                      # Shared TypeScript types
-│   ├── types.ts                 # Event, Job, User, API responses
-│   └── constants.ts             # Status enums, limits
-│
-├── docs/
-│   └── spec.md                  # This file
-└── README.md
-```
+## Database Schema (D1)
 
-## Key Features (Prototype Scope)
-
-### Frontend Pages
-| Route | Description | Auth Required |
-|-------|-------------|:---:|
-| `/` | Trending events grid with cards, search/filter by category | Yes |
-| `/login` | Google OAuth sign-in page | No |
-| `/create/[eventId]` | Upload selfie + preview + Generate button | Yes |
-| `/result/[jobId]` | Poll job status, preview result video, download/share | Yes |
-| `/history` | User's past generations, sorted by date | Yes |
-| `/admin` | Admin panel — CRUD hot events, upload reference videos | Yes (Admin) |
-
-### Backend Endpoints (Workers)
-| Method | Path | Description | Auth |
-|--------|------|-------------|:---:|
-| `GET` | `/events` | List trending hot events (paginated) | Yes |
-| `GET` | `/events/:id` | Get single event detail | Yes |
-| `POST` | `/upload` | Upload selfie to R2, return signed URL | Yes |
-| `POST` | `/swap` | Trigger fal.ai swap job, return job ID | Yes |
-| `GET` | `/job/:id` | Poll job status (queued/processing/completed/failed) | Yes |
-| `GET` | `/history` | List user's generation jobs | Yes |
-| `POST` | `/admin/events` | Create new event (upload video to R2) | Admin |
-| `PUT` | `/admin/events/:id` | Update event metadata | Admin |
-| `DELETE` | `/admin/events/:id` | Delete event + associated R2 files | Admin |
-| `GET` | `/admin/events` | List all events (including drafts) | Admin |
-
-### D1 Database Schema
 ```sql
--- Users (synced from NextAuth on first login)
+-- Users (synced from NextAuth on first login, RETAINED from HotInsert)
 CREATE TABLE users (
-  id          TEXT PRIMARY KEY,       -- NextAuth user ID
+  id          TEXT PRIMARY KEY,
   email       TEXT NOT NULL UNIQUE,
   name        TEXT,
-  image       TEXT,                   -- Google avatar URL
+  image       TEXT,
   role        TEXT DEFAULT 'user',    -- 'user' | 'admin'
+  credits     REAL DEFAULT 1.0,
   created_at  INTEGER DEFAULT (unixepoch())
 );
 
--- Hot Events
+-- Historic Sports Events
 CREATE TABLE events (
-  id          TEXT PRIMARY KEY,
-  title       TEXT NOT NULL,
-  category    TEXT NOT NULL,          -- 'sports' | 'music' | 'movies' | 'news' | 'other'
-  description TEXT,
-  video_url   TEXT NOT NULL,          -- R2 key or signed URL
-  thumbnail_url TEXT,                 -- R2 key or signed URL
-  duration    INTEGER,                -- seconds
-  status      TEXT DEFAULT 'active',  -- 'active' | 'draft' | 'archived'
-  created_by  TEXT REFERENCES users(id),
-  created_at  INTEGER DEFAULT (unixepoch())
+  id                TEXT PRIMARY KEY,
+  title             TEXT NOT NULL,        -- e.g. "1998 World Cup Final: France vs Brazil"
+  year              INTEGER NOT NULL,
+  location          TEXT,                 -- e.g. "Stade de France, Paris"
+  sport_type        TEXT NOT NULL,        -- football, basketball, tennis, athletics, cricket, boxing, american_football, other
+  description       TEXT,
+  key_moment        TEXT,                 -- e.g. "Zidane's first header in the 27th minute"
+  era_clothing      TEXT,                 -- e.g. "late 90s casual wear, France jerseys"
+  image_prompt      TEXT NOT NULL,        -- img2img prompt template with placeholders
+  caption_templates TEXT,                 -- JSON array of 3-5 caption strings
+  hashtags          TEXT,                 -- Space-separated hashtags
+  viral_score       REAL NOT NULL DEFAULT 5.0,  -- 1.0-10.0
+  thumbnail_url     TEXT,                 -- R2 key for event cover image
+  status            TEXT NOT NULL DEFAULT 'active',  -- active, draft, archived
+  created_at        INTEGER NOT NULL DEFAULT (unixepoch())
 );
 
--- Swap Jobs
-CREATE TABLE jobs (
-  id            TEXT PRIMARY KEY,
-  user_id       TEXT NOT NULL REFERENCES users(id),
-  event_id      TEXT NOT NULL REFERENCES events(id),
-  fal_request_id TEXT,                -- fal.ai queue request ID
-  input_image   TEXT NOT NULL,        -- R2 key of user selfie
-  output_video  TEXT,                 -- R2 key or fal.ai result URL
-  status        TEXT DEFAULT 'queued',-- 'queued' | 'processing' | 'completed' | 'failed'
-  error_message TEXT,
-  created_at    INTEGER DEFAULT (unixepoch()),
-  completed_at  INTEGER
-);
-
--- Rate Limiting
-CREATE TABLE rate_limits (
-  user_id    TEXT NOT NULL REFERENCES users(id),
-  date       TEXT NOT NULL,           -- 'YYYY-MM-DD'
-  count      INTEGER DEFAULT 0,
-  PRIMARY KEY (user_id, date)
+-- AI Generations
+CREATE TABLE generations (
+  id              TEXT PRIMARY KEY,
+  user_id         TEXT NOT NULL REFERENCES users(id),
+  event_id        TEXT NOT NULL REFERENCES events(id),
+  input_image     TEXT NOT NULL,          -- R2 key of user selfie
+  output_image    TEXT,                   -- R2 key of generated image
+  agnes_job_id    TEXT,                   -- Agnes AI request ID for tracking
+  status          TEXT NOT NULL DEFAULT 'queued'  -- queued, processing, completed, failed,
+  error_message   TEXT,
+  captions        TEXT,                   -- JSON array of generated captions
+  selected_caption TEXT,                  -- User's chosen caption
+  created_at      INTEGER NOT NULL DEFAULT (unixepoch()),
+  completed_at    INTEGER
 );
 ```
 
-### Data Models (shared/types.ts)
+---
+
+## Data Models (TypeScript)
+
 ```typescript
+type SportType = 'football' | 'basketball' | 'tennis' | 'athletics' | 'cricket' | 'boxing' | 'american_football' | 'other';
+type GenerationStatus = 'queued' | 'processing' | 'completed' | 'failed';
+
 interface Event {
   id: string;
   title: string;
-  category: 'sports' | 'music' | 'movies' | 'news' | 'other';
+  year: number;
+  location?: string;
+  sportType: SportType;
   description?: string;
-  videoUrl: string;
+  keyMoment?: string;
+  eraClothing?: string;
+  imagePrompt: string;
+  captionTemplates: string;  // JSON string
+  hashtags: string;
+  viralScore: number;        // 1-10
   thumbnailUrl?: string;
-  duration?: number;
   status: 'active' | 'draft' | 'archived';
   createdAt: number;
 }
 
-interface Job {
+interface Generation {
   id: string;
   userId: string;
   eventId: string;
-  falRequestId?: string;
-  inputImage: string;
-  outputVideo?: string;
-  status: 'queued' | 'processing' | 'completed' | 'failed';
+  inputImage: string;        // R2 key
+  outputImage?: string;      // R2 key
+  agnesJobId?: string;
+  status: GenerationStatus;
   errorMessage?: string;
+  captions?: string[];       // parsed from JSON
+  selectedCaption?: string;
   createdAt: number;
   completedAt?: number;
-}
-
-interface User {
-  id: string;
-  email: string;
-  name?: string;
-  image?: string;
-  role: 'user' | 'admin';
+  // Enriched fields (from joins / API)
+  event?: Event;
+  inputImageUrl?: string;    // signed URL
+  outputImageUrl?: string;   // signed URL
 }
 ```
 
-## Non-Functional Requirements
-- **Performance**: Page load < 1.5s, generation < 60s (async, user sees polling UI)
-- **Cost Control**: ~$0.50 per generation; daily limit of 10 generations per user
-- **Security**:
-  - NextAuth.js JWT session tokens, verified on Workers via shared secret
-  - Admin-only routes protected by `role` check in D1
-  - Signed URLs with 15-minute expiration for R2 access
-  - Rate limiting on Workers (per-user, per-IP fallback)
-- **Compliance**: Privacy policy page, terms of service
-- **Scalability**: Cloudflare edge handles global traffic; D1 scales reads via replication
+---
 
-## CORS Configuration
-- Next.js (Vercel) → Cloudflare Workers: Workers must allow `Access-Control-Allow-Origin` for the Vercel domain and `http://localhost:3000` (dev)
-- NextAuth callback URL: Vercel domain + `/api/auth/callback/google`
+## API Endpoints
 
-## Development & Deployment Workflow
+### Public
 
-### Local Development
-```bash
-# Frontend
-cd frontend
-pnpm install
-pnpm dev                        # http://localhost:3000
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/events` | List active events, sorted by `viral_score` DESC. Query: `?sportType=` filter, `?page=`, `?pageSize=`. Returns signed thumbnail URLs |
+| GET | `/events/:id` | Single event detail |
 
-# Backend
-cd backend
-pnpm install
-wrangler dev                    # http://localhost:8787
+### Authenticated
 
-# D1 Local
-wrangler d1 execute hotinsert-db --local --file=./migrations/001_init.sql
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/upload` | Upload selfie to R2 (multipart/form-data). Returns `{ key, signedUrl }` |
+| POST | `/generate` | Trigger generation. Body: `{ eventId, imageKey }`. Returns `{ generationId, status }` |
+| GET | `/generation/:id` | Poll generation status. Returns full generation with signed URLs + captions |
+| GET | `/generations` | User's generation history, paginated. Query: `?page=`, `?pageSize=` |
+| GET | `/me` | Current user profile |
+
+### Admin
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/admin/events` | List all events (including drafts) |
+| POST | `/admin/events` | Create event (multipart: thumbnail + JSON metadata) |
+| PUT | `/admin/events/:id` | Update event |
+| DELETE | `/admin/events/:id` | Delete event + associated R2 files |
+
+---
+
+## AI Pipeline
+
+```
+User selfie (R2 signed URL) + Event template
+        │
+        ▼
+PromptBuilder.compile(event)
+  → imagePrompt (img2img editing instruction)
+  → captions (3-5 filled templates)
+  → hashtags
+        │
+        ▼
+Agnes AI — agnes-image-2.0-flash
+  POST /v1/images/generations
+  Body: {
+    model: "agnes-image-2.0-flash",
+    prompt: "<editing instruction>",
+    size: "1024x768",
+    extra_body: {
+      tags: ["img2img"],
+      image: ["<selfie signed URL>"],
+      response_format: "url"
+    }
+  }
+        │
+        ▼
+Generated image URL → Download → Upload to R2 outputs/
+        │
+        ▼
+Return signed R2 URL + captions to frontend
 ```
 
-### Deployment
-- **Frontend**: `vercel deploy` or Git integration (auto-deploy on push to main)
-- **Backend**: `wrangler deploy`
-- **D1**: `wrangler d1 execute hotinsert-db --file=./migrations/001_init.sql`
-- **R2**: Create bucket via `wrangler r2 bucket create hotinsert-assets`
+### Prompt Template (Example — 1998 World Cup Final)
 
-### Environment Variables
+```
+"Place this person naturally into the crowd at Stade de France during the
+1998 World Cup Final. The person is wearing a late 90s France home jersey,
+arms raised in the air, face showing pure euphoria, mouth open cheering.
+
+Zidane just scored his first header in the 27th minute. The crowd is
+exploding — people jumping, hugging strangers, French flags waving.
+Confetti and paper streamers in the air. Stadium floodlights blazing down.
+Night atmosphere, dramatic shadows.
+
+The person should look like they are genuinely part of this crowd — same
+lighting, same color temperature, same emotional intensity.
+
+Visual style: Ultra-realistic DSLR sports photograph, ESPN broadcast
+aesthetic, shallow depth of field, cinematic framing, 8K, Canon 35mm.
+
+Keep the person's facial features and identity intact. Do NOT add text,
+logos, or watermarks. Do NOT make it look like a collage or illustration."
+```
+
+---
+
+## Frontend Routes
+
+| Route | Description | Auth |
+|-------|-------------|:---:|
+| `/` | Home — Hero + sport tabs + event grid (viral score sorted) | No |
+| `/login` | Google OAuth sign-in | No |
+| `/create/[eventId]` | Event detail + selfie upload + "Step Into History" button | No* |
+| `/result/[generationId]` | Generation progress + image display + caption picker + share | Yes |
+| `/history` | User's generation history | Yes |
+| `/admin` | Event management (CRUD) | Admin |
+
+*Browse is public; generating requires login (redirects to `/login`)
+
+### Click Flow (3 clicks)
+1. **Home** (`/`) — Browse events by sport, tap one
+2. **Create** (`/create/[eventId]`) — Upload selfie, tap "Step Into History"
+3. **Result** (`/result/[id]`) — See image, pick caption, share
+
+---
+
+## Seed Events (15 events, by viral_score)
+
+| # | Event | Sport | Year | Viral |
+|---|-------|-------|------|-------|
+| 1 | World Cup Final: Argentina vs France (Messi's crowning) | Football | 2022 | 9.5 |
+| 2 | World Cup Semi: Germany 7-1 Brazil | Football | 2014 | 9.0 |
+| 3 | World Cup Final: France vs Brazil (Zidane headers) | Football | 1998 | 8.5 |
+| 4 | NBA Finals G7: LeBron's Block | Basketball | 2016 | 8.5 |
+| 5 | UCL Final: Miracle of Istanbul | Football | 2005 | 8.0 |
+| 6 | World Cup: Maradona "Goal of the Century" | Football | 1986 | 8.0 |
+| 7 | World Cup Final: Iniesta 116th min winner | Football | 2010 | 8.0 |
+| 8 | Beijing 2008: Usain Bolt 100m WR | Athletics | 2008 | 7.5 |
+| 9 | UCL Final: Man Utd stoppage-time comeback | Football | 1999 | 7.5 |
+| 10 | Super Bowl XLII: Helmet Catch | Am. Football | 2008 | 7.5 |
+| 11 | Wimbledon Final: Federer vs Nadal | Tennis | 2009 | 7.0 |
+| 12 | Barcelona 1992: Dream Team | Basketball | 1992 | 7.0 |
+| 13 | Athens 2004: Liu Xiang 110m Hurdles Gold | Athletics | 2004 | 7.0 |
+| 14 | Cricket World Cup Final (Super Over) | Cricket | 2019 | 6.0 |
+| 15 | World Cup Final: Germany vs Argentina (Götze) | Football | 2014 | 7.0 |
+
+---
+
+## Environment Variables
+
 ```
 # Frontend (.env.local)
 AUTH_GOOGLE_ID=xxx
 AUTH_GOOGLE_SECRET=xxx
 AUTH_SECRET=xxx
-NEXT_PUBLIC_WORKER_URL=https://api.hotinsert.workers.dev
+NEXT_PUBLIC_WORKER_URL=https://api.example.workers.dev
 
-# Backend (wrangler.toml secrets)
-FAL_API_KEY=xxx
-JWT_SECRET=xxx              # Shared secret for verifying NextAuth tokens
-ADMIN_EMAILS=xxx@gmail.com  # Comma-separated list of admin Google emails
+# Backend (wrangler.toml / secrets)
+AGNES_API_KEY=xxx
+AUTH_SECRET=xxx
+ADMIN_EMAILS=xxx@gmail.com
+ENVIRONMENT=development
 ```
 
-## Risks & Notes
-- **D1**: SQLite-compatible with some limitations (no FK enforcement in beta, row size limits). Suitable for prototype scale; migrations are straightforward.
-- **fal.ai costs**: Implement daily limit (10/user/day) and total monthly budget cap. Monitor via Cloudflare Analytics.
-- **Hot event videos**: Manually curated + uploaded by admin. If scraping is added later, legal review required for copyright.
-- **CORS**: Properly configure between Vercel domain and Cloudflare Workers for both auth cookies and API calls.
-- **NextAuth + Workers**: Workers verify JWT tokens issued by NextAuth. Shared `AUTH_SECRET` must be identical on both sides.
+---
 
-## Next Steps (Updated)
-1. Initialize Next.js project with NextAuth + Google OAuth
-2. Set up Cloudflare Worker + D1 database + R2 bucket
-3. Implement D1 schema migrations
-4. Build `/admin` panel for event management
-5. Implement upload + fal.ai async integration with polling
-6. Seed initial hot events via admin panel
-7. Deploy frontend (Vercel) + backend (Cloudflare)
+## 1-Week MVP Build Plan
+
+| Day | Focus | Deliverables |
+|-----|-------|-------------|
+| **D1** | Cleanup + Database | Delete HotInsert code. Migration: drop old tables, create events + generations. Seed 15 events |
+| **D2** | Backend Core | Types, PromptBuilder, Agnes AI client, D1 helpers. GET /events, GET /events/:id |
+| **D3** | Backend Generate | POST /generate, GET /generation/:id (polling), GET /generations (history). Admin CRUD. curl E2E test |
+| **D4** | Frontend Core | Types, API client. Layout + brand styling. Home page (event grid + sport tabs). EventCard component |
+| **D5** | Frontend Flow | Create page (event detail + UploadSelfie + "Step Into History"). Result page (progress + image + captions + share) |
+| **D6** | Frontend Polish | Share buttons (X/Twitter + copy link). History page. Admin page. Mobile responsive verification (375px) |
+| **D7** | Deploy + Verify | wrangler deploy + Vercel deploy. Full E2E smoke test. Bug fixes |
+
+---
+
+## V2 Roadmap
+
+1. **Video generation** — Agnes AI video / Kling image-to-video (3-5 sec cinematic)
+2. **LLM captions** — Claude-enhanced personalized captions
+3. **Flutter app** — Native mobile experience
+4. **Payment** — Credit purchase system (if video costs increase)
+5. **Community events** — User-submitted event templates + review
+6. **A/B testing** — viral_score ranking vs random
+
+---
+
+## Verification
+
+```bash
+# 1. Migration
+wrangler d1 execute DB --file=./migrations/0007_rebuild.sql
+
+# 2. Seed events
+# Run seed script to insert 15 events
+
+# 3. API E2E test
+# Upload selfie
+curl -X POST {WORKER_URL}/upload \
+  -H "Authorization: Bearer $TOKEN" \
+  -F "file=@selfie.jpg"
+
+# Trigger generation
+curl -X POST {WORKER_URL}/generate \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"eventId":"1998-wc-final","imageKey":"uploads/xxx/selfie.jpg"}'
+
+# Poll result
+curl {WORKER_URL}/generation/{id} \
+  -H "Authorization: Bearer $TOKEN"
+
+# 4. Frontend
+# Open / → Select event → Upload selfie → Generate → View image → Share
+```
 
 ---
 
 This spec is ready for implementation.
-Update as needed during development.
-Last updated: June 2026 — clarified: auth (NextAuth + Google), storage (D1 + R2), admin panel, async fal.ai, no retry, per-frame replacement, $0.50/gen
+Last updated: June 2026 — migrated from HotInsert to IfIWasThere. Agnes AI (img2img), image-first MVP, viral scoring, free.
