@@ -130,26 +130,18 @@ app.get('/me', jwtMiddleware(), async (c) => {
 // ─── Google Auth (native clients) ───────────────────────
 app.route('/auth', authRouter);
 
-// ─── Public Events ──────────────────────────────────────
+// ─── Public Routes (no auth required) ──────────────────
 app.route('/events', eventsRouter);
+app.route('/upload', uploadRouter);
+app.route('/generate', generateRouter);
+app.route('/generation', generationRouter);
 
-// ─── Protected Routes ───────────────────────────────────
-const api = new Hono();
-
-api.use('/upload/*', authMiddleware());
-api.use('/generate/*', authMiddleware());
-api.use('/generation/*', authMiddleware());
-api.use('/generations/*', authMiddleware());
-api.use('/admin/*', authMiddleware());
-api.use('/admin/*', requireAdmin());
-
-api.route('/upload', uploadRouter);
-api.route('/generate', generateRouter);
-api.route('/generation', generationRouter);
-api.route('/generations', generationsRouter);
-api.route('/admin', adminRouter);
-
-app.route('/', api);
+// ─── Admin Routes (auth + admin required) ──────────────
+const admin = new Hono();
+admin.use('/admin/*', authMiddleware());
+admin.use('/admin/*', requireAdmin());
+admin.route('/admin', adminRouter);
+app.route('/', admin);
 
 // ─── Error Handling ─────────────────────────────────────
 app.onError((err, c) => {
