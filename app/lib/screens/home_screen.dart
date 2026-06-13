@@ -133,17 +133,19 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     }
 
     return RefreshIndicator(
+      color: AppTheme.primaryColor,
+      backgroundColor: AppTheme.surfaceColor,
       onRefresh: () => ref.read(eventsProvider.notifier).loadEvents(
             category: state.selectedCategory,
           ),
       child: GridView.builder(
         controller: _scrollController,
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.fromLTRB(16, 4, 16, 16),
         gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
           crossAxisCount: 2,
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-          childAspectRatio: 0.75,
+          crossAxisSpacing: 14,
+          mainAxisSpacing: 14,
+          childAspectRatio: 0.82,
         ),
         itemCount: state.events.length + (state.isLoading ? 4 : 0),
         itemBuilder: (context, index) {
@@ -181,7 +183,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       child: Container(
         decoration: BoxDecoration(
           color: AppTheme.cardColor,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.04)),
         ),
       ),
     );
@@ -190,25 +193,24 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget _buildError(String error) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: const EdgeInsets.all(40),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
-              padding: const EdgeInsets.all(16),
+              width: 72,
+              height: 72,
               decoration: BoxDecoration(
                 color: Colors.red.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(16),
+                shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.cloud_off, size: 48, color: Colors.red),
+              child: const Icon(Icons.wifi_off_rounded, size: 32, color: Colors.red),
             ),
-            const SizedBox(height: 16),
-            Text(
-              error,
-              style: const TextStyle(color: Colors.white70, fontSize: 14),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
+            const SizedBox(height: 20),
+            const Text('Connection error', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
+            const SizedBox(height: 8),
+            Text(error, style: const TextStyle(color: Colors.white54, fontSize: 13), textAlign: TextAlign.center),
+            const SizedBox(height: 20),
             ElevatedButton(
               onPressed: () => ref.read(eventsProvider.notifier).loadEvents(),
               child: const Text('Retry'),
@@ -222,21 +224,23 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   Widget _buildEmpty() {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: const EdgeInsets.all(40),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text('🎬', style: TextStyle(fontSize: 48)),
-            const SizedBox(height: 16),
-            const Text(
-              'No events yet',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+            Container(
+              width: 72,
+              height: 72,
+              decoration: BoxDecoration(
+                color: AppTheme.primaryColor.withValues(alpha: 0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.celebration_rounded, size: 32, color: AppTheme.primaryColor),
             ),
+            const SizedBox(height: 20),
+            const Text('No events yet', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
             const SizedBox(height: 8),
-            Text(
-              'Check back soon for trending events!',
-              style: TextStyle(fontSize: 14, color: Colors.white.withValues(alpha: 0.5)),
-            ),
+            const Text('Trending moments will appear here', style: TextStyle(fontSize: 13, color: Colors.white54)),
           ],
         ),
       ),

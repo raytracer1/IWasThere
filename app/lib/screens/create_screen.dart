@@ -248,16 +248,16 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                   decoration: BoxDecoration(
                     color: AppTheme.categoryColor(event.category),
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    event.category.toUpperCase(),
+                    event.category,
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 11,
+                      fontSize: 12,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
@@ -287,18 +287,19 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
             ] else ...[
               // Price info
               Container(
-                padding: const EdgeInsets.all(12),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 decoration: BoxDecoration(
                   color: AppTheme.surfaceColor,
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.info_outline, size: 18, color: Colors.white54),
+                    const Icon(Icons.auto_awesome, size: 16, color: Colors.amber),
                     const SizedBox(width: 8),
                     Text(
-                      'Cost: \$${event.effectivePrice.toStringAsFixed(2)} per generation',
-                      style: const TextStyle(fontSize: 13, color: Colors.white70),
+                      '\$${event.effectivePrice.toStringAsFixed(2)} per generation',
+                      style: const TextStyle(fontSize: 13, color: Colors.white70, fontWeight: FontWeight.w500),
                     ),
                   ],
                 ),
@@ -376,47 +377,66 @@ class _CreateScreenState extends ConsumerState<CreateScreen> {
   }
 
   Widget _buildLoginPrompt() {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          children: [
-            const Icon(Icons.lock_outline, size: 40, color: Colors.white38),
-            const SizedBox(height: 12),
-            const Text(
-              'Sign in to create your video',
-              style: TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
+    return Container(
+      margin: const EdgeInsets.symmetric(vertical: 8),
+      padding: const EdgeInsets.all(28),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
+        color: AppTheme.cardColor,
+      ),
+      child: Column(
+        children: [
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              color: AppTheme.primaryColor.withValues(alpha: 0.12),
+              shape: BoxShape.circle,
             ),
-            const SizedBox(height: 6),
-            Text(
-              'Upload your selfie and AI will insert you into this trending moment.',
-              style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.5)),
-              textAlign: TextAlign.center,
+            child: Icon(Icons.auto_awesome, size: 28, color: AppTheme.primaryColor),
+          ),
+          const SizedBox(height: 16),
+          const Text(
+            'Sign in to create your video',
+            style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'Upload your selfie and AI will insert you into this trending moment.',
+            style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.5)),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: AppTheme.surfaceColor,
+              borderRadius: BorderRadius.circular(20),
             ),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: AppTheme.surfaceColor,
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Text(
-                'Cost: \$${widget.event.effectivePrice.toStringAsFixed(2)} per generation',
-                style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.5)),
-              ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.monetization_on, size: 14, color: Colors.amber),
+                const SizedBox(width: 4),
+                Text(
+                  '\$${widget.event.effectivePrice.toStringAsFixed(2)} per generation',
+                  style: TextStyle(fontSize: 12, color: Colors.white.withValues(alpha: 0.6)),
+                ),
+              ],
             ),
-            const SizedBox(height: 20),
-            SizedBox(
-              width: double.infinity,
-              height: 48,
-              child: ElevatedButton.icon(
-                onPressed: _goToLogin,
-                icon: const Icon(Icons.login, size: 20),
-                label: const Text('Sign in to Continue', style: TextStyle(fontSize: 16)),
-              ),
+          ),
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            height: 50,
+            child: ElevatedButton.icon(
+              onPressed: _goToLogin,
+              icon: const Icon(Icons.login, size: 20),
+              label: const Text('Sign in to Continue', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

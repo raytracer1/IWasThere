@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../config/theme.dart';
 
-/// Horizontal scrollable category filter tabs.
 class CategoryTabs extends StatelessWidget {
   final String? selectedCategory;
   final ValueChanged<String?> onCategoryChanged;
@@ -20,13 +19,14 @@ class CategoryTabs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 44,
+    return Container(
+      height: 52,
+      margin: const EdgeInsets.symmetric(vertical: 8),
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         itemCount: _categories.length,
-        separatorBuilder: (_, __) => const SizedBox(width: 8),
+        separatorBuilder: (_, __) => const SizedBox(width: 10),
         itemBuilder: (context, index) {
           final cat = _categories[index];
           final key = cat['key'] as String?;
@@ -34,22 +34,43 @@ class CategoryTabs extends StatelessWidget {
           final icon = cat['icon'] as IconData;
           final isSelected = selectedCategory == key;
 
-          return ChoiceChip(
-            selected: isSelected,
-            label: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(icon, size: 16, color: isSelected ? Colors.white : Colors.white70),
-                const SizedBox(width: 6),
-                Text(label),
-              ],
-            ),
-            onSelected: (_) => onCategoryChanged(key),
-            selectedColor: AppTheme.primaryColor,
-            checkmarkColor: Colors.white,
-            backgroundColor: AppTheme.surfaceColor,
-            side: BorderSide(
-              color: isSelected ? AppTheme.primaryColor : Colors.white.withValues(alpha: 0.12),
+          return AnimatedContainer(
+            duration: const Duration(milliseconds: 200),
+            child: ChoiceChip(
+              selected: isSelected,
+              label: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    icon,
+                    size: 18,
+                    color: isSelected ? Colors.white : Colors.white54,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    label,
+                    style: TextStyle(
+                      color: isSelected ? Colors.white : Colors.white54,
+                      fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+              onSelected: (_) => onCategoryChanged(key),
+              selectedColor: AppTheme.primaryColor,
+              backgroundColor: AppTheme.surfaceColor,
+              showCheckmark: false,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+                side: BorderSide(
+                  color: isSelected ? AppTheme.primaryColor : Colors.white.withValues(alpha: 0.1),
+                  width: isSelected ? 0 : 1,
+                ),
+              ),
+              elevation: isSelected ? 2.0 : null,
+              shadowColor: isSelected ? AppTheme.primaryColor.withValues(alpha: 0.3) : null,
             ),
           );
         },
