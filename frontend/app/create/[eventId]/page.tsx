@@ -2,7 +2,6 @@
 
 import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
-import { useSession } from "@/lib/useAppSession";
 import { fetchEvent, uploadSelfie, triggerGenerate } from "@/lib/api";
 import type { Event, UploadResponse } from "@/lib/types";
 import { UploadSelfie } from "@/components/UploadSelfie";
@@ -14,7 +13,6 @@ export default function CreatePage({
 }) {
   const { eventId } = use(params);
   const router = useRouter();
-  const { data: session } = useSession();
 
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
@@ -140,38 +138,26 @@ export default function CreatePage({
       )}
 
       {/* Generate Button */}
-      {!session?.user ? (
-        <div className="rounded-xl bg-gray-900/60 border border-white/10 p-5 text-center">
-          <p className="text-sm text-gray-300 mb-3">Sign in to step into history</p>
-          <a
-            href="/login"
-            className="inline-block rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 px-6 py-2.5 text-sm font-semibold text-white hover:opacity-90 transition-opacity"
-          >
-            Sign in with Google
-          </a>
-        </div>
-      ) : (
-        <button
-          onClick={handleGenerate}
-          disabled={!uploadResult || generating}
-          className={`w-full rounded-xl py-3.5 text-sm font-bold transition-all ${
-            uploadResult && !generating
-              ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white hover:opacity-90 shadow-lg shadow-cyan-500/25"
-              : "bg-gray-800 text-gray-500 cursor-not-allowed"
-          }`}
-        >
-          {generating ? (
-            <span className="flex items-center justify-center gap-2">
-              <span className="animate-spin">⏳</span>
-              Generating...
-            </span>
-          ) : uploadResult ? (
-            `⚡ Step Into ${event.year}`
-          ) : (
-            "Upload a selfie to continue"
-          )}
-        </button>
-      )}
+      <button
+        onClick={handleGenerate}
+        disabled={!uploadResult || generating}
+        className={`w-full rounded-xl py-3.5 text-sm font-bold transition-all ${
+          uploadResult && !generating
+            ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white hover:opacity-90 shadow-lg shadow-cyan-500/25"
+            : "bg-gray-800 text-gray-500 cursor-not-allowed"
+        }`}
+      >
+        {generating ? (
+          <span className="flex items-center justify-center gap-2">
+            <span className="animate-spin">⏳</span>
+            Generating...
+          </span>
+        ) : uploadResult ? (
+          `⚡ Step Into ${event.year}`
+        ) : (
+          "Upload a selfie to continue"
+        )}
+      </button>
     </div>
   );
 }

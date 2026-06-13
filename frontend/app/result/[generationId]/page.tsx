@@ -2,7 +2,6 @@
 
 import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
-import { useSession } from "@/lib/useAppSession";
 import { fetchGeneration } from "@/lib/api";
 import type { Generation } from "@/lib/types";
 import { CaptionPicker } from "@/components/CaptionPicker";
@@ -15,14 +14,11 @@ export default function ResultPage({
 }) {
   const { generationId } = use(params);
   const router = useRouter();
-  const { data: session } = useSession();
   const [gen, setGen] = useState<Generation | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selectedCaption, setSelectedCaption] = useState<string | undefined>();
 
   useEffect(() => {
-    if (!session?.user) return;
-
     let timer: ReturnType<typeof setInterval>;
     let stopped = false;
 
@@ -51,15 +47,7 @@ export default function ResultPage({
       stopped = true;
       clearInterval(timer);
     };
-  }, [generationId, session?.user]);
-
-  if (!session?.user) {
-    return (
-      <div className="mx-auto max-w-lg px-4 py-16 text-center">
-        <p className="text-gray-400">Sign in to view your result.</p>
-      </div>
-    );
-  }
+  }, [generationId]);
 
   if (error && !gen) {
     return (

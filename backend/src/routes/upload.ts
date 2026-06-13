@@ -1,11 +1,10 @@
 import { Hono } from 'hono';
-import { uploadToR2, generateFileKey } from '../utils/r2';
+import { uploadToR2 } from '../utils/r2';
 import { MAX_SELFIE_SIZE, ACCEPTED_IMAGE_TYPES } from '../shared';
 import type { Bindings } from '../types';
 
 const uploadRouter = new Hono<{ Bindings: Bindings }>();
 
-// Duck-typed file interface for Workers runtime (no File class in @cloudflare/workers-types)
 interface UploadedFile {
   name: string;
   size: number;
@@ -15,10 +14,9 @@ interface UploadedFile {
 
 /**
  * POST /upload — Upload user selfie image to R2.
+ * No auth required. Uses anonymous folder.
  */
 uploadRouter.post('/', async (c) => {
-  const user = c.get('user');
-
   const formData = await c.req.formData();
   const file = formData.get('file');
 
@@ -28,7 +26,6 @@ uploadRouter.post('/', async (c) => {
 
   const uploadFile = file as unknown as UploadedFile;
 
-  // Validate file size
   if (uploadFile.size > MAX_SELFIE_SIZE) {
     return c.json({
       success: false,
@@ -36,7 +33,6 @@ uploadRouter.post('/', async (c) => {
     }, 400);
   }
 
-  // Validate file type
   if (!ACCEPTED_IMAGE_TYPES.includes(uploadFile.type as typeof ACCEPTED_IMAGE_TYPES[number])) {
     return c.json({
       success: false,
@@ -44,11 +40,10 @@ uploadRouter.post('/', async (c) => {
     }, 400);
   }
 
-  // Generate unique R2 key
-  const key = generateFileKey(user.id, 'uploads', uploadFile.name);
+  const ext = uploadFile.name.split('.').pop() || 'jpg';
+  const key = `uploads/${crypto.randomUUID()}.${ext}`;
   const buffer = await uploadFile.arrayBuffer();
 
-  // Upload to R2
   try {
     await uploadToR2(c.env.ASSETS, key, buffer, uploadFile.type);
   } catch (err) {
