@@ -38,15 +38,20 @@ app.get('/assets/:key{.*}', async (c) => {
     return c.json({ success: false, error: 'Missing token or expiry' }, 401);
   }
 
+  console.log(`[assets] key=${key} token=${token?.slice(0, 10)}... expires=${expires}`);
+
   const isValid = await verifySignedToken(key, token, expires, secret);
   if (!isValid) {
+    console.log(`[assets] HMAC verification FAILED for key=${key}`);
     return c.json({ success: false, error: 'Invalid or expired link' }, 401);
   }
 
   const head = await c.env.ASSETS.head(key);
   if (!head) {
+    console.log(`[assets] File NOT FOUND in R2: ${key}`);
     return c.json({ success: false, error: 'File not found' }, 404);
   }
+  console.log(`[assets] Served: ${key}`);
 
   const fileSize = head.size;
   const contentType = head.httpMetadata?.contentType ?? 'application/octet-stream';

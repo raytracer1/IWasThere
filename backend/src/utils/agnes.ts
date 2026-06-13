@@ -1,27 +1,17 @@
 /**
  * Agnes AI image generation client.
- *
- * Uses the OpenAI-compatible endpoint:
- *   POST https://apihub.agnes-ai.com/v1/images/generations
- *
- * Model: agnes-image-2.0-flash (img2img mode for person-in-scene insertion)
+ * POST https://apihub.agnes-ai.com/v1/images/generations
  */
 
 const AGNES_BASE = 'https://apihub.agnes-ai.com/v1';
 
 interface AgnesImageResponse {
   data: Array<{ url: string }>;
-  usage?: { generated_images: number };
 }
 
-/**
- * Generate an image using Agnes AI img2img mode.
- * Takes a reference image (user selfie) and an editing prompt,
- * returns the generated image URL.
- */
 export async function generateImage(
   prompt: string,
-  referenceImageUrl: string,
+  imageBase64: string,
   apiKey: string,
   size = '1024x768'
 ): Promise<string> {
@@ -32,12 +22,11 @@ export async function generateImage(
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: 'agnes-image-2.0-flash',
+      model: 'agnes-image-2.1-flash',
       prompt,
       size,
       extra_body: {
-        tags: ['img2img'],
-        image: [referenceImageUrl],
+        image: [imageBase64],
         response_format: 'url',
       },
     }),
@@ -45,7 +34,7 @@ export async function generateImage(
 
   if (!resp.ok) {
     const errText = await resp.text();
-    throw new Error(`Agnes AI error (${resp.status}): ${errText}`);
+    throw new Error(`Agnes AI ${resp.status}: ${errText.slice(0, 200)}`);
   }
 
   const json = (await resp.json()) as AgnesImageResponse;

@@ -7,10 +7,6 @@ import type { Bindings } from '../types';
 
 const generateRouter = new Hono<{ Bindings: Bindings }>();
 
-/**
- * POST /generate — Trigger AI image generation (no auth required).
- * Body: { eventId, imageKey }
- */
 generateRouter.post('/', async (c) => {
   const db = new D1Helper(c.env.DB);
   const secret = c.env.AUTH_SECRET ?? 'dev-secret';
@@ -21,12 +17,17 @@ generateRouter.post('/', async (c) => {
     return c.json({ success: false, error: 'Agnes AI not configured' }, 500);
   }
 
-  const body = await c.req.json<{ eventId: string; imageKey: string }>();
-  const { eventId, imageKey } = body;
+  const body = await c.req.json<{ eventId: string; imageBase64: string }>();
+  const { eventId, imageBase64 } = body;
 
-  if (!eventId || !imageKey) {
-    return c.json({ success: false, error: 'eventId and imageKey are required' }, 400);
+  if (!eventId || !imageBase64) {
+    return c.json({ success: false, error: 'eventId and imageBase64 are required' }, 400);
   }
+
+  // Ensure base64 has data URL prefix
+  const dataUrl = imageBase64.startsWith('data:')
+    ? imageBase64
+    : `data:image/jpeg;base64,${imageBase64}`;
 
   const event = await db.getEventById(eventId);
   if (!event) {
@@ -34,56 +35,67 @@ generateRouter.post('/', async (c) => {
   }
 
   const { imagePrompt, captions } = compileEventPrompts(event);
-  const selfieUrl = await generateSignedUrl(imageKey, secret, workerUrl);
-
   const generationId = crypto.randomUUID();
+
   await db.createGeneration({
     id: generationId,
     userId: 'anonymous',
     eventId,
-    inputImage: imageKey,
+    inputImage: 'base64-direct',
     status: 'processing',
   });
 
-  c.executionCtx?.waitUntil(
-    (async () => {
-      try {
-        const imageUrl = await generateImage(imagePrompt, selfieUrl, apiKey, '1024x768');
-        const imageResp = await fetch(imageUrl);
-        if (!imageResp.ok) {
-          throw new Error(`Failed to download generated image: ${imageResp.status}`);
-        }
-        const imageBuffer = await imageResp.arrayBuffer();
+  console.log(`[generate] Starting ${generationId} for ${eventId}`);
+  console.log(`[generate] Base64 size: ${imageBase64.length} chars`);
 
-        const outputKey = `outputs/${generationId}.png`;
-        await uploadToR2(c.env.ASSETS, outputKey, imageBuffer, 'image/png');
+  try {
+    console.log('[generate] Calling Agnes AI (img2img)...');
+    const imageUrl = await generateImage(imagePrompt, dataUrl, apiKey, '1024x768');
+    console.log(`[generate] Image URL: ${imageUrl}`);
 
-        await db.updateGenerationStatus(
-          generationId,
-          'completed',
-          outputKey,
-          undefined,
-          JSON.stringify(captions)
-        );
-      } catch (err) {
-        console.error('Generation error:', err);
-        await db.updateGenerationStatus(
-          generationId,
-          'failed',
-          undefined,
-          err instanceof Error ? err.message : 'Unknown error'
-        );
-      }
-    })()
-  );
+    const imageResp = await fetch(imageUrl);
+    if (!imageResp.ok) {
+      throw new Error(`Download failed: ${imageResp.status}`);
+    }
+    const imageBuffer = await imageResp.arrayBuffer();
 
-  return c.json({
-    success: true,
-    data: {
+    const outputKey = `outputs/${generationId}.png`;
+    await uploadToR2(c.env.ASSETS, outputKey, imageBuffer, 'image/png');
+
+    await db.updateGenerationStatus(
       generationId,
-      status: 'processing',
-    },
-  });
+      'completed',
+      outputKey,
+      undefined,
+      JSON.stringify(captions)
+    );
+
+    const outputUrl = await generateSignedUrl(outputKey, secret, workerUrl);
+
+    console.log(`[generate] Completed ${generationId}`);
+
+    return c.json({
+      success: true,
+      data: {
+        generationId,
+        status: 'completed',
+        outputImageUrl: outputUrl,
+        captions,
+      },
+    });
+  } catch (err) {
+    console.error(`[generate] Failed:`, err);
+    await db.updateGenerationStatus(
+      generationId,
+      'failed',
+      undefined,
+      err instanceof Error ? err.message : 'Unknown error'
+    );
+    return c.json({
+      success: false,
+      error: err instanceof Error ? err.message : 'Generation failed',
+    }, 500);
+  }
 });
 
 export default generateRouter;
