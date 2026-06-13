@@ -29,6 +29,7 @@ export default function AdminPage() {
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
+  const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
 
   // Form state
   const [form, setForm] = useState({
@@ -79,6 +80,7 @@ export default function AdminPage() {
   const resetForm = () => {
     setEditing(null);
     setThumbnailFile(null);
+    setThumbnailPreview(null);
     setForm({ id: "", title: "", year: new Date().getFullYear(), location: "", sportType: "football", description: "", keyMoment: "", eraClothing: "", imagePrompt: "", captionTemplates: "[]", hashtags: "", viralScore: 5.0, thumbnailUrl: "", status: "active" });
   };
 
@@ -184,12 +186,20 @@ export default function AdminPage() {
             📁 {form.thumbnailUrl ? "Change thumbnail" : "Upload thumbnail"}
             <input type="file" accept="image/*" className="hidden" onChange={e => {
               const f = e.target.files?.[0];
-              if (f) setThumbnailFile(f);
+              if (f) {
+                setThumbnailFile(f);
+                setThumbnailPreview(URL.createObjectURL(f));
+              }
             }} />
           </label>
-          {thumbnailFile && <p className="col-span-2 text-xs text-green-400">📎 {thumbnailFile.name} ({(thumbnailFile.size / 1024).toFixed(0)} KB) — will be uploaded on save</p>}
+          {thumbnailPreview && (
+            <div className="col-span-2 rounded-lg overflow-hidden border border-white/10">
+              <img src={thumbnailPreview} alt="Thumbnail preview" className="w-full h-32 object-cover" />
+            </div>
+          )}
+          {thumbnailFile && <p className="col-span-2 text-xs text-green-400">📎 {thumbnailFile.name} ({(thumbnailFile.size / 1024).toFixed(0)} KB)</p>}
           {form.thumbnailUrl && !thumbnailFile && (
-            <p className="col-span-2 text-xs text-gray-500">Current: {form.thumbnailUrl}</p>
+            <p className="col-span-2 text-xs text-gray-500">Has thumbnail (upload a new one to replace)</p>
           )}
           <input placeholder="Description" value={form.description} onChange={e => setForm({...form, description: e.target.value})} className="col-span-2 rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-white" />
         </div>
