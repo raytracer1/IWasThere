@@ -220,15 +220,9 @@ export default function ResultPage({
             <div className="flex gap-3">
               <button
                 onClick={() => router.push("/")}
-                className="flex-1 rounded-xl bg-gray-800 py-3 text-sm font-medium text-gray-300 hover:bg-gray-700 transition-colors"
+                className="w-full rounded-xl bg-gray-800 py-3 text-sm font-medium text-gray-300 hover:bg-gray-700 transition-colors"
               >
                 New Event
-              </button>
-              <button
-                onClick={() => router.push("/history")}
-                className="flex-1 rounded-xl bg-gray-800 py-3 text-sm font-medium text-gray-300 hover:bg-gray-700 transition-colors"
-              >
-                My History
               </button>
             </div>
           </div>
