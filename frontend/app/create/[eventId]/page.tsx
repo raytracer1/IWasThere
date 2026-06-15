@@ -48,15 +48,11 @@ export default function CreatePage({
     setGenError(null);
     const reader = new FileReader();
     reader.onload = () => {
-      const result = reader.result as string;
-      setSelfiePreview(result);
-      setImageBase64(result);
+      setSelfiePreview(reader.result as string);
+      setImageBase64(reader.result as string);
       setConverting(false);
     };
-    reader.onerror = () => {
-      setGenError("Failed to read image");
-      setConverting(false);
-    };
+    reader.onerror = () => { setGenError("Failed to read image"); setConverting(false); };
     reader.readAsDataURL(file);
   };
 

@@ -1,16 +1,13 @@
 import { Hono } from 'hono';
 import { D1Helper } from '../utils/d1';
-import { generateSignedUrl, uploadToR2 } from '../utils/r2';
 import { compileEventPrompts } from '../utils/promptBuilder';
-import { generateImage } from '../utils/agnes';
+import { generateImage, submitVideo } from '../utils/agnes';
 import type { Bindings } from '../types';
 
 const generateRouter = new Hono<{ Bindings: Bindings }>();
 
 generateRouter.post('/', async (c) => {
   const db = new D1Helper(c.env.DB);
-  const secret = c.env.AUTH_SECRET ?? 'dev-secret';
-  const workerUrl = new URL(c.req.url).origin;
   const apiKey = c.env.AGNES_API_KEY;
 
   if (!apiKey) {
@@ -24,8 +21,7 @@ generateRouter.post('/', async (c) => {
     return c.json({ success: false, error: 'eventId and imageBase64 are required' }, 400);
   }
 
-  // Ensure base64 has data URL prefix
-  const dataUrl = imageBase64.startsWith('data:')
+  const selfieBase64 = imageBase64.startsWith('data:')
     ? imageBase64
     : `data:image/jpeg;base64,${imageBase64}`;
 
@@ -34,7 +30,7 @@ generateRouter.post('/', async (c) => {
     return c.json({ success: false, error: 'Event not found' }, 404);
   }
 
-  const { imagePrompt, captions } = compileEventPrompts(event);
+  const { imagePrompt } = compileEventPrompts(event);
   const generationId = crypto.randomUUID();
 
   await db.createGeneration({
@@ -45,56 +41,28 @@ generateRouter.post('/', async (c) => {
     status: 'processing',
   });
 
-  console.log(`[generate] Starting ${generationId} for ${eventId}`);
-  console.log(`[generate] Base64 size: ${imageBase64.length} chars`);
+  console.log(`[generate] Step 1: Image for ${generationId}`);
 
   try {
-    console.log('[generate] Calling Agnes AI (img2img)...');
-    const imageUrl = await generateImage(imagePrompt, dataUrl, apiKey, '576x1024');
-    console.log(`[generate] Image URL: ${imageUrl}`);
+    // Step 1: Image generation (base64 → reliable)
+    const generatedImageUrl = await generateImage(imagePrompt, selfieBase64, apiKey, '576x1024');
+    console.log(`[generate] Image done: ${generatedImageUrl}`);
 
-    const imageResp = await fetch(imageUrl);
-    if (!imageResp.ok) {
-      throw new Error(`Download failed: ${imageResp.status}`);
-    }
-    const imageBuffer = await imageResp.arrayBuffer();
+    // Step 2: Submit video (Agnes-hosted URL → won't be blocked)
+    console.log(`[generate] Step 2: Video`);
+    const taskId = await submitVideo(imagePrompt, generatedImageUrl, apiKey, 121, 24);
+    console.log(`[generate] Video task: ${taskId}`);
 
-    const outputKey = `outputs/${generationId}.png`;
-    await uploadToR2(c.env.ASSETS, outputKey, imageBuffer, 'image/png');
-
-    await db.updateGenerationStatus(
-      generationId,
-      'completed',
-      outputKey,
-      undefined,
-      JSON.stringify(captions)
-    );
-
-    const outputUrl = await generateSignedUrl(outputKey, secret, workerUrl);
-
-    console.log(`[generate] Completed ${generationId}`);
+    await db.updateGeneration(generationId, { agnesJobId: taskId });
 
     return c.json({
       success: true,
-      data: {
-        generationId,
-        status: 'completed',
-        outputImageUrl: outputUrl,
-        captions,
-      },
+      data: { generationId, status: 'processing' },
     });
   } catch (err) {
     console.error(`[generate] Failed:`, err);
-    await db.updateGenerationStatus(
-      generationId,
-      'failed',
-      undefined,
-      err instanceof Error ? err.message : 'Unknown error'
-    );
-    return c.json({
-      success: false,
-      error: err instanceof Error ? err.message : 'Generation failed',
-    }, 500);
+    await db.updateGenerationStatus(generationId, 'failed', undefined, err instanceof Error ? err.message : 'Unknown error');
+    return c.json({ success: false, error: err instanceof Error ? err.message : 'Generation failed' }, 500);
   }
 });
 

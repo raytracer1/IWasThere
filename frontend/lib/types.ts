@@ -131,6 +131,7 @@ export interface Generation {
   // Enriched fields
   inputImageUrl?: string;
   outputImageUrl?: string;
+  outputVideoUrl?: string;
   eventTitle?: string;
   eventCategory?: string;
   eventThumbnail?: string;
@@ -159,5 +160,5 @@ export interface GenerateRequest {
 
 // ─── Constants ──────────────────────────────────────────
 export const MAX_SELFIE_SIZE = 10 * 1024 * 1024;
-export const POLL_INTERVAL_MS = 3000;
+export const POLL_INTERVAL_MS = 5000;
 export const DEFAULT_PAGE_SIZE = 20;

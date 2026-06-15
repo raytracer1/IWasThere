@@ -120,7 +120,7 @@ export default function ResultPage({
             <span className="text-3xl animate-pulse">⚡</span>
           </div>
           <h2 className="text-lg font-semibold text-white mb-2">
-            Transporting you to history...
+            Creating your video...
           </h2>
           <p className="text-sm text-gray-400">
             AI is placing you into the moment. This usually takes 10-20 seconds.
@@ -157,9 +157,23 @@ export default function ResultPage({
       {/* Completed State */}
       {isCompleted && gen && (
         <div className="space-y-6">
-          {/* Generated Image */}
+          {/* Generated Video / Image */}
           <div className="rounded-2xl overflow-hidden border border-white/10 bg-gray-900/60 relative">
-            {gen.outputImageUrl ? (
+            {gen.outputVideoUrl ? (
+              <>
+                <video
+                  src={gen.outputVideoUrl}
+                  controls
+                  autoPlay
+                  loop
+                  playsInline
+                  className="w-full max-h-[60vh] object-contain"
+                />
+                <div className="absolute bottom-3 right-3 text-xs text-white/80 font-medium drop-shadow-lg">
+                  AI-Generated
+                </div>
+              </>
+            ) : gen.outputImageUrl ? (
               <>
                 <img
                   src={gen.outputImageUrl}
@@ -171,8 +185,8 @@ export default function ResultPage({
                 </div>
               </>
             ) : (
-              <div className="aspect-[4/3] flex items-center justify-center text-gray-500">
-                No image available
+              <div className="aspect-[9/16] flex items-center justify-center text-gray-500">
+                No media available
               </div>
             )}
           </div>
@@ -196,13 +210,16 @@ export default function ResultPage({
 
           {/* Share / Download */}
           <div className="space-y-3">
-            {gen.outputImageUrl && (
-              <button
-                onClick={() => downloadWithWatermark(gen.outputImageUrl!, `ifiwasthere-${gen.eventId}`)}
+            {(gen.outputVideoUrl || gen.outputImageUrl) && (
+              <a
+                href={gen.outputVideoUrl || gen.outputImageUrl}
+                download={`ifiwasthere-${gen.eventId}.${gen.outputVideoUrl ? 'mp4' : 'png'}`}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="block w-full text-center rounded-xl bg-white/10 border border-white/10 py-3 text-sm font-medium text-white hover:bg-white/20 transition-colors"
               >
-                📥 Download Image
-              </button>
+                📥 Download {gen.outputVideoUrl ? 'Video' : 'Image'}
+              </a>
             )}
 
             {selectedCaption && (

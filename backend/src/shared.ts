@@ -192,6 +192,7 @@ export interface UpdateEventRequest {
 export const MAX_SELFIE_SIZE = 10 * 1024 * 1024;
 export const MAX_THUMBNAIL_SIZE = 5 * 1024 * 1024;
 export const SIGNED_URL_EXPIRY = 900;
+export const SIGNED_URL_EXPIRY_LONG = 3600; // 1 hour for video generation
 export const POLL_INTERVAL_MS = 3000;
 export const DEFAULT_PAGE_SIZE = 20;
 

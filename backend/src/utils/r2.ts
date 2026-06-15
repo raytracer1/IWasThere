@@ -15,9 +15,10 @@ import { SIGNED_URL_EXPIRY } from '../shared';
 export async function generateSignedUrl(
   key: string,
   secret: string,
-  baseUrl: string
+  baseUrl: string,
+  expirySeconds = SIGNED_URL_EXPIRY,
 ): Promise<string> {
-  const expires = Math.floor(Date.now() / 1000) + SIGNED_URL_EXPIRY;
+  const expires = Math.floor(Date.now() / 1000) + expirySeconds;
 
   // Simple HMAC-based signing using Web Crypto API
   const encoder = new TextEncoder();
