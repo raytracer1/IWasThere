@@ -170,6 +170,10 @@ export class D1Helper {
     await this.run(`UPDATE events SET ${fields.join(', ')} WHERE id = ?`, ...values);
   }
 
+  async nullifyGenerationsEvent(eventId: string): Promise<void> {
+    await this.run('UPDATE generations SET event_id = NULL WHERE event_id = ?', eventId);
+  }
+
   async deleteEvent(id: string): Promise<void> {
     await this.run('DELETE FROM events WHERE id = ?', id);
   }

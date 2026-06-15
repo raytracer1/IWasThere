@@ -32,7 +32,7 @@ CREATE INDEX idx_events_created_at ON events(created_at);
 CREATE TABLE IF NOT EXISTS generations (
   id              TEXT PRIMARY KEY,
   user_id         TEXT NOT NULL REFERENCES users(id),
-  event_id        TEXT NOT NULL REFERENCES events(id),
+  event_id        TEXT REFERENCES events(id) ON DELETE SET NULL,
   input_image     TEXT NOT NULL,
   output_image    TEXT,
   agnes_job_id    TEXT,

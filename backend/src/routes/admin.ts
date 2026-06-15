@@ -151,6 +151,9 @@ adminRouter.delete('/events/:id', async (c) => {
     return c.json({ success: false, error: 'Event not found' }, 404);
   }
 
+  // Detach generations (set event_id to null) so FK doesn't block delete
+  await db.nullifyGenerationsEvent(event.id);
+
   // Delete all R2 assets
   const r2Keys = [
     event.thumbnailUrl,
