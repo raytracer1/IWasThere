@@ -8,15 +8,14 @@ import AuthGuard from "@/components/admin/AuthGuard";
 import EventForm, { type EventFormSaveData } from "@/components/admin/EventForm";
 import { adminFetch } from "@/lib/admin-api";
 
-async function uploadFile(file: File, eventId: string, name: string, token?: string): Promise<string> {
+function buildKey(file: File, eventId: string, name: string): string {
+  return `events/${eventId}/${name}.${file.name.split('.').pop() || 'bin'}`;
+}
+
+async function uploadFile(file: File, eventId: string, name: string, token?: string): Promise<void> {
   const fd = new FormData();
   fd.append("file", file);
-  const res = await adminFetch<{ success: boolean; data: { key: string } }>(
-    `/admin/upload?eventId=${eventId}&name=${name}`,
-    token,
-    { method: "POST", body: fd }
-  );
-  return res.data.key;
+  await adminFetch(`/admin/upload?eventId=${eventId}&name=${name}`, token, { method: "POST", body: fd });
 }
 
 export default function AdminEditPage({
@@ -54,18 +53,23 @@ export default function AdminEditPage({
   }, [eventId, accessToken]);
 
   const handleSave = async (data: EventFormSaveData) => {
-    // Step 1: Upload files, fill keys into body
+    // Step 1: Upload files (parallel), key is deterministic
+    const uploads: Promise<void>[] = [];
     if (data.thumbnailFile) {
-      data.body.thumbnailUrl = await uploadFile(data.thumbnailFile, eventId, "thumbnail", accessToken);
+      data.body.thumbnailUrl = buildKey(data.thumbnailFile, eventId, "thumbnail");
+      uploads.push(uploadFile(data.thumbnailFile, eventId, "thumbnail", accessToken));
     }
     if (data.backgroundFile) {
       const gen = (data.body.generation as Record<string, unknown>) || {};
-      gen.background_image = await uploadFile(data.backgroundFile, eventId, "background", accessToken);
+      gen.background_image = buildKey(data.backgroundFile, eventId, "background");
       data.body.generation = gen;
+      uploads.push(uploadFile(data.backgroundFile, eventId, "background", accessToken));
     }
     if (data.videoFile) {
-      data.body.referenceVideo = await uploadFile(data.videoFile, eventId, "reference", accessToken);
+      data.body.referenceVideo = buildKey(data.videoFile, eventId, "reference");
+      uploads.push(uploadFile(data.videoFile, eventId, "reference", accessToken));
     }
+    await Promise.all(uploads);
 
     // Step 2: PUT event JSON
     await adminFetch(`/admin/events/${eventId}`, accessToken, {

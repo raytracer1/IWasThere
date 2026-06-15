@@ -30,6 +30,14 @@ function parseJson(str: string, fieldName: string): Record<string, unknown> {
   }
 }
 
+/** Get key from signed URL: "https://.../assets/events/uuid/name.jpg?token=..." → "events/uuid/name.jpg" */
+function toKey(url: string): string {
+  const idx = url.indexOf('/assets/');
+  if (idx === -1) return url;
+  const q = url.indexOf('?', idx);
+  return q === -1 ? url.slice(idx + 8) : url.slice(idx + 8, q);
+}
+
 export interface EventFormSaveData {
   body: Record<string, unknown>;
   thumbnailFile: File | null;
@@ -88,9 +96,12 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
         userStr: stringify(ev.user || (DEFAULT_USER as Record<string, unknown>)),
         entitiesStr: stringify(ev.entities || (DEFAULT_ENTITIES as Record<string, unknown>)),
         momentStr: stringify(ev.moment || (DEFAULT_MOMENT as Record<string, unknown>)),
-        generationStr: stringify((ev.generation as unknown as Record<string, unknown>) || DEFAULT_GENERATION),
-        thumbnailUrl: ev.thumbnailUrl || "",
-        videoKey: ev.referenceVideo || "",
+        generationStr: stringify({
+          ...((ev.generation as unknown as Record<string, unknown>) || DEFAULT_GENERATION),
+          background_image: toKey(((ev.generation as unknown as Record<string, unknown>)?.background_image as string) || ""),
+        }),
+        thumbnailUrl: toKey(ev.thumbnailUrl || ""),
+        videoKey: toKey(ev.referenceVideo || ""),
         status: ev.status as "active" | "draft",
       });
     } else {
