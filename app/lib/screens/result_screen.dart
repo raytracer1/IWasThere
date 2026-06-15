@@ -1,29 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../config/theme.dart';
-import '../providers/auth_provider.dart';
 import '../providers/job_provider.dart';
-import '../widgets/job_status_widget.dart';
 
-/// Result screen — polls job status and shows the generated video.
 class ResultScreen extends ConsumerWidget {
-  final String jobId;
-
-  const ResultScreen({super.key, required this.jobId});
+  final String generationId;
+  const ResultScreen({super.key, required this.generationId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final user = ref.watch(currentUserProvider);
-
-    // If not logged in, redirect to home
-    if (user == null) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        Navigator.of(context).pushReplacementNamed('/home');
-      });
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
-    }
-
-    final jobState = ref.watch(jobProvider(jobId));
+    final jobState = ref.watch(jobProvider(generationId));
 
     return Scaffold(
       appBar: AppBar(
@@ -37,78 +23,90 @@ class ResultScreen extends ConsumerWidget {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // Job info (if available)
-            if (jobState.job?.event != null) ...[
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppTheme.categoryColor(jobState.job!.event!.category),
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      jobState.job!.event!.category.toUpperCase(),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      jobState.job!.event!.title,
-                      style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
+            // Event info
+            if (jobState.job?.eventTitle != null) ...[
+              Text(jobState.job!.eventTitle!, style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 16),
             ],
 
-            // Job status
+            // Content
             Expanded(
-              child: JobStatusWidget(
-                job: jobState.job,
-                isLoading: jobState.isLoading,
-                error: jobState.error,
-              ),
+              child: _buildContent(jobState),
             ),
 
-            // Action buttons after completion or failure
+            // Actions
             if (jobState.job?.isTerminal == true) ...[
               const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  if (jobState.job!.isFailed)
-                    ElevatedButton.icon(
-                      onPressed: () => Navigator.of(context).pushReplacementNamed('/home'),
-                      icon: const Icon(Icons.home, size: 18),
-                      label: const Text('Back to Events'),
-                    ),
-                  if (jobState.job!.isCompleted) ...[
-                    OutlinedButton.icon(
-                      onPressed: () => Navigator.of(context).pushNamed('/history'),
-                      icon: const Icon(Icons.history, size: 18),
-                      label: const Text('View History'),
-                    ),
-                    const SizedBox(width: 12),
-                    ElevatedButton.icon(
-                      onPressed: () => Navigator.of(context).pushReplacementNamed('/home'),
-                      icon: const Icon(Icons.add, size: 18),
-                      label: const Text('Create Another'),
-                    ),
-                  ],
-                ],
-              ),
+              if (jobState.job!.isCompleted)
+                SizedBox(
+                  width: double.infinity, height: 48,
+                  child: ElevatedButton.icon(
+                    onPressed: () => Navigator.of(context).pushReplacementNamed('/home'),
+                    icon: const Icon(Icons.home, size: 18),
+                    label: const Text('Back to Events'),
+                  ),
+                ),
+              if (jobState.job!.isFailed)
+                SizedBox(
+                  width: double.infinity, height: 48,
+                  child: ElevatedButton.icon(
+                    onPressed: () => Navigator.of(context).pushReplacementNamed('/home'),
+                    icon: const Icon(Icons.home, size: 18),
+                    label: const Text('Back to Events'),
+                  ),
+                ),
               const SizedBox(height: 20),
             ],
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildContent(JobState state) {
+    if (state.isLoading && state.job == null) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (state.job == null) {
+      return const Center(child: Text('Loading...'));
+    }
+
+    if (state.job!.isProcessing || state.job!.isQueued) {
+      return Center(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          const SizedBox(width: 48, height: 48, child: CircularProgressIndicator(strokeWidth: 3)),
+          const SizedBox(height: 20),
+          const Text('Creating your image...', style: TextStyle(fontSize: 16)),
+          const SizedBox(height: 8),
+          Text('This usually takes 10-20 seconds', style: TextStyle(fontSize: 13, color: Colors.white.withValues(alpha: 0.5))),
+        ]),
+      );
+    }
+
+    if (state.job!.isFailed) {
+      return Center(
+        child: Column(mainAxisSize: MainAxisSize.min, children: [
+          const Icon(Icons.error_outline, size: 48, color: Colors.red),
+          const SizedBox(height: 12),
+          const Text('Generation failed', style: TextStyle(fontSize: 16)),
+          if (state.job!.errorMessage != null) ...[
+            const SizedBox(height: 8),
+            Text(state.job!.errorMessage!, style: const TextStyle(fontSize: 13, color: Colors.white54), textAlign: TextAlign.center),
+          ],
+        ]),
+      );
+    }
+
+    if (state.job!.isCompleted && state.job!.outputImageUrl != null) {
+      return InteractiveViewer(
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Image.network(state.job!.outputImageUrl!, fit: BoxFit.contain),
+        ),
+      );
+    }
+
+    return const SizedBox.shrink();
   }
 }

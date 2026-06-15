@@ -43,7 +43,7 @@ class JobNotifier extends StateNotifier<JobState> {
 
   Future<void> _pollJob(String jobId) async {
     try {
-      final response = await _apiService.getJob(jobId);
+      final response = await _apiService.getGeneration(jobId);
       if (response.success && response.data != null) {
         final job = response.data!;
         state = JobState(job: job, isLoading: false);
@@ -68,7 +68,7 @@ class JobNotifier extends StateNotifier<JobState> {
   Future<void> fetchJob(String jobId) async {
     state = JobState(isLoading: true);
     try {
-      final response = await _apiService.getJob(jobId);
+      final response = await _apiService.getGeneration(jobId);
       if (response.success && response.data != null) {
         state = JobState(job: response.data, isLoading: false);
       } else {

@@ -12,16 +12,16 @@ import 'screens/admin/event_form_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const ProviderScope(child: HotInsertApp()));
+  runApp(const ProviderScope(child: IfIWasThereApp()));
 }
 
-class HotInsertApp extends StatelessWidget {
-  const HotInsertApp({super.key});
+class IfIWasThereApp extends StatelessWidget {
+  const IfIWasThereApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'HotInsert AI',
+      title: 'IfIWasThere AI',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.darkTheme,
       darkTheme: AppTheme.darkTheme,
@@ -46,9 +46,9 @@ class HotInsertApp extends StatelessWidget {
         );
 
       case '/result':
-        final jobId = settings.arguments as String;
+        final generationId = settings.arguments as String;
         return MaterialPageRoute(
-          builder: (_) => ResultScreen(jobId: jobId),
+          builder: (_) => ResultScreen(generationId: generationId),
         );
 
       case '/history':
