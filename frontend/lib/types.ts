@@ -157,20 +157,7 @@ export interface GenerateRequest {
   imageBase64: string;
 }
 
-// ─── Upload Response ────────────────────────────────────
-export interface UploadResponse {
-  key: string;
-  filename: string;
-  size: number;
-  contentType: string;
-}
-
 // ─── Constants ──────────────────────────────────────────
 export const MAX_SELFIE_SIZE = 10 * 1024 * 1024;
-export const ACCEPTED_IMAGE_TYPES = [
-  'image/jpeg',
-  'image/png',
-  'image/webp',
-] as const;
 export const POLL_INTERVAL_MS = 3000;
 export const DEFAULT_PAGE_SIZE = 20;

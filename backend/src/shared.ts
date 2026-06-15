@@ -188,26 +188,12 @@ export interface UpdateEventRequest {
   status?: EventStatus;
 }
 
-// ─── Upload Response ────────────────────────────────────
-export interface UploadResponse {
-  key: string;
-  signedUrl: string;
-  filename: string;
-  size: number;
-}
-
 // ─── Constants ──────────────────────────────────────────
 export const MAX_SELFIE_SIZE = 10 * 1024 * 1024;
 export const MAX_THUMBNAIL_SIZE = 5 * 1024 * 1024;
 export const SIGNED_URL_EXPIRY = 900;
 export const POLL_INTERVAL_MS = 3000;
 export const DEFAULT_PAGE_SIZE = 20;
-
-export const ACCEPTED_IMAGE_TYPES = [
-  'image/jpeg',
-  'image/png',
-  'image/webp',
-] as const;
 
 export const R2_DIRS = {
   UPLOADS: 'uploads',

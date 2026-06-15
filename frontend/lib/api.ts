@@ -3,7 +3,6 @@ import type {
   PaginatedResponse,
   Event,
   Generation,
-  UploadResponse,
   GenerateRequest,
 } from "@/lib/types";
 
@@ -49,17 +48,6 @@ export async function fetchEvent(
   eventId: string
 ): Promise<ApiResponse<Event>> {
   return apiFetch<ApiResponse<Event>>(`/events/${eventId}`);
-}
-
-export async function uploadSelfie(
-  file: File
-): Promise<ApiResponse<UploadResponse>> {
-  const formData = new FormData();
-  formData.append("file", file);
-  return apiFetch<ApiResponse<UploadResponse>>("/upload", {
-    method: "POST",
-    body: formData,
-  });
 }
 
 export async function triggerGenerate(
