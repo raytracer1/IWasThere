@@ -33,6 +33,7 @@ function parseJson(str: string, fieldName: string): Record<string, unknown> {
 export interface EventFormSaveData {
   body: Record<string, unknown>;
   thumbnailFile: File | null;
+  backgroundFile: File | null;
 }
 
 interface EventFormProps {
@@ -62,6 +63,8 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
   });
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
+  const [backgroundFile, setBackgroundFile] = useState<File | null>(null);
+  const [backgroundPreview, setBackgroundPreview] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
@@ -100,6 +103,8 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
     }
     setThumbnailFile(null);
     setThumbnailPreview(null);
+    setBackgroundFile(null);
+    setBackgroundPreview(null);
     setMsg(null);
     initializedRef.current = ev?.id ?? "__new__";
   }, []);
@@ -109,10 +114,13 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
     initForm(event);
   }, [event, initForm]);
 
-  // Cleanup preview URL on unmount
+  const bgPreviewRef = useRef<string | null>(null);
+
+  // Cleanup preview URLs on unmount
   useEffect(() => {
     return () => {
       if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
+      if (bgPreviewRef.current) URL.revokeObjectURL(bgPreviewRef.current);
     };
   }, []);
 
@@ -151,7 +159,7 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
         thumbnailUrl: form.thumbnailUrl || undefined,
         status: form.status,
       };
-      await onSave({ body, thumbnailFile });
+      await onSave({ body, thumbnailFile, backgroundFile });
       setMsg(isEdit ? "✅ Event updated" : "✅ Event created");
       if (!isEdit) {
         initForm(null);
@@ -206,12 +214,6 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
 
         {/* Thumbnail */}
         <div className="col-span-2 flex flex-col gap-2">
-          <input
-            placeholder="Thumbnail URL (or upload below)"
-            value={form.thumbnailUrl}
-            onChange={(e) => setField("thumbnailUrl", e.target.value)}
-            className="rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-white"
-          />
           <label className="flex items-center gap-2 rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-gray-400 cursor-pointer hover:text-white hover:border-cyan-500/30 transition-colors">
             📁 Upload thumbnail
             <input
@@ -221,7 +223,7 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
               onChange={(e) => handleThumbnailChange(e.target.files?.[0])}
             />
           </label>
-          {thumbnailPreview && (
+          {thumbnailPreview ? (
             <div className="rounded-lg overflow-hidden border border-white/10">
               <img
                 src={thumbnailPreview}
@@ -229,7 +231,57 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
                 className="w-full max-h-48 object-cover"
               />
             </div>
-          )}
+          ) : form.thumbnailUrl ? (
+            <div className="rounded-lg overflow-hidden border border-white/10">
+              <img
+                src={form.thumbnailUrl}
+                alt="Current thumbnail"
+                className="w-full max-h-48 object-cover"
+              />
+            </div>
+          ) : null}
+        </div>
+
+        {/* Background Image */}
+        <div className="col-span-2 flex flex-col gap-2">
+          <label className="flex items-center gap-2 rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-gray-400 cursor-pointer hover:text-white hover:border-cyan-500/30 transition-colors">
+            🖼️ Upload background image
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (bgPreviewRef.current) {
+                  URL.revokeObjectURL(bgPreviewRef.current);
+                  bgPreviewRef.current = null;
+                }
+                if (file) {
+                  setBackgroundFile(file);
+                  const url = URL.createObjectURL(file);
+                  bgPreviewRef.current = url;
+                  setBackgroundPreview(url);
+                }
+              }}
+            />
+          </label>
+          {backgroundPreview ? (
+            <div className="rounded-lg overflow-hidden border border-white/10">
+              <img
+                src={backgroundPreview}
+                alt="Background preview"
+                className="w-full max-h-48 object-cover"
+              />
+            </div>
+          ) : (event?.generation as unknown as Record<string, unknown>)?.background_image ? (
+            <div className="rounded-lg overflow-hidden border border-white/10">
+              <img
+                src={(event?.generation as unknown as Record<string, unknown>).background_image as string}
+                alt="Current background"
+                className="w-full max-h-48 object-cover"
+              />
+            </div>
+          ) : null}
         </div>
 
         {/* JSON Editor Fields */}

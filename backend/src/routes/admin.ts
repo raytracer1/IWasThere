@@ -87,6 +87,17 @@ adminRouter.post('/events', async (c) => {
       thumbnailKey = `events/${crypto.randomUUID()}.${file.name.split('.').pop() || 'jpg'}`;
       await uploadToR2(c.env.ASSETS, thumbnailKey, await file.arrayBuffer(), file.type);
     }
+
+    // Handle background image upload
+    const background = formData.get('background');
+    if (background && typeof background !== 'string') {
+      const bgFile = background as unknown as UploadedFile;
+      const bgKey = `backgrounds/${crypto.randomUUID()}.${bgFile.name.split('.').pop() || 'jpg'}`;
+      await uploadToR2(c.env.ASSETS, bgKey, await bgFile.arrayBuffer(), bgFile.type);
+      const gen = (body.generation as Record<string, unknown>) || {};
+      gen.background_image = bgKey;
+      body.generation = gen;
+    }
   } else {
     body = await c.req.json();
   }
@@ -158,6 +169,17 @@ adminRouter.put('/events/:id', async (c) => {
       }
       thumbnailKey = `events/${crypto.randomUUID()}.${file.name.split('.').pop() || 'jpg'}`;
       await uploadToR2(c.env.ASSETS, thumbnailKey, await file.arrayBuffer(), file.type);
+    }
+
+    // Handle background image upload
+    const background = formData.get('background');
+    if (background && typeof background !== 'string') {
+      const bgFile = background as unknown as UploadedFile;
+      const bgKey = `backgrounds/${crypto.randomUUID()}.${bgFile.name.split('.').pop() || 'jpg'}`;
+      await uploadToR2(c.env.ASSETS, bgKey, await bgFile.arrayBuffer(), bgFile.type);
+      const gen = (body.generation as Record<string, unknown>) || {};
+      gen.background_image = bgKey;
+      body.generation = gen;
     }
   } else {
     body = await c.req.json<Record<string, unknown>>();

@@ -46,9 +46,10 @@ export default function AdminEditPage({
   }, [eventId, accessToken]);
 
   const handleSave = async (data: EventFormSaveData) => {
-    if (data.thumbnailFile) {
+    if (data.thumbnailFile || data.backgroundFile) {
       const fd = new FormData();
-      fd.append("thumbnail", data.thumbnailFile);
+      if (data.thumbnailFile) fd.append("thumbnail", data.thumbnailFile);
+      if (data.backgroundFile) fd.append("background", data.backgroundFile);
       fd.append("metadata", JSON.stringify(data.body));
       await adminFetch(`/admin/events/${eventId}`, accessToken, {
         method: "PUT",
