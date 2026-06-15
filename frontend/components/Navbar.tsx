@@ -11,20 +11,22 @@ export function Navbar() {
 
   return (
     <nav className="sticky top-0 z-50 border-b border-white/10 bg-gray-950/80 backdrop-blur-xl">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
+      <div className="mx-auto flex max-w-7xl items-center px-4 py-3 relative">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2">
+        <Link href="/" className="flex items-center gap-2 flex-1">
           <span className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
             ⚡ IfIWasThere
           </span>
         </Link>
 
-        {/* Navigation */}
-        <div className="flex items-center gap-6">
+        {/* Navigation — centered */}
+        <div className="absolute left-1/2 -translate-x-1/2">
           <NavLink href="/" active={pathname === "/"} label="Home" />
         </div>
 
-        <ThemeToggle />
+        <div className="flex-1 flex justify-end">
+          <ThemeToggle />
+        </div>
       </div>
     </nav>
   );
