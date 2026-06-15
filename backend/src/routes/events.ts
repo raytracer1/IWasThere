@@ -20,7 +20,7 @@ eventsRouter.get('/', async (c) => {
 
   const { events, total } = await db.getActiveEvents(category, page, pageSize);
 
-  // Resolve thumbnail URLs (R2 key → signed URL, external URL → pass through)
+  // Sign thumbnail & background R2 keys
   const signed = await Promise.all(
     events.map(async (ev) => ({
       ...ev,
@@ -29,6 +29,12 @@ eventsRouter.get('/', async (c) => {
           ? ev.thumbnailUrl
           : await generateSignedUrl(ev.thumbnailUrl, secret, workerUrl)
         : undefined,
+      generation: {
+        ...ev.generation,
+        background_image: ev.generation?.background_image && !ev.generation.background_image.startsWith('http')
+          ? await generateSignedUrl(ev.generation.background_image, secret, workerUrl)
+          : ev.generation?.background_image,
+      },
     }))
   );
 
@@ -54,6 +60,7 @@ eventsRouter.get('/:id', async (c) => {
     return c.json({ success: false, error: 'Event not found' }, 404);
   }
 
+  const bgImage = event.generation?.background_image;
   return c.json({
     success: true,
     data: {
@@ -63,6 +70,12 @@ eventsRouter.get('/:id', async (c) => {
           ? event.thumbnailUrl
           : await generateSignedUrl(event.thumbnailUrl, secret, workerUrl)
         : undefined,
+      generation: {
+        ...event.generation,
+        background_image: bgImage && !bgImage.startsWith('http')
+          ? await generateSignedUrl(bgImage, secret, workerUrl)
+          : bgImage,
+      },
     },
   });
 });

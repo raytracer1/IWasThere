@@ -26,12 +26,18 @@ adminRouter.get('/events', async (c) => {
 
   const { events, total } = await db.getAllEvents(page, pageSize);
 
-  // Sign thumbnail R2 keys
+  // Sign thumbnail & background R2 keys
   const signed = await Promise.all(events.map(async (ev) => ({
     ...ev,
     thumbnailUrl: ev.thumbnailUrl && !ev.thumbnailUrl.startsWith('http')
       ? await generateSignedUrl(ev.thumbnailUrl, secret, workerUrl)
       : ev.thumbnailUrl,
+    generation: {
+      ...ev.generation,
+      background_image: ev.generation?.background_image && !ev.generation.background_image.startsWith('http')
+        ? await generateSignedUrl(ev.generation.background_image, secret, workerUrl)
+        : ev.generation?.background_image,
+    },
   })));
 
   return c.json({ success: true, data: signed, total, page, pageSize });
@@ -57,6 +63,12 @@ adminRouter.get('/events/:id', async (c) => {
       thumbnailUrl: event.thumbnailUrl && !event.thumbnailUrl.startsWith('http')
         ? await generateSignedUrl(event.thumbnailUrl, secret, workerUrl)
         : event.thumbnailUrl,
+      generation: {
+        ...event.generation,
+        background_image: event.generation?.background_image && !event.generation.background_image.startsWith('http')
+          ? await generateSignedUrl(event.generation.background_image, secret, workerUrl)
+          : event.generation?.background_image,
+      },
     },
   });
 });
