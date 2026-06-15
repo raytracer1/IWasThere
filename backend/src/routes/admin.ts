@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { D1Helper } from '../utils/d1';
 import { uploadToR2, deleteFromR2, generateSignedUrl } from '../utils/r2';
 import { MAX_THUMBNAIL_SIZE, DEFAULT_PAGE_SIZE } from '../shared';
+import type { Event } from '../shared';
 import type { Bindings } from '../types';
 
 const adminRouter = new Hono<{ Bindings: Bindings }>();
@@ -95,7 +96,7 @@ adminRouter.post('/events', async (c) => {
     user: (body.user as Record<string, unknown>) || {},
     entities: (body.entities as Record<string, unknown>) || {},
     moment: (body.moment as Record<string, unknown>) || {},
-    generation: gen as Event['generation'],
+    generation: gen as unknown as Event['generation'],
     thumbnailUrl: (body.thumbnailUrl as string) || thumbnailKey,
     status: (body.status as 'active' | 'draft' | 'archived') || 'active',
   });

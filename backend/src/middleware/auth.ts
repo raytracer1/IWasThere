@@ -1,6 +1,7 @@
 import { createMiddleware } from 'hono/factory';
 import { D1Helper } from '../utils/d1';
 import type { Context } from 'hono';
+import type { User } from '../shared';
 
 // JWT payload from NextAuth — verified with jose
 interface JwtPayload {

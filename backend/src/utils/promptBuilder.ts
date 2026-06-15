@@ -26,7 +26,9 @@ export function compileEventPrompts(event: Event): {
     moment: event.moment?.description || event.moment?.key_action || event.title,
     clothing: event.user?.clothing || 'casual wear',
     time_period: event.scene?.time_period || '',
-    atmosphere: event.scene?.atmosphere || '',
+    atmosphere: Array.isArray(event.scene?.atmosphere)
+      ? event.scene.atmosphere.join(', ')
+      : event.scene?.atmosphere || '',
   };
 
   const promptTemplate = event.generation?.prompt_template || '';
