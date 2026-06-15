@@ -7,6 +7,52 @@ import type { Generation } from "@/lib/types";
 import { CaptionPicker } from "@/components/CaptionPicker";
 import { POLL_INTERVAL_MS } from "@/lib/types";
 
+async function downloadWithWatermark(imageUrl: string, filename: string) {
+  const img = new Image();
+  img.crossOrigin = "anonymous";
+  img.src = imageUrl;
+  await new Promise<void>((resolve, reject) => {
+    img.onload = () => resolve();
+    img.onerror = () => reject(new Error("Failed to load image"));
+  });
+
+  const canvas = document.createElement("canvas");
+  canvas.width = img.naturalWidth;
+  canvas.height = img.naturalHeight;
+  const ctx = canvas.getContext("2d")!;
+
+  // Draw image
+  ctx.drawImage(img, 0, 0);
+
+  // Draw watermark
+  const fontSize = Math.max(14, img.naturalWidth / 40);
+  ctx.font = `${fontSize}px system-ui, sans-serif`;
+  ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
+  ctx.strokeStyle = "rgba(0, 0, 0, 0.5)";
+  ctx.lineWidth = 3;
+  const text = "AI-Generated";
+  const metrics = ctx.measureText(text);
+  const padding = fontSize;
+  const x = canvas.width - metrics.width - padding;
+  const y = canvas.height - padding;
+
+  // Text
+  ctx.fillStyle = "rgba(255, 255, 255, 0.85)";
+  ctx.strokeText(text, x, y);
+  ctx.fillText(text, x, y);
+
+  // Download
+  canvas.toBlob((blob) => {
+    if (!blob) return;
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${filename}.png`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, "image/png");
+}
+
 export default function ResultPage({
   params,
 }: {
@@ -112,13 +158,18 @@ export default function ResultPage({
       {isCompleted && gen && (
         <div className="space-y-6">
           {/* Generated Image */}
-          <div className="rounded-2xl overflow-hidden border border-white/10 bg-gray-900/60">
+          <div className="rounded-2xl overflow-hidden border border-white/10 bg-gray-900/60 relative">
             {gen.outputImageUrl ? (
-              <img
-                src={gen.outputImageUrl}
-                alt="Your AI-generated sports moment"
-                className="w-full h-auto"
-              />
+              <>
+                <img
+                  src={gen.outputImageUrl}
+                  alt="Your AI-generated sports moment"
+                  className="w-full h-auto"
+                />
+                <div className="absolute bottom-3 right-3 text-xs text-white/80 font-medium drop-shadow-lg">
+                  AI-Generated
+                </div>
+              </>
             ) : (
               <div className="aspect-[4/3] flex items-center justify-center text-gray-500">
                 No image available
@@ -146,15 +197,12 @@ export default function ResultPage({
           {/* Share / Download */}
           <div className="space-y-3">
             {gen.outputImageUrl && (
-              <a
-                href={gen.outputImageUrl}
-                download={`ifiwasthere-${gen.eventId}.png`}
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                onClick={() => downloadWithWatermark(gen.outputImageUrl!, `ifiwasthere-${gen.eventId}`)}
                 className="block w-full text-center rounded-xl bg-white/10 border border-white/10 py-3 text-sm font-medium text-white hover:bg-white/20 transition-colors"
               >
                 📥 Download Image
-              </a>
+              </button>
             )}
 
             {selectedCaption && (
