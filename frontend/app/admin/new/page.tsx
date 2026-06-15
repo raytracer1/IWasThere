@@ -1,37 +1,48 @@
 "use client";
 
+import { useMemo } from "react";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import AuthGuard from "@/components/admin/AuthGuard";
 import EventForm, { type EventFormSaveData } from "@/components/admin/EventForm";
 import { adminFetch } from "@/lib/admin-api";
 
+async function uploadFile(file: File, eventId: string, name: string, token?: string): Promise<string> {
+  const fd = new FormData();
+  fd.append("file", file);
+  const res = await adminFetch<{ success: boolean; data: { key: string } }>(
+    `/admin/upload?eventId=${eventId}&name=${name}`,
+    token,
+    { method: "POST", body: fd }
+  );
+  return res.data.key;
+}
+
 export default function AdminNewPage() {
   const { data: session } = useSession();
   const router = useRouter();
   const accessToken = (session as { accessToken?: string } | null)?.accessToken;
+  const eventId = useMemo(() => crypto.randomUUID(), []);
 
   const handleSave = async (data: EventFormSaveData) => {
-    if (data.thumbnailFile || data.backgroundFile || data.videoFile) {
-      const fd = new FormData();
-      if (data.thumbnailFile) fd.append("thumbnail", data.thumbnailFile);
-      if (data.backgroundFile) fd.append("background", data.backgroundFile);
-      if (data.videoFile) fd.append("video", data.videoFile);
-      fd.append("metadata", JSON.stringify(data.body));
-      await adminFetch("/admin/events", accessToken, {
-        method: "POST",
-        body: fd,
-      });
-    } else {
-      await adminFetch("/admin/events", accessToken, {
-        method: "POST",
-        body: JSON.stringify(data.body),
-      });
+    // Step 1: Upload files, fill keys into body
+    if (data.thumbnailFile) {
+      data.body.thumbnailUrl = await uploadFile(data.thumbnailFile, eventId, "thumbnail", accessToken);
     }
-    router.push("/admin");
-  };
+    if (data.backgroundFile) {
+      const gen = (data.body.generation as Record<string, unknown>) || {};
+      gen.background_image = await uploadFile(data.backgroundFile, eventId, "background", accessToken);
+      data.body.generation = gen;
+    }
+    if (data.videoFile) {
+      data.body.referenceVideo = await uploadFile(data.videoFile, eventId, "reference", accessToken);
+    }
 
-  const handleCancel = () => {
+    // Step 2: POST event JSON
+    await adminFetch("/admin/events", accessToken, {
+      method: "POST",
+      body: JSON.stringify({ ...data.body, id: eventId }),
+    });
     router.push("/admin");
   };
 
@@ -42,12 +53,10 @@ export default function AdminNewPage() {
           <h1 className="text-xl font-bold text-white">⚙️ New Event</h1>
           <div className="flex items-center gap-3">
             <span className="text-xs text-gray-400">{session?.user?.email}</span>
-            <button onClick={() => signOut()} className="text-xs text-red-400 hover:underline">
-              Sign out
-            </button>
+            <button onClick={() => signOut()} className="text-xs text-red-400 hover:underline">Sign out</button>
           </div>
         </div>
-        <EventForm onSave={handleSave} onCancel={handleCancel} />
+        <EventForm onSave={handleSave} onCancel={() => router.push("/admin")} />
       </div>
     </AuthGuard>
   );

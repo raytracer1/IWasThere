@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { D1Helper } from '../utils/d1';
-import { uploadToR2, deleteFromR2, signEventAssetUrls } from '../utils/r2';
+import { uploadToR2, deleteFromR2, generateSignedUrl, signEventAssetUrls } from '../utils/r2';
 import { MAX_THUMBNAIL_SIZE, DEFAULT_PAGE_SIZE } from '../shared';
 import type { Event } from '../shared';
 import type { Bindings } from '../types';
@@ -13,6 +13,34 @@ interface UploadedFile {
   type: string;
   arrayBuffer(): Promise<ArrayBuffer>;
 }
+
+/**
+ * POST /admin/upload — Upload a file, return R2 key.
+ * Query: ?eventId=<uuid>&name=<thumbnail|background|reference>
+ */
+adminRouter.post('/upload', async (c) => {
+  const eventId = c.req.query('eventId') || crypto.randomUUID();
+  const name = c.req.query('name') || 'file';
+
+  const formData = await c.req.formData();
+  const file = formData.get('file');
+
+  if (!file || typeof file === 'string') {
+    return c.json({ success: false, error: 'No file provided' }, 400);
+  }
+
+  const uploadFile = file as unknown as UploadedFile;
+  const ext = uploadFile.name.split('.').pop() || 'bin';
+  const key = `events/${eventId}/${name}.${ext}`;
+
+  await uploadToR2(c.env.ASSETS, key, await uploadFile.arrayBuffer(), uploadFile.type);
+
+  const secret = c.env.AUTH_SECRET ?? 'dev-secret';
+  const workerUrl = new URL(c.req.url).origin;
+  const url = await generateSignedUrl(key, secret, workerUrl);
+
+  return c.json({ success: true, data: { key, url } });
+});
 
 /**
  * GET /admin/events — List all events (including drafts).
@@ -55,51 +83,8 @@ adminRouter.get('/events/:id', async (c) => {
  */
 adminRouter.post('/events', async (c) => {
   const db = new D1Helper(c.env.DB);
-
-  let thumbnailKey: string | undefined;
-  let body: Record<string, unknown>;
-
-  const contentType = c.req.header('Content-Type') ?? '';
-
-  const id = crypto.randomUUID();
-
-  if (contentType.includes('multipart/form-data')) {
-    const formData = await c.req.formData();
-    const metadataStr = formData.get('metadata') as string;
-    body = metadataStr ? JSON.parse(metadataStr) : {};
-    const thumbnail = formData.get('thumbnail');
-
-    if (thumbnail && typeof thumbnail !== 'string') {
-      const file = thumbnail as unknown as UploadedFile;
-      if (file.size > MAX_THUMBNAIL_SIZE) {
-        return c.json({ success: false, error: 'Thumbnail too large' }, 400);
-      }
-      thumbnailKey = `events/${id}/thumbnail.${file.name.split('.').pop() || 'jpg'}`;
-      await uploadToR2(c.env.ASSETS, thumbnailKey, await file.arrayBuffer(), file.type);
-    }
-
-    // Handle background image upload
-    const background = formData.get('background');
-    if (background && typeof background !== 'string') {
-      const bgFile = background as unknown as UploadedFile;
-      const bgKey = `events/${id}/background.${bgFile.name.split('.').pop() || 'jpg'}`;
-      await uploadToR2(c.env.ASSETS, bgKey, await bgFile.arrayBuffer(), bgFile.type);
-      const gen = (body.generation as Record<string, unknown>) || {};
-      gen.background_image = bgKey;
-      body.generation = gen;
-    }
-
-    // Handle reference video upload
-    const video = formData.get('video');
-    if (video && typeof video !== 'string') {
-      const vidFile = video as unknown as UploadedFile;
-      const vidKey = `events/${id}/reference.${vidFile.name.split('.').pop() || 'mp4'}`;
-      await uploadToR2(c.env.ASSETS, vidKey, await vidFile.arrayBuffer(), vidFile.type);
-      body.referenceVideo = vidKey;
-    }
-  } else {
-    body = await c.req.json();
-  }
+  const body = await c.req.json<Record<string, unknown>>();
+  const id = (body.id as string) || crypto.randomUUID();
 
   // Validate required fields
   if (!body.title || !body.category || !body.generation) {
@@ -129,7 +114,7 @@ adminRouter.post('/events', async (c) => {
     entities: (body.entities as Record<string, unknown>) || {},
     moment: (body.moment as Record<string, unknown>) || {},
     generation: gen as unknown as Event['generation'],
-    thumbnailUrl: (body.thumbnailUrl as string) || thumbnailKey,
+    thumbnailUrl: body.thumbnailUrl as string | undefined,
     status: (body.status as 'active' | 'draft' | 'archived') || 'active',
   });
 
@@ -148,52 +133,7 @@ adminRouter.put('/events/:id', async (c) => {
     return c.json({ success: false, error: 'Event not found' }, 404);
   }
 
-  let thumbnailKey: string | undefined;
-  let body: Record<string, unknown>;
-
-  const contentType = c.req.header('Content-Type') ?? '';
-
-  if (contentType.includes('multipart/form-data')) {
-    const formData = await c.req.formData();
-    const metadataStr = formData.get('metadata') as string;
-    body = metadataStr ? JSON.parse(metadataStr) : {};
-    const thumbnail = formData.get('thumbnail');
-
-    if (thumbnail && typeof thumbnail !== 'string') {
-      const file = thumbnail as unknown as UploadedFile;
-      if (file.size > MAX_THUMBNAIL_SIZE) {
-        return c.json({ success: false, error: 'Thumbnail too large' }, 400);
-      }
-      thumbnailKey = `events/${id}/thumbnail.${file.name.split('.').pop() || 'jpg'}`;
-      await uploadToR2(c.env.ASSETS, thumbnailKey, await file.arrayBuffer(), file.type);
-    }
-
-    // Handle background image upload
-    const background = formData.get('background');
-    if (background && typeof background !== 'string') {
-      const bgFile = background as unknown as UploadedFile;
-      const bgKey = `events/${id}/background.${bgFile.name.split('.').pop() || 'jpg'}`;
-      await uploadToR2(c.env.ASSETS, bgKey, await bgFile.arrayBuffer(), bgFile.type);
-      const gen = (body.generation as Record<string, unknown>) || {};
-      gen.background_image = bgKey;
-      body.generation = gen;
-    }
-
-    // Handle reference video upload
-    const video = formData.get('video');
-    if (video && typeof video !== 'string') {
-      const vidFile = video as unknown as UploadedFile;
-      const vidKey = `events/${id}/reference.${vidFile.name.split('.').pop() || 'mp4'}`;
-      await uploadToR2(c.env.ASSETS, vidKey, await vidFile.arrayBuffer(), vidFile.type);
-      body.referenceVideo = vidKey;
-    }
-  } else {
-    body = await c.req.json<Record<string, unknown>>();
-  }
-
-  if (thumbnailKey) {
-    body.thumbnailUrl = thumbnailKey;
-  }
+  const body = await c.req.json<Record<string, unknown>>();
 
   await db.updateEvent(id, body);
   return c.json({ success: true, data: { id: existing.id } });

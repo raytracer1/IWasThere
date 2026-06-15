@@ -8,6 +8,17 @@ import AuthGuard from "@/components/admin/AuthGuard";
 import EventForm, { type EventFormSaveData } from "@/components/admin/EventForm";
 import { adminFetch } from "@/lib/admin-api";
 
+async function uploadFile(file: File, eventId: string, name: string, token?: string): Promise<string> {
+  const fd = new FormData();
+  fd.append("file", file);
+  const res = await adminFetch<{ success: boolean; data: { key: string } }>(
+    `/admin/upload?eventId=${eventId}&name=${name}`,
+    token,
+    { method: "POST", body: fd }
+  );
+  return res.data.key;
+}
+
 export default function AdminEditPage({
   params,
 }: {
@@ -31,11 +42,8 @@ export default function AdminEditPage({
           `/admin/events/${eventId}`,
           accessToken
         );
-        if (res.data) {
-          setEvent(res.data);
-        } else {
-          setError("Event not found");
-        }
+        if (res.data) setEvent(res.data);
+        else setError("Event not found");
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to load event");
       } finally {
@@ -46,26 +54,24 @@ export default function AdminEditPage({
   }, [eventId, accessToken]);
 
   const handleSave = async (data: EventFormSaveData) => {
-    if (data.thumbnailFile || data.backgroundFile || data.videoFile) {
-      const fd = new FormData();
-      if (data.thumbnailFile) fd.append("thumbnail", data.thumbnailFile);
-      if (data.backgroundFile) fd.append("background", data.backgroundFile);
-      if (data.videoFile) fd.append("video", data.videoFile);
-      fd.append("metadata", JSON.stringify(data.body));
-      await adminFetch(`/admin/events/${eventId}`, accessToken, {
-        method: "PUT",
-        body: fd,
-      });
-    } else {
-      await adminFetch(`/admin/events/${eventId}`, accessToken, {
-        method: "PUT",
-        body: JSON.stringify(data.body),
-      });
+    // Step 1: Upload files, fill keys into body
+    if (data.thumbnailFile) {
+      data.body.thumbnailUrl = await uploadFile(data.thumbnailFile, eventId, "thumbnail", accessToken);
     }
-    router.push("/admin");
-  };
+    if (data.backgroundFile) {
+      const gen = (data.body.generation as Record<string, unknown>) || {};
+      gen.background_image = await uploadFile(data.backgroundFile, eventId, "background", accessToken);
+      data.body.generation = gen;
+    }
+    if (data.videoFile) {
+      data.body.referenceVideo = await uploadFile(data.videoFile, eventId, "reference", accessToken);
+    }
 
-  const handleCancel = () => {
+    // Step 2: PUT event JSON
+    await adminFetch(`/admin/events/${eventId}`, accessToken, {
+      method: "PUT",
+      body: JSON.stringify(data.body),
+    });
     router.push("/admin");
   };
 
@@ -76,12 +82,9 @@ export default function AdminEditPage({
           <h1 className="text-xl font-bold text-white">⚙️ Edit Event</h1>
           <div className="flex items-center gap-3">
             <span className="text-xs text-gray-400">{session?.user?.email}</span>
-            <button onClick={() => signOut()} className="text-xs text-red-400 hover:underline">
-              Sign out
-            </button>
+            <button onClick={() => signOut()} className="text-xs text-red-400 hover:underline">Sign out</button>
           </div>
         </div>
-
         {loading ? (
           <div className="rounded-xl border border-white/10 bg-gray-900/60 p-8 text-center">
             <p className="text-gray-400">Loading event...</p>
@@ -89,15 +92,12 @@ export default function AdminEditPage({
         ) : error ? (
           <div className="rounded-xl border border-white/10 bg-gray-900/60 p-8 text-center">
             <p className="text-red-400">{error}</p>
-            <button
-              onClick={() => router.push("/admin")}
-              className="mt-3 text-sm text-cyan-400 hover:underline"
-            >
+            <button onClick={() => router.push("/admin")} className="mt-3 text-sm text-cyan-400 hover:underline">
               Back to admin
             </button>
           </div>
         ) : event ? (
-          <EventForm event={event} onSave={handleSave} onCancel={handleCancel} />
+          <EventForm event={event} onSave={handleSave} onCancel={() => router.push("/admin")} />
         ) : null}
       </div>
     </AuthGuard>

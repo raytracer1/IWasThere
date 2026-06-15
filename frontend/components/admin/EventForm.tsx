@@ -46,7 +46,9 @@ interface EventFormProps {
 export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
   const isEdit = !!event;
   const initializedRef = useRef<string | null>(null);
-  const previewUrlRef = useRef<string | null>(null);
+  const thumbPreviewRef = useRef<string | null>(null);
+  const bgPreviewRef = useRef<string | null>(null);
+  const videoPreviewRef = useRef<string | null>(null);
 
   const [form, setForm] = useState({
     title: "",
@@ -60,18 +62,20 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
     momentStr: stringify(DEFAULT_MOMENT),
     generationStr: stringify(DEFAULT_GENERATION),
     thumbnailUrl: "",
+    videoKey: "",
     status: "active" as "active" | "draft",
   });
+
   const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
   const [backgroundFile, setBackgroundFile] = useState<File | null>(null);
   const [backgroundPreview, setBackgroundPreview] = useState<string | null>(null);
   const [videoFile, setVideoFile] = useState<File | null>(null);
   const [videoPreview, setVideoPreview] = useState<string | null>(null);
+
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
-  // Initialize form when event prop changes
   const initForm = useCallback((ev: Event | null | undefined) => {
     if (ev) {
       setForm({
@@ -86,6 +90,7 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
         momentStr: stringify(ev.moment || (DEFAULT_MOMENT as Record<string, unknown>)),
         generationStr: stringify((ev.generation as unknown as Record<string, unknown>) || DEFAULT_GENERATION),
         thumbnailUrl: ev.thumbnailUrl || "",
+        videoKey: ev.referenceVideo || "",
         status: ev.status as "active" | "draft",
       });
     } else {
@@ -101,6 +106,7 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
         momentStr: stringify(DEFAULT_MOMENT),
         generationStr: stringify(DEFAULT_GENERATION),
         thumbnailUrl: "",
+        videoKey: "",
         status: "active",
       });
     }
@@ -119,33 +125,35 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
     initForm(event);
   }, [event, initForm]);
 
-  const bgPreviewRef = useRef<string | null>(null);
-  const videoPreviewRef = useRef<string | null>(null);
-
   // Cleanup preview URLs on unmount
   useEffect(() => {
     return () => {
-      if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
+      if (thumbPreviewRef.current) URL.revokeObjectURL(thumbPreviewRef.current);
       if (bgPreviewRef.current) URL.revokeObjectURL(bgPreviewRef.current);
       if (videoPreviewRef.current) URL.revokeObjectURL(videoPreviewRef.current);
     };
   }, []);
 
-  const handleThumbnailChange = (file: File | undefined) => {
-    if (previewUrlRef.current) {
-      URL.revokeObjectURL(previewUrlRef.current);
-      previewUrlRef.current = null;
-    }
-    if (file) {
-      setThumbnailFile(file);
-      const url = URL.createObjectURL(file);
-      previewUrlRef.current = url;
-      setThumbnailPreview(url);
-    }
-  };
+  const handleFileSelect = (file: File | undefined, name: string) => {
+    if (!file) return;
+    const url = URL.createObjectURL(file);
 
-  const setField = (key: string, value: string) => {
-    setForm((prev) => ({ ...prev, [key]: value }));
+    if (name === "thumbnail") {
+      if (thumbPreviewRef.current) URL.revokeObjectURL(thumbPreviewRef.current);
+      thumbPreviewRef.current = url;
+      setThumbnailFile(file);
+      setThumbnailPreview(url);
+    } else if (name === "background") {
+      if (bgPreviewRef.current) URL.revokeObjectURL(bgPreviewRef.current);
+      bgPreviewRef.current = url;
+      setBackgroundFile(file);
+      setBackgroundPreview(url);
+    } else if (name === "reference") {
+      if (videoPreviewRef.current) URL.revokeObjectURL(videoPreviewRef.current);
+      videoPreviewRef.current = url;
+      setVideoFile(file);
+      setVideoPreview(url);
+    }
   };
 
   const handleSave = async () => {
@@ -164,13 +172,12 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
         moment: parseJson(form.momentStr, "moment"),
         generation: parseJson(form.generationStr, "generation"),
         thumbnailUrl: form.thumbnailUrl || undefined,
+        referenceVideo: form.videoKey || undefined,
         status: form.status,
       };
       await onSave({ body, thumbnailFile, backgroundFile, videoFile });
       setMsg(isEdit ? "✅ Event updated" : "✅ Event created");
-      if (!isEdit) {
-        initForm(null);
-      }
+      if (!isEdit) initForm(null);
     } catch (err) {
       setMsg(`❌ ${err instanceof Error ? err.message : "Failed"}`);
     } finally {
@@ -189,30 +196,26 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
         <input
           placeholder="Title"
           value={form.title}
-          onChange={(e) => setField("title", e.target.value)}
+          onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
           className="col-span-2 rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-white"
         />
         <select
           value={form.category}
-          onChange={(e) => setField("category", e.target.value)}
+          onChange={(e) => setForm((prev) => ({ ...prev, category: e.target.value }))}
           className="rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-white"
         >
-          {CATEGORIES.map((s) => (
-            <option key={s} value={s}>{s}</option>
-          ))}
+          {CATEGORIES.map((s) => (<option key={s} value={s}>{s}</option>))}
         </select>
         <select
           value={form.event_type}
-          onChange={(e) => setField("event_type", e.target.value)}
+          onChange={(e) => setForm((prev) => ({ ...prev, event_type: e.target.value }))}
           className="rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-white"
         >
-          {EVENT_TYPES.map((t) => (
-            <option key={t} value={t}>{t}</option>
-          ))}
+          {EVENT_TYPES.map((t) => (<option key={t} value={t}>{t}</option>))}
         </select>
         <select
           value={form.status}
-          onChange={(e) => setField("status", e.target.value)}
+          onChange={(e) => setForm((prev) => ({ ...prev, status: e.target.value as "active" | "draft" }))}
           className="rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-white"
         >
           <option value="active">Active</option>
@@ -223,28 +226,16 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
         <div className="col-span-2 flex flex-col gap-2">
           <label className="flex items-center gap-2 rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-gray-400 cursor-pointer hover:text-white hover:border-cyan-500/30 transition-colors">
             📁 Upload thumbnail
-            <input
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => handleThumbnailChange(e.target.files?.[0])}
-            />
+            <input type="file" accept="image/*" className="hidden"
+              onChange={(e) => handleFileSelect(e.target.files?.[0], "thumbnail")} />
           </label>
           {thumbnailPreview ? (
             <div className="rounded-lg overflow-hidden border border-white/10">
-              <img
-                src={thumbnailPreview}
-                alt="Thumbnail preview"
-                className="w-full max-h-64 object-contain"
-              />
+              <img src={thumbnailPreview} alt="Thumbnail preview" className="w-full max-h-64 object-contain" />
             </div>
           ) : form.thumbnailUrl ? (
             <div className="rounded-lg overflow-hidden border border-white/10">
-              <img
-                src={form.thumbnailUrl}
-                alt="Current thumbnail"
-                className="w-full max-h-64 object-contain"
-              />
+              <img src={form.thumbnailUrl} alt="Current thumbnail" className="w-full max-h-64 object-contain" />
             </div>
           ) : null}
         </div>
@@ -253,40 +244,17 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
         <div className="col-span-2 flex flex-col gap-2">
           <label className="flex items-center gap-2 rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-gray-400 cursor-pointer hover:text-white hover:border-cyan-500/30 transition-colors">
             🖼️ Upload background image
-            <input
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (bgPreviewRef.current) {
-                  URL.revokeObjectURL(bgPreviewRef.current);
-                  bgPreviewRef.current = null;
-                }
-                if (file) {
-                  setBackgroundFile(file);
-                  const url = URL.createObjectURL(file);
-                  bgPreviewRef.current = url;
-                  setBackgroundPreview(url);
-                }
-              }}
-            />
+            <input type="file" accept="image/*" className="hidden"
+              onChange={(e) => handleFileSelect(e.target.files?.[0], "background")} />
           </label>
           {backgroundPreview ? (
             <div className="rounded-lg overflow-hidden border border-white/10">
-              <img
-                src={backgroundPreview}
-                alt="Background preview"
-                className="w-full max-h-64 object-contain"
-              />
+              <img src={backgroundPreview} alt="Background preview" className="w-full max-h-64 object-contain" />
             </div>
           ) : (event?.generation as unknown as Record<string, unknown>)?.background_image ? (
             <div className="rounded-lg overflow-hidden border border-white/10">
-              <img
-                src={(event?.generation as unknown as Record<string, unknown>).background_image as string}
-                alt="Current background"
-                className="w-full max-h-64 object-contain"
-              />
+              <img src={(event?.generation as unknown as Record<string, unknown>).background_image as string}
+                alt="Current background" className="w-full max-h-64 object-contain" />
             </div>
           ) : null}
         </div>
@@ -295,24 +263,8 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
         <div className="col-span-2 flex flex-col gap-2">
           <label className="flex items-center gap-2 rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-gray-400 cursor-pointer hover:text-white hover:border-cyan-500/30 transition-colors">
             🎬 Upload reference video
-            <input
-              type="file"
-              accept="video/*"
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0];
-                if (videoPreviewRef.current) {
-                  URL.revokeObjectURL(videoPreviewRef.current);
-                  videoPreviewRef.current = null;
-                }
-                if (file) {
-                  setVideoFile(file);
-                  const url = URL.createObjectURL(file);
-                  videoPreviewRef.current = url;
-                  setVideoPreview(url);
-                }
-              }}
-            />
+            <input type="file" accept="video/*" className="hidden"
+              onChange={(e) => handleFileSelect(e.target.files?.[0], "reference")} />
           </label>
           {videoPreview ? (
             <div className="rounded-lg overflow-hidden border border-white/10">
@@ -330,79 +282,43 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
           <p className="text-xs text-gray-500 mb-2">JSON Fields — edit as JSON objects</p>
         </div>
 
-        {/* Scene + Emotion */}
         <div className="col-span-2 sm:col-span-1">
           <label className="text-xs text-gray-400 mb-1 block">scene</label>
-          <textarea
-            value={form.sceneStr}
-            onChange={(e) => setField("sceneStr", e.target.value)}
-            rows={5}
-            className="w-full rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-xs text-white font-mono"
-          />
+          <textarea value={form.sceneStr} onChange={(e) => setForm((prev) => ({ ...prev, sceneStr: e.target.value }))}
+            rows={5} className="w-full rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-xs text-white font-mono" />
         </div>
         <div className="col-span-2 sm:col-span-1">
           <label className="text-xs text-gray-400 mb-1 block">emotion</label>
-          <textarea
-            value={form.emotionStr}
-            onChange={(e) => setField("emotionStr", e.target.value)}
-            rows={5}
-            className="w-full rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-xs text-white font-mono"
-          />
+          <textarea value={form.emotionStr} onChange={(e) => setForm((prev) => ({ ...prev, emotionStr: e.target.value }))}
+            rows={5} className="w-full rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-xs text-white font-mono" />
         </div>
-
-        {/* Camera + User */}
         <div className="col-span-2 sm:col-span-1">
           <label className="text-xs text-gray-400 mb-1 block">camera</label>
-          <textarea
-            value={form.cameraStr}
-            onChange={(e) => setField("cameraStr", e.target.value)}
-            rows={5}
-            className="w-full rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-xs text-white font-mono"
-          />
+          <textarea value={form.cameraStr} onChange={(e) => setForm((prev) => ({ ...prev, cameraStr: e.target.value }))}
+            rows={5} className="w-full rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-xs text-white font-mono" />
         </div>
         <div className="col-span-2 sm:col-span-1">
           <label className="text-xs text-gray-400 mb-1 block">user</label>
-          <textarea
-            value={form.userStr}
-            onChange={(e) => setField("userStr", e.target.value)}
-            rows={5}
-            className="w-full rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-xs text-white font-mono"
-          />
+          <textarea value={form.userStr} onChange={(e) => setForm((prev) => ({ ...prev, userStr: e.target.value }))}
+            rows={5} className="w-full rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-xs text-white font-mono" />
         </div>
-
-        {/* Entities + Moment */}
         <div className="col-span-2 sm:col-span-1">
           <label className="text-xs text-gray-400 mb-1 block">entities</label>
-          <textarea
-            value={form.entitiesStr}
-            onChange={(e) => setField("entitiesStr", e.target.value)}
-            rows={5}
-            className="w-full rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-xs text-white font-mono"
-          />
+          <textarea value={form.entitiesStr} onChange={(e) => setForm((prev) => ({ ...prev, entitiesStr: e.target.value }))}
+            rows={5} className="w-full rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-xs text-white font-mono" />
         </div>
         <div className="col-span-2 sm:col-span-1">
           <label className="text-xs text-gray-400 mb-1 block">moment</label>
-          <textarea
-            value={form.momentStr}
-            onChange={(e) => setField("momentStr", e.target.value)}
-            rows={5}
-            className="w-full rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-xs text-white font-mono"
-          />
+          <textarea value={form.momentStr} onChange={(e) => setForm((prev) => ({ ...prev, momentStr: e.target.value }))}
+            rows={5} className="w-full rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-xs text-white font-mono" />
         </div>
-
-        {/* Generation */}
         <div className="col-span-2">
           <label className="text-xs text-gray-400 mb-1 block">generation</label>
-          <textarea
-            value={form.generationStr}
-            onChange={(e) => setField("generationStr", e.target.value)}
-            rows={6}
-            className="w-full rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-xs text-white font-mono"
-          />
+          <textarea value={form.generationStr} onChange={(e) => setForm((prev) => ({ ...prev, generationStr: e.target.value }))}
+            rows={6} className="w-full rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-xs text-white font-mono" />
         </div>
       </div>
 
-      {/* Buttons */}
       <div className="flex gap-2 mt-4">
         <button
           onClick={handleSave}
@@ -412,12 +328,9 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
           {saving ? "Saving..." : isEdit ? "Update" : "Create"}
         </button>
         {onCancel && (
-          <button onClick={onCancel} className="rounded-lg bg-gray-700 px-4 py-2 text-sm text-gray-300">
-            Cancel
-          </button>
+          <button onClick={onCancel} className="rounded-lg bg-gray-700 px-4 py-2 text-sm text-gray-300">Cancel</button>
         )}
       </div>
-
       {msg && <p className="mt-2 text-sm">{msg}</p>}
     </div>
   );
