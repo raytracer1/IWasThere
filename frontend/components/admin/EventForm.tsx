@@ -244,9 +244,9 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
             <div className="rounded-lg overflow-hidden border border-white/10">
               <img src={thumbnailPreview} alt="Thumbnail preview" className="w-full max-h-64 object-contain" />
             </div>
-          ) : form.thumbnailUrl ? (
+          ) : event?.thumbnailUrl && event.thumbnailUrl.startsWith('http') ? (
             <div className="rounded-lg overflow-hidden border border-white/10">
-              <img src={form.thumbnailUrl} alt="Current thumbnail" className="w-full max-h-64 object-contain" />
+              <img src={event.thumbnailUrl} alt="Current thumbnail" className="w-full max-h-64 object-contain" />
             </div>
           ) : null}
         </div>
