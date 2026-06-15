@@ -66,41 +66,60 @@ export default function AdminListPage() {
           + New Event
         </button>
 
-        {/* Event List */}
+        {/* Event Grid */}
         {loading ? (
           <p className="text-sm text-gray-400">Loading...</p>
         ) : (
-          <div className="space-y-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
             {events.map((ev) => (
               <div
                 key={ev.id}
-                className="flex items-center gap-3 rounded-xl border border-white/10 bg-gray-900/60 p-3"
+                className="rounded-2xl border border-white/10 bg-gray-900/60 backdrop-blur-sm overflow-hidden group"
               >
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-white truncate">{ev.title}</p>
-                  <p className="text-xs text-gray-400">
-                    {ev.category} · {ev.event_type || ""} · {ev.scene?.time_period || ""} ·{" "}
-                    <span
-                      className={
-                        ev.status === "active" ? "text-green-400" : "text-yellow-400"
-                      }
-                    >
-                      {ev.status}
-                    </span>
-                  </p>
+                {/* Thumbnail */}
+                <div className="aspect-[4/3] bg-gradient-to-br from-gray-800 to-gray-900 relative overflow-hidden">
+                  {ev.thumbnailUrl ? (
+                    <img
+                      src={ev.thumbnailUrl}
+                      alt={ev.title}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center text-3xl opacity-30">
+                      🏟️
+                    </div>
+                  )}
+                  <div className="absolute top-2 left-2 rounded-md bg-black/70 px-2 py-0.5 text-xs text-white capitalize">
+                    {ev.category.replace("_", " ")}
+                  </div>
+                  <div className={`absolute top-2 right-2 rounded-md px-2 py-0.5 text-xs font-medium ${
+                    ev.status === "active" ? "bg-green-500/80 text-white" : "bg-yellow-500/80 text-black"
+                  }`}>
+                    {ev.status}
+                  </div>
                 </div>
-                <button
-                  onClick={() => router.push(`/admin/${ev.id}`)}
-                  className="text-xs text-cyan-400 hover:underline"
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={() => handleDelete(ev.id)}
-                  className="text-xs text-red-400 hover:underline"
-                >
-                  Del
-                </button>
+
+                {/* Info */}
+                <div className="p-3">
+                  <p className="text-xs text-gray-400 mb-1">{ev.event_type || ""} · {ev.scene?.time_period || ""}</p>
+                  <h3 className="text-sm font-semibold text-white line-clamp-2 leading-snug mb-2">
+                    {ev.title}
+                  </h3>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => router.push(`/admin/${ev.id}`)}
+                      className="flex-1 rounded-lg bg-cyan-600/20 border border-cyan-500/30 py-1.5 text-xs text-cyan-300 hover:bg-cyan-600/30 transition-colors"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => handleDelete(ev.id)}
+                      className="flex-1 rounded-lg bg-red-500/10 border border-red-500/20 py-1.5 text-xs text-red-400 hover:bg-red-500/20 transition-colors"
+                    >
+                      Del
+                    </button>
+                  </div>
+                </div>
               </div>
             ))}
           </div>
