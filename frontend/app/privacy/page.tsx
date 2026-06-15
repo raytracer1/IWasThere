@@ -15,7 +15,7 @@ export default function PrivacyPage() {
           servers.
         </p>
         <p>
-          The generated output image is stored for <strong>7 days</strong> and
+          The generated output image is stored for <strong>3 days</strong> and
           then automatically deleted. No other user data is stored.
         </p>
       </section>
@@ -52,8 +52,8 @@ export default function PrivacyPage() {
       <section className="space-y-3">
         <h2 className="text-lg font-semibold text-white">5. Data Retention</h2>
         <p>
-          Generated images are stored for <strong>7 days</strong> to allow you
-          to download and share them. After 7 days, they are permanently deleted.
+          Generated images are stored for <strong>3 days</strong> to allow you
+          to download and share them. After 3 days, they are permanently deleted.
           No other user data is retained.
         </p>
       </section>

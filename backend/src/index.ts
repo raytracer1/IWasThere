@@ -115,3 +115,33 @@ app.notFound((c) => {
 });
 
 export default app;
+
+// ─── Cron: cleanup old generations (3 day retention) ──────
+
+import { D1Helper } from './utils/d1';
+import { deleteFromR2 } from './utils/r2';
+
+async function cleanupGenerations(env: Bindings) {
+  const db = new D1Helper(env.DB);
+  const expired = await db.getExpiredGenerations(3);
+
+  if (expired.length === 0) return;
+
+  console.log(`[cron] Cleaning up ${expired.length} expired generations`);
+
+  for (const gen of expired) {
+    // Delete R2 files
+    const keys = [gen.inputImage, gen.outputImage].filter(Boolean) as string[];
+    for (const key of keys) {
+      try { await deleteFromR2(env.ASSETS, key); } catch {}
+    }
+    // Delete DB record
+    try { await db.deleteGeneration(gen.id); } catch {}
+  }
+
+  console.log(`[cron] Cleanup complete`);
+}
+
+export const scheduled: ExportedHandlerScheduledHandler<Bindings> = async (_event, env) => {
+  await cleanupGenerations(env);
+};

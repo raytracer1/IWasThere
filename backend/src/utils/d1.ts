@@ -266,6 +266,19 @@ export class D1Helper {
     };
   }
 
+  async deleteGeneration(id: string): Promise<void> {
+    await this.run('DELETE FROM generations WHERE id = ?', id);
+  }
+
+  async getExpiredGenerations(retentionDays: number): Promise<Generation[]> {
+    const cutoff = Math.floor(Date.now() / 1000) - retentionDays * 86400;
+    const rows = await this.all<Record<string, unknown>>(
+      'SELECT * FROM generations WHERE created_at < ?',
+      cutoff
+    );
+    return rows.results.map((row) => this.mapGeneration(row));
+  }
+
   // ─── Row Mappers ──────────────────────────────────────
 
   private mapEvent(row: Record<string, unknown>): Event {
