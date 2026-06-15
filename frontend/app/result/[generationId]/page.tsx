@@ -164,7 +164,7 @@ export default function ResultPage({
                 <img
                   src={gen.outputImageUrl}
                   alt="Your AI-generated sports moment"
-                  className="w-full h-auto"
+                  className="w-full max-h-[60vh] object-contain"
                 />
                 <div className="absolute bottom-3 right-3 text-xs text-white/80 font-medium drop-shadow-lg">
                   AI-Generated
