@@ -73,76 +73,6 @@ export function isLiveStatus(status: string): boolean {
   return LIVE_STATUSES.has(status.toUpperCase().replace(/['']/g, "'"));
 }
 
-export async function fetchTodayMatches(): Promise<MatchEvent[]> {
-  if (!API_KEY) {
-    console.warn('  ⚠️  FOOTBALL_DATA_KEY not set');
-    return [];
-  }
-
-  const today = new Date().toISOString().slice(0, 10);
-  const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
-
-  // 一次请求拿今明两天，最多重试 2 次
-  const url = `${API_BASE}/matches?dateFrom=${today}&dateTo=${tomorrow}`;
-  let data: any = null;
-  try {
-    for (let attempt = 0; attempt < 3; attempt++) {
-      try {
-        const r = await fetch(url, {
-          headers: { 'X-Auth-Token': API_KEY, 'Accept': 'application/json' },
-          signal: AbortSignal.timeout(30_000),
-        });
-        data = await r.json();
-        break;
-      } catch (err) {
-        if (attempt < 2) {
-          console.warn(`   Football-Data attempt ${attempt + 1} failed, retrying...`);
-          await new Promise(r => setTimeout(r, 2000));
-        } else {
-          throw err;
-        }
-      }
-    }
-    const allMatches = data?.matches ?? [];
-
-    const matches: MatchEvent[] = [];
-    const seen = new Set<string>();
-
-    for (const m of allMatches) {
-      const leagueName = m.competition?.name ?? '';
-      const weight = getLeagueWeight(leagueName);
-      if (weight < 30) continue;
-
-      const id = String(m.id);
-      if (seen.has(id)) continue;
-      seen.add(id);
-
-      const matchDate = (m.utcDate ?? '').slice(0, 10);
-
-      matches.push({
-        id,
-        homeTeam: m.homeTeam?.name ?? 'Unknown',
-        awayTeam: m.awayTeam?.name ?? 'Unknown',
-        league: leagueName,
-        homeScore: m.score?.fullTime?.home ?? null,
-        awayScore: m.score?.fullTime?.away ?? null,
-        status: m.status ?? 'SCHEDULED',
-        time: m.utcDate?.slice(11, 19) ?? '',
-        date: matchDate || today,
-        round: m.stage ?? '',
-        season: m.season?.startDate?.slice(0, 4) ?? '2026',
-        venue: m.group ?? '',
-        group: m.group ?? '',
-      });
-    }
-
-    return matches;
-  } catch (err) {
-    console.warn('   Football-Data fetch error:', String(err).slice(0, 80));
-    return [];
-  }
-}
-
 export function detectEvents(matches: MatchEvent[]): EventTrigger[] {
   const triggers: EventTrigger[] = [];
 
@@ -228,41 +158,7 @@ export interface FixtureInfo {
   awayTeam: string;
   status: string;
   elapsed: number | null;
-}
-
-/**
- * 获取今天正在直播的所有比赛，用于控制录制启停。
- */
-export async function getLiveMatches(date: string): Promise<FixtureInfo[]> {
-  if (!API_KEY) return [];
-
-  try {
-    const results: FixtureInfo[] = [];
-    for (const status of ['LIVE', 'IN_PLAY', 'PAUSED']) {
-      const r = await fetch(`${API_BASE}/matches?dateFrom=${date}&dateTo=${date}&status=${status}`, {
-        headers: { 'X-Auth-Token': API_KEY },
-        signal: AbortSignal.timeout(30_000),
-      });
-      const data = await r.json();
-      for (const m of data?.matches ?? []) {
-        results.push({
-          id: m.id,
-          kickoffUtc: m.utcDate,
-          homeTeam: m.homeTeam?.name ?? '',
-          awayTeam: m.awayTeam?.name ?? '',
-          status: m.status ?? '?',
-          elapsed: m.minute ?? null,
-        });
-      }
-    }
-    return results;
-  } catch (err) {
-    console.warn('  ⚠️  getLiveMatches error:', String(err).slice(0, 80));
-    return [];
-  }
-}
-
-/**
+}/**
  * 根据球队名 + 日期查找正在进行的 match。
  */
 export async function findLiveFixture(
@@ -330,40 +226,61 @@ export function estimateGoalUtcMs(kickoffUtc: string, elapsed: number): number {
 }
 
 /**
- * 查找今天最近的开球时间（用于控制录制启停）。
- * 返回 null = 今天没有比赛需要录制。
+ * 获取今天所有比赛（目标联赛）。
+ * 一次请求，返回全部比赛数据。
  */
-export async function getNearestKickoff(date: string): Promise<{ label: string; kickoffUtc: string; status: string } | null> {
-  if (!API_KEY) return null;
-  try {
-    const r = await fetch(`${API_BASE}/matches?dateFrom=${date}&dateTo=${date}`, {
-      headers: { 'X-Auth-Token': API_KEY },
-      signal: AbortSignal.timeout(30_000),
-    });
-    const data = await r.json();
-    const now = Date.now();
-    let nearest: { label: string; kickoffUtc: string; status: string; diff: number } | null = null;
+export async function fetchTodayMatches(date: string): Promise<MatchEvent[]> {
+  if (!API_KEY) return [];
 
-    for (const m of data?.matches ?? []) {
-      const status = m.status ?? '';
-      const kickoffUtc = m.utcDate ?? '';
-      if (!kickoffUtc || status === 'FINISHED') continue;
+  const tomorrow = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
 
-      const kickoffMs = new Date(kickoffUtc).getTime();
-      const diff = kickoffMs - now;
-      const isLive = ['IN_PLAY', 'LIVE', 'PAUSED', '1H', '2H', 'HT'].includes(status);
-      // 忽略 30 分钟后才开始的比赛
-      if (!isLive && diff > 30 * 60 * 1000) continue;
-
-      const label = `${m.homeTeam?.name ?? '?'} vs ${m.awayTeam?.name ?? '?'}`;
-      if (!nearest || diff < nearest.diff) {
-        nearest = { label, kickoffUtc, status, diff };
-      }
+  let data: any = null;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const r = await fetch(`${API_BASE}/matches?dateFrom=${date}&dateTo=${tomorrow}`, {
+        headers: { 'X-Auth-Token': API_KEY, 'Accept': 'application/json' },
+        signal: AbortSignal.timeout(30_000),
+      });
+      data = await r.json();
+      break;
+    } catch {
+      if (attempt < 2) await new Promise(r => setTimeout(r, 2000));
     }
-    return nearest ? { label: nearest.label, kickoffUtc: nearest.kickoffUtc, status: nearest.status } : null;
-  } catch {
-    return null;
   }
+  if (!data) return [];
+
+  const allMatches = data?.matches ?? [];
+  const seen = new Set<string>();
+  const matches: MatchEvent[] = [];
+
+  for (const m of allMatches) {
+    const id = String(m.id);
+    if (seen.has(id)) continue;
+    const leagueName = m.competition?.name ?? '';
+    const weight = getLeagueWeight(leagueName);
+    if (weight < 30) continue;
+    seen.add(id);
+
+    const utcDate = m.utcDate ?? '';
+    matches.push({
+      id,
+      homeTeam: m.homeTeam?.name ?? 'Unknown',
+      awayTeam: m.awayTeam?.name ?? 'Unknown',
+      league: leagueName,
+      homeScore: m.score?.fullTime?.home ?? null,
+      awayScore: m.score?.fullTime?.away ?? null,
+      status: m.status ?? 'SCHEDULED',
+      time: utcDate.slice(11, 19),
+      date: utcDate.slice(0, 10) || date,
+      kickoffUtc: utcDate,
+      round: m.stage ?? '',
+      season: m.season?.startDate?.slice(0, 4) ?? '2026',
+      venue: m.group ?? '',
+      group: m.group ?? '',
+    });
+  }
+
+  return matches;
 }
 
 // ─── Fixture ID 缓存 ──────────────────────────────

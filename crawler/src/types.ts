@@ -26,9 +26,10 @@ export interface MatchEvent {
   league: string;
   homeScore: number | null;
   awayScore: number | null;
-  status: string;       // NS, LIVE, FT
+  status: string;       // SCHEDULED, IN_PLAY, LIVE, FINISHED etc
   time: string;         // HH:MM:SS
   date: string;         // YYYY-MM-DD
+  kickoffUtc: string;   // full ISO timestamp
   round: string;
   season: string;
   venue: string;

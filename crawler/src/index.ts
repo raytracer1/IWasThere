@@ -2,7 +2,7 @@ import 'dotenv/config';
 import fs from 'node:fs';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { fetchTodayMatches, initScoreCache, detectEvents, isLiveStatus, findLiveFixture, getGoalEvents, getCachedFixtureId, setCachedFixtureId, estimateGoalUtcMs, getNearestKickoff } from './sources/football-data';
+import { fetchTodayMatches, initScoreCache, detectEvents, isLiveStatus, findLiveFixture, getGoalEvents, getCachedFixtureId, setCachedFixtureId, estimateGoalUtcMs } from './sources/football-data';
 import { searchTikTok, downloadTikTok } from './sources/tiktok';
 import { searchRedditByKeyword } from './sources/reddit';
 import { searchYoutubeByKeyword } from './sources/youtube';
@@ -46,55 +46,63 @@ async function eventDrivenLoop() {
   pruneState();
   const today = new Date().toISOString().slice(0, 10);
 
-  // Init TheSportsDB cache for event detection
-  const initialMatches = await fetchTodayMatches();
-  initScoreCache(initialMatches);
-
-  // Poll loop — sleep duration adapts to nearest kickoff
+  // Poll loop — one API call per iteration
   while (true) {
-    if (ENABLE_CCTV5) {
-      const nearest = await getNearestKickoff(today);
-      const isLive = nearest && ['IN_PLAY', 'LIVE', 'PAUSED', '1H', '2H', 'HT'].includes(nearest.status);
+    // 1. 获取所有目标联赛比赛
+    const matches = await fetchTodayMatches(today);
+    initScoreCache(matches);
 
-      if (isLive) {
-        // 正在直播 → 启动/保持录制
+    // 2. 从过滤结果中找最近比赛
+    const now = Date.now();
+    let nearest: { label: string; kickoffUtc: string; status: string; shouldRecord: boolean } | null = null;
+    for (const m of matches) {
+      if (!m.kickoffUtc || m.status === 'FINISHED') continue;
+      const diff = new Date(m.kickoffUtc).getTime() - now;
+      const isLive = ['IN_PLAY', 'LIVE', 'PAUSED', '1H', '2H', 'HT'].includes(m.status);
+      const startingSoon = diff < 5 * 60 * 1000;
+      if (!nearest || diff < new Date(nearest.kickoffUtc).getTime() - now) {
+        nearest = {
+          label: `${m.homeTeam} vs ${m.awayTeam}`,
+          kickoffUtc: m.kickoffUtc,
+          status: m.status,
+          shouldRecord: isLive || startingSoon,
+        };
+      }
+    }
+
+    // 3. 日志 + 录制控制
+    if (nearest) {
+      const liveTag = nearest.shouldRecord ? '🔴' : '⏰';
+      const msUntil = new Date(nearest.kickoffUtc).getTime() - now;
+      const countdown = msUntil > 0 ? ` (in ${Math.round(msUntil / 60000)}m)` : '';
+      console.log(`📅 Nearest: ${liveTag} ${nearest.label} | ${nearest.status} | ${nearest.kickoffUtc.slice(11, 16)} UTC${countdown}`);
+    }
+
+    if (ENABLE_CCTV5) {
+      if (nearest?.shouldRecord) {
         if (!isRecorderRunning()) {
           try {
             await startRecording(nearest.label);
-            console.log(`   📡 CCTV5 recorder started (${nearest.label}, ${nearest.status})`);
+            console.log(`   📡 CCTV5 recorder started (${nearest.label})`);
           } catch (err) {
             console.error('   ❌ Failed to start CCTV5 recorder:', String(err).slice(0, 100));
           }
         }
       } else if (nearest) {
-        // 未开赛 → 计算等待时间，睡到开赛前 1 分钟
+        // 未到录制时间 → 睡到开球前 1 分钟
         const msUntilKickoff = new Date(nearest.kickoffUtc).getTime() - Date.now() - 60_000;
         if (msUntilKickoff > 0) {
-          const waitSec = Math.ceil(msUntilKickoff / 1000);
-          console.log(`⏰ ${nearest.label} kicks off at ${nearest.kickoffUtc}, waiting ${Math.round(waitSec / 60)}m...`);
-          await sleep(Math.min(waitSec, 600) * 1000); // 最多等 10 分钟，防止 API 时间漂移
-          continue; // 醒来后重新检查
-        }
-        // 距开球 < 1 分钟 → 启动录制
-        if (!isRecorderRunning()) {
-          try {
-            await startRecording(nearest.label);
-            console.log(`   📡 CCTV5 recorder started (${nearest.label}, kickoff soon)`);
-          } catch (err) {
-            console.error('   ❌ Failed to start CCTV5 recorder:', String(err).slice(0, 100));
-          }
+          await sleep(Math.min(msUntilKickoff, 600_000));
+          continue;
         }
       } else if (isRecorderRunning()) {
-        // 没有比赛了 → 停止
         stopRecording();
         console.log('   📡 CCTV5 recorder stopped (no more matches today)');
       }
     }
 
     try {
-
-      // Event detection still uses TheSportsDB score cache
-      const matches = await fetchTodayMatches();
+      // Event detection from the same match list
       const liveMatches = matches.filter(m => isLiveStatus(m.status));
 
       const now = new Date().toISOString();
@@ -117,7 +125,7 @@ async function eventDrivenLoop() {
         const upcoming = matches.filter(m => m.status === 'NS');
         console.log(`⏱️  [${now}] No live matches. ${matches.length} today, ${upcoming.length} upcoming`);
       } else {
-        console.log(`⏱️  [${now}] No matches found today`);
+        console.log(`⏱️  [${now}] No target-league matches today`);
       }
     } catch (err) {
       console.error('Poll error:', err);
