@@ -16,20 +16,19 @@ function escape(str: string): string {
 }
 
 for (const event of SEED_EVENTS) {
-  const sql = `INSERT OR IGNORE INTO events (id, title, year, location, sport_type, description, key_moment, era_clothing, image_prompt, caption_templates, hashtags, viral_score, thumbnail_url, status, created_at)
+  const sql = `INSERT OR IGNORE INTO events (id, title, category, event_type, scene, emotion, camera, user, entities, moment, generation, thumbnail_url, status, created_at)
 VALUES (
   '${escape(event.id)}',
   '${escape(event.title)}',
-  ${event.year},
-  ${event.location ? `'${escape(event.location)}'` : 'NULL'},
-  '${escape(event.sportType)}',
-  ${event.description ? `'${escape(event.description)}'` : 'NULL'},
-  ${event.keyMoment ? `'${escape(event.keyMoment)}'` : 'NULL'},
-  ${event.eraClothing ? `'${escape(event.eraClothing)}'` : 'NULL'},
-  '${escape(event.imagePrompt)}',
-  '${escape(event.captionTemplates)}',
-  '${escape(event.hashtags)}',
-  ${event.viralScore},
+  '${escape(event.category)}',
+  ${event.event_type ? `'${escape(event.event_type)}'` : 'NULL'},
+  '${escape(JSON.stringify(event.scene))}',
+  '${escape(JSON.stringify(event.emotion))}',
+  '${escape(JSON.stringify(event.camera))}',
+  '${escape(JSON.stringify(event.user))}',
+  '${escape(JSON.stringify(event.entities))}',
+  '${escape(JSON.stringify(event.moment))}',
+  '${escape(JSON.stringify(event.generation))}',
   ${event.thumbnailUrl ? `'${escape(event.thumbnailUrl)}'` : 'NULL'},
   '${escape(event.status)}',
   unixepoch()

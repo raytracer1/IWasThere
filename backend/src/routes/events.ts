@@ -7,18 +7,18 @@ import type { Bindings } from '../types';
 const eventsRouter = new Hono<{ Bindings: Bindings }>();
 
 /**
- * GET /events — List active events sorted by viral_score DESC.
- * Query: ?sportType=, ?page=, ?pageSize=
+ * GET /events — List active events sorted by created_at DESC.
+ * Query: ?category=, ?page=, ?pageSize=
  */
 eventsRouter.get('/', async (c) => {
   const db = new D1Helper(c.env.DB);
-  const sportType = c.req.query('sportType') || undefined;
+  const category = c.req.query('category') || undefined;
   const page = parseInt(c.req.query('page') ?? '1', 10);
   const pageSize = parseInt(c.req.query('pageSize') ?? String(DEFAULT_PAGE_SIZE), 10);
   const secret = c.env.AUTH_SECRET ?? 'dev-secret';
   const workerUrl = new URL(c.req.url).origin;
 
-  const { events, total } = await db.getActiveEvents(sportType, page, pageSize);
+  const { events, total } = await db.getActiveEvents(category, page, pageSize);
 
   // Resolve thumbnail URLs (R2 key → signed URL, external URL → pass through)
   const signed = await Promise.all(

@@ -36,12 +36,12 @@ async function apiFetch<T>(
 // ─── Public (no auth) ───────────────────────────────────
 
 export async function fetchEvents(
-  sportType?: string,
+  category?: string,
   page = 1,
   pageSize = 20
 ): Promise<PaginatedResponse<Event>> {
   const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
-  if (sportType) params.set("sportType", sportType);
+  if (category) params.set("category", category);
   return apiFetch<PaginatedResponse<Event>>(`/events?${params}`);
 }
 

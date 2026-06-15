@@ -1,7 +1,7 @@
 import { Hono } from 'hono';
 import { D1Helper } from '../utils/d1';
 import { uploadToR2, deleteFromR2, generateSignedUrl } from '../utils/r2';
-import { SPORT_TYPES, MAX_THUMBNAIL_SIZE, DEFAULT_PAGE_SIZE } from '../shared';
+import { MAX_THUMBNAIL_SIZE, DEFAULT_PAGE_SIZE } from '../shared';
 import type { Bindings } from '../types';
 
 const adminRouter = new Hono<{ Bindings: Bindings }>();
@@ -67,32 +67,35 @@ adminRouter.post('/events', async (c) => {
   }
 
   // Validate required fields
-  if (!body.title || !body.year || !body.sportType || !body.imagePrompt) {
+  if (!body.title || !body.category || !body.generation) {
     return c.json({
       success: false,
-      error: 'title, year, sportType, and imagePrompt are required',
+      error: 'title, category, and generation are required',
     }, 400);
   }
 
-  if (!SPORT_TYPES.includes(body.sportType as typeof SPORT_TYPES[number])) {
-    return c.json({ success: false, error: `Invalid sportType. Use: ${SPORT_TYPES.join(', ')}` }, 400);
+  const gen = body.generation as Record<string, unknown>;
+  if (!gen?.prompt_template) {
+    return c.json({
+      success: false,
+      error: 'generation.prompt_template is required',
+    }, 400);
   }
 
-  const id = body.id || body.title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  const id = (body.id as string) || (body.title as string).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 
   await db.createEvent({
     id,
     title: body.title as string,
-    year: body.year as number,
-    location: body.location as string | undefined,
-    sportType: body.sportType as typeof SPORT_TYPES[number],
-    description: body.description as string | undefined,
-    keyMoment: body.keyMoment as string | undefined,
-    eraClothing: body.eraClothing as string | undefined,
-    imagePrompt: body.imagePrompt as string,
-    captionTemplates: body.captionTemplates as string | undefined,
-    hashtags: body.hashtags as string | undefined,
-    viralScore: (body.viralScore as number) ?? 5.0,
+    category: body.category as string,
+    event_type: body.event_type as string | undefined,
+    scene: (body.scene as Record<string, unknown>) || {},
+    emotion: (body.emotion as Record<string, unknown>) || {},
+    camera: (body.camera as Record<string, unknown>) || {},
+    user: (body.user as Record<string, unknown>) || {},
+    entities: (body.entities as Record<string, unknown>) || {},
+    moment: (body.moment as Record<string, unknown>) || {},
+    generation: gen as Event['generation'],
     thumbnailUrl: (body.thumbnailUrl as string) || thumbnailKey,
     status: (body.status as 'active' | 'draft' | 'archived') || 'active',
   });
@@ -133,10 +136,6 @@ adminRouter.put('/events/:id', async (c) => {
     }
   } else {
     body = await c.req.json<Record<string, unknown>>();
-  }
-
-  if (body.sportType && !SPORT_TYPES.includes(body.sportType as typeof SPORT_TYPES[number])) {
-    return c.json({ success: false, error: `Invalid sportType` }, 400);
   }
 
   if (thumbnailKey) {

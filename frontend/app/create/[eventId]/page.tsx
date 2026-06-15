@@ -6,6 +6,11 @@ import { fetchEvent, triggerGenerate } from "@/lib/api";
 import type { Event } from "@/lib/types";
 import { UploadSelfie } from "@/components/UploadSelfie";
 
+const CATEGORY_ICON: Record<string, string> = {
+  football: "⚽", basketball: "🏀", tennis: "🎾", athletics: "🏃",
+  cricket: "🏏", boxing: "🥊", american_football: "🏈", other: "🏟️",
+};
+
 export default function CreatePage({
   params,
 }: {
@@ -45,7 +50,6 @@ export default function CreatePage({
     reader.onload = () => {
       const result = reader.result as string;
       setSelfiePreview(result);
-      // Strip the data:image/...;base64, prefix for cleaner transport
       setImageBase64(result);
       setConverting(false);
     };
@@ -93,26 +97,30 @@ export default function CreatePage({
     );
   }
 
-  const SPORT_ICON: Record<string, string> = {
-    football: "⚽", basketball: "🏀", tennis: "🎾", athletics: "🏃",
-    cricket: "🏏", boxing: "🥊", american_football: "🏈", other: "🏟️",
-  };
+  const categoryIcon = CATEGORY_ICON[event.category] || "🏟️";
+  const timePeriod = event.scene?.time_period || "";
+  const location = event.scene?.location || "";
+  const momentDesc = event.moment?.description || event.moment?.key_action || "";
+  const atmosphere = event.scene?.atmosphere || "";
 
   return (
     <div className="mx-auto max-w-lg px-4 py-6 pb-20">
       {/* Event Header */}
       <div className="text-center mb-6">
         <div className="inline-flex items-center gap-2 rounded-full bg-cyan-500/10 border border-cyan-500/20 px-3 py-1 text-xs text-cyan-300 mb-3">
-          {SPORT_ICON[event.sportType] || ""} {event.sportType.replace("_", " ")} · {event.year}
+          {categoryIcon} {event.category.replace("_", " ")} · {timePeriod}
         </div>
         <h1 className="text-xl font-bold text-white">{event.title}</h1>
-        {event.location && (
-          <p className="text-sm text-gray-400 mt-1">📍 {event.location}</p>
+        {location && (
+          <p className="text-sm text-gray-400 mt-1">📍 {location}</p>
         )}
-        {event.keyMoment && (
+        {momentDesc && (
           <div className="mt-4 rounded-xl bg-gray-900/60 border border-white/10 p-4 text-left">
             <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">The Moment</p>
-            <p className="text-sm text-gray-200 leading-relaxed">{event.keyMoment}</p>
+            <p className="text-sm text-gray-200 leading-relaxed">{momentDesc}</p>
+            {atmosphere && (
+              <p className="text-xs text-gray-500 mt-2 leading-relaxed">{atmosphere}</p>
+            )}
           </div>
         )}
       </div>
@@ -160,7 +168,7 @@ export default function CreatePage({
             Generating...
           </span>
         ) : imageBase64 ? (
-          `⚡ Step Into ${event.year}`
+          `⚡ Step Into ${timePeriod}`
         ) : (
           "Upload a selfie to continue"
         )}

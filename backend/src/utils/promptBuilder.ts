@@ -2,15 +2,17 @@ import type { Event } from '../shared';
 
 interface PromptVariables {
   event: string;
-  year: string;
-  moment: string;
-  era: string;
+  category: string;
   location: string;
+  moment: string;
+  clothing: string;
+  time_period: string;
+  atmosphere: string;
 }
 
 /**
- * Compile an event's prompt templates into final strings
- * by replacing {event}, {year}, {moment}, {era}, {location} placeholders.
+ * Compile an event's generation templates into final prompt strings
+ * by replacing placeholders with event data from the nested objects.
  */
 export function compileEventPrompts(event: Event): {
   imagePrompt: string;
@@ -19,35 +21,30 @@ export function compileEventPrompts(event: Event): {
 } {
   const vars: PromptVariables = {
     event: event.title,
-    year: String(event.year),
-    moment: event.keyMoment || event.title,
-    era: event.eraClothing || 'casual wear',
-    location: event.location || '',
+    category: event.category,
+    location: event.scene?.location || '',
+    moment: event.moment?.description || event.moment?.key_action || event.title,
+    clothing: event.user?.clothing || 'casual wear',
+    time_period: event.scene?.time_period || '',
+    atmosphere: event.scene?.atmosphere || '',
   };
 
+  const promptTemplate = event.generation?.prompt_template || '';
+
   return {
-    imagePrompt: replacePlaceholders(event.imagePrompt, vars),
-    captions: parseCaptions(event.captionTemplates).map((t) =>
-      replacePlaceholders(t, vars)
-    ),
-    hashtags: event.hashtags,
+    imagePrompt: replacePlaceholders(promptTemplate, vars),
+    captions: [],
+    hashtags: '',
   };
 }
 
 function replacePlaceholders(template: string, vars: PromptVariables): string {
   return template
     .replace(/\{event\}/g, vars.event)
-    .replace(/\{year\}/g, vars.year)
+    .replace(/\{category\}/g, vars.category)
+    .replace(/\{location\}/g, vars.location)
     .replace(/\{moment\}/g, vars.moment)
-    .replace(/\{era\}/g, vars.era)
-    .replace(/\{location\}/g, vars.location);
-}
-
-function parseCaptions(raw: string): string[] {
-  try {
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch {
-    return [];
-  }
+    .replace(/\{clothing\}/g, vars.clothing)
+    .replace(/\{time_period\}/g, vars.time_period)
+    .replace(/\{atmosphere\}/g, vars.atmosphere);
 }

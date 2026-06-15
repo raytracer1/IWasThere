@@ -2,441 +2,1040 @@ import type { Event } from '../shared';
 
 /**
  * 15 historic sports events for IfIWasThere MVP.
- * Sorted by viral_score (descending).
  */
 export const SEED_EVENTS: Omit<Event, 'createdAt'>[] = [
   // ─── 1. Messi 2022 World Cup Final ───────────────────────
   {
     id: '2022-wc-final',
-    title: '2022 World Cup Final: Argentina vs France',
-    year: 2022,
-    location: 'Lusail Stadium, Qatar',
-    sportType: 'football',
-    description: 'The greatest World Cup final ever. Messi scores twice, Mbappé hits a hat-trick, and Argentina wins on penalties.',
-    keyMoment: 'Messi lifting the World Cup trophy, arms raised to the sky',
-    eraClothing: '2022 Argentina jersey, casual modern wear',
-    imagePrompt: `Place this person naturally into the celebration crowd at Lusail Stadium after the 2022 World Cup Final. The person is wearing an Argentina jersey, face showing pure joy and tears, arms raised high. Golden confetti raining down, fireworks in the night sky. Messi just lifted the World Cup trophy.
+    title: 'Messi Trophy Celebration — World Cup Final 2022',
+    category: 'football',
+    event_type: 'trophy_celebration',
+    scene: {
+      type: 'soccer_stadium',
+      venue: 'Lusail Stadium',
+      location: 'Lusail, Qatar',
+      time_period: '2022',
+      lighting: 'night',
+      weather: 'clear',
+      crowd_density: 'very_high',
+      atmosphere: ['cheering', 'confetti', 'fireworks', 'flags_waving', 'tears_of_joy'],
+      description: 'The greatest World Cup final ever. Messi scores twice, Mbappé hits a hat-trick, and Argentina wins on penalties.',
+    },
+    emotion: {
+      primary: 'euphoria',
+      secondary: 'relief',
+      intensity: 0.98,
+      description: 'Pure joy and tears, arms raised high, the weight of a career fulfilled in one moment',
+    },
+    camera: {
+      style: 'broadcast_photography',
+      angle: 'spectator_view',
+      shot_type: 'medium_wide',
+      lens: '35mm',
+      depth_of_field: 'shallow',
+      lighting: 'golden_stadium_floodlights',
+    },
+    user: {
+      role: 'spectator',
+      clothing: '2022 Argentina jersey, casual modern wear',
+      pose: 'arms_raised',
+      expression: 'euphoric',
+      visibility: 'high',
+    },
+    entities: {
+      sport: 'soccer',
+      competition: 'FIFA World Cup',
+      team_a: 'Argentina',
+      team_b: 'France',
+      player: 'Lionel Messi',
+      people: ['Messi', 'Argentine players'],
+      objects: ['World Cup trophy', 'confetti', 'fireworks'],
+    },
+    moment: {
+      minute: 120,
+      score_before: '3-3',
+      score_after: '4-2 (penalties)',
+      significance: 'Messi finally wins the World Cup, cementing his legacy as the GOAT',
+      description: 'Messi lifting the World Cup trophy, arms raised to the sky, golden confetti raining down',
+    },
+    generation: {
+      prompt_template: `Place this person naturally into the celebration crowd at Lusail Stadium after the 2022 World Cup Final. The person is wearing an Argentina jersey, face showing pure joy and tears, arms raised high. Golden confetti raining down, fireworks in the night sky. Messi just lifted the World Cup trophy.
 
 The crowd around them is ecstatic — hugging strangers, waving Argentine flags, phones out recording history. Stadium floodlights illuminating the pitch, the giant trophy on the podium visible in the background.
 
 The person should look genuinely part of this historic celebration — same warm golden lighting, same emotional intensity.
 
 Visual style: Ultra-realistic DSLR sports photography, ESPN broadcast aesthetic, shallow depth of field, cinematic framing, 8K, Canon 35mm. Keep facial features intact. No text or logos.`,
-    captionTemplates: JSON.stringify([
-      'POV: You were at Lusail Stadium when Messi finally lifted the World Cup. Still get goosebumps. 🏆🇦🇷 #IfIWasThere',
-      'What if you could step into the {year} World Cup Final? This is what it felt like when {moment}. Legendary. 🐐',
-      'Dec 18, {year}. The night football peaked. And I was THERE. Still not over it. ✨ #POV',
-      'Where were you when {moment}? I was at {location}. History witnessed. 🙌',
-      'One stadium. One trophy. One moment that changed everything. And I was part of it. #IfIWasThere',
-    ]),
-    hashtags: '#IfIWasThere #Messi #WorldCupFinal #Argentina #Qatar2022 #GOAT',
-    viralScore: 9.5,
+      negative_prompt: 'blurry face, duplicate person, extra fingers, cropped face, distorted body, low quality, cartoon, painting, illustration, watermark, text, logo, player on field',
+      background_image: '',
+      insert_zone: '',
+    },
     status: 'active',
   },
 
   // ─── 2. Germany 7-1 Brazil ─────────────────────────────
   {
     id: '2014-germany-7-1-brazil',
-    title: '2014 World Cup Semi-Final: Germany 7-1 Brazil',
-    year: 2014,
-    location: 'Mineirão Stadium, Belo Horizonte, Brazil',
-    sportType: 'football',
-    description: 'The most shocking result in World Cup history. Germany scored 5 goals in 18 first-half minutes against the hosts.',
-    keyMoment: 'German fans celebrating the 5th goal, stunned Brazilian fans in disbelief',
-    eraClothing: '2014 Germany jersey, casual summer wear',
-    imagePrompt: `Place this person naturally into the Germany fan section at Mineirão Stadium during the 2014 World Cup semi-final. The person is wearing a Germany jersey, arms raised, face showing shocked joy and disbelief. Scoreboard visible showing "GER 7 - 1 BRA".
+    title: 'Germany 5th Goal Celebration — World Cup Semi-Final 2014',
+    category: 'football',
+    event_type: 'goal_celebration',
+    scene: {
+      type: 'soccer_stadium',
+      venue: 'Mineirão Stadium',
+      location: 'Belo Horizonte, Brazil',
+      time_period: '2014',
+      lighting: 'night',
+      weather: 'clear',
+      crowd_density: 'very_high',
+      atmosphere: ['shocked_celebration', 'stunned_silence', 'contrasting_emotions', 'historic_upset'],
+      description: 'The most shocking result in World Cup history. Germany scored 5 goals in 18 first-half minutes against the hosts.',
+    },
+    emotion: {
+      primary: 'shocked_elation',
+      secondary: 'disbelief',
+      intensity: 0.95,
+      description: 'Ecstatic disbelief — laughing in shock, arms raised, surreal atmosphere of witnessing the impossible',
+    },
+    camera: {
+      style: 'broadcast_photography',
+      angle: 'spectator_view',
+      shot_type: 'medium_wide',
+      lens: '35mm',
+      depth_of_field: 'shallow',
+      lighting: 'dramatic_stadium',
+    },
+    user: {
+      role: 'spectator',
+      clothing: '2014 Germany jersey, casual summer wear',
+      pose: 'arms_raised',
+      expression: 'shocked',
+      visibility: 'high',
+    },
+    entities: {
+      sport: 'soccer',
+      competition: 'FIFA World Cup',
+      team_a: 'Germany',
+      team_b: 'Brazil',
+      player: 'Toni Kroos',
+      people: ['German players', 'Brazilian fans'],
+      objects: ['scoreboard showing GER 7-1 BRA'],
+    },
+    moment: {
+      minute: 29,
+      score_before: '4-1',
+      score_after: '5-1',
+      significance: 'The most shocking result in World Cup history — 5 goals in 18 minutes',
+      description: 'German fans celebrating the 5th goal, stunned Brazilian fans in disbelief across the stadium',
+    },
+    generation: {
+      prompt_template: `Place this person naturally into the Germany fan section at Mineirão Stadium during the 2014 World Cup semi-final. The person is wearing a Germany jersey, arms raised, face showing shocked joy and disbelief. Scoreboard visible showing "GER 7 - 1 BRA".
 
 The German fans around are in a state of ecstatic disbelief — some laughing in shock, others singing, flags waving. Brazilian fans visible across the stadium with hands on heads, tears, disbelief. Night atmosphere, stadium lights, dramatic contrast between sections.
 
 The person should look genuinely part of this German celebration — same lighting, same surreal atmosphere, same raw emotion.
 
 Visual style: Ultra-realistic DSLR sports photography, dramatic stadium lighting, emotional crowd shots, shallow depth of field, 8K, Canon 35mm. Keep facial features intact. No text or logos.`,
-    captionTemplates: JSON.stringify([
-      'POV: You witnessed the most insane night in football. Germany 7-1 Brazil. I was THERE in Belo Horizonte. 🤯🇩🇪 #IfIWasThere',
-      'Still the most unbelievable thing I\'ve ever seen in sports. {moment}. And I was in that stadium. 💀',
-      'What if you were at Mineirão on July 8, {year}? This is what the German section felt like. Pure shock. #POV',
-      'Nobody believed it was real. Not even the Germans. {location}. {year}. Legendary. 🏟️',
-      '{event}. The game that broke the internet. And I watched it from inside the stadium. Unreal. 🙌',
-    ]),
-    hashtags: '#IfIWasThere #GermanyVsBrazil #7x1 #WorldCup #Mineirazo #Football',
-    viralScore: 9.0,
+      negative_prompt: 'blurry face, duplicate person, extra fingers, cropped face, distorted body, low quality, cartoon, painting, illustration, watermark, text, logo, player on field, empty stadium',
+      background_image: '',
+      insert_zone: '',
+    },
     status: 'active',
   },
 
   // ─── 3. 1998 World Cup Final ───────────────────────────
   {
     id: '1998-wc-final',
-    title: '1998 World Cup Final: France vs Brazil',
-    year: 1998,
-    location: 'Stade de France, Paris, France',
-    sportType: 'football',
-    description: 'Zinedine Zidane scored two iconic headers to lead France to a 3-0 victory over Brazil on home soil.',
-    keyMoment: 'Zidane\'s first header in the 27th minute, crowd erupting',
-    eraClothing: 'late 90s France jersey, bucket hats, casual 90s style',
-    imagePrompt: `Place this person naturally into the crowd at Stade de France during the 1998 World Cup Final. The person is wearing a late 90s France home jersey, arms raised in the air, face showing pure euphoria, mouth open cheering.
+    title: 'Zidane Header — World Cup Final 1998',
+    category: 'football',
+    event_type: 'goal_celebration',
+    scene: {
+      type: 'soccer_stadium',
+      venue: 'Stade de France',
+      location: 'Paris, France',
+      time_period: '1998',
+      lighting: 'night',
+      weather: 'clear',
+      crowd_density: 'very_high',
+      atmosphere: ['erupting_celebration', 'confetti', 'national_pride', 'historic_moment'],
+      description: 'Zinedine Zidane scored two iconic headers to lead France to a 3-0 victory over Brazil on home soil.',
+    },
+    emotion: {
+      primary: 'euphoria',
+      secondary: 'national_pride',
+      intensity: 0.92,
+      description: 'Pure euphoria, mouth open cheering, arms raised, the joy of an entire nation',
+    },
+    camera: {
+      style: 'broadcast_photography',
+      angle: 'crowd_level',
+      shot_type: 'medium_wide',
+      lens: '35mm',
+      depth_of_field: 'shallow',
+      lighting: 'stadium_floodlights',
+    },
+    user: {
+      role: 'spectator',
+      clothing: 'late 90s France jersey, bucket hat, casual 90s style',
+      pose: 'jumping_cheering',
+      expression: 'euphoric',
+      visibility: 'high',
+    },
+    entities: {
+      sport: 'soccer',
+      competition: 'FIFA World Cup',
+      team_a: 'France',
+      team_b: 'Brazil',
+      player: 'Zinedine Zidane',
+      people: ['Zidane', 'French players'],
+      objects: ['confetti', 'paper streamers', 'French flags'],
+    },
+    moment: {
+      minute: 27,
+      score_before: '0-0',
+      score_after: '1-0',
+      significance: 'Zidane\'s iconic performance leads France to their first World Cup on home soil',
+      description: 'Zidane rises above the Brazilian defense, heading the ball into the net — Stade de France erupts',
+    },
+    generation: {
+      prompt_template: `Place this person naturally into the crowd at Stade de France during the 1998 World Cup Final. The person is wearing a late 90s France home jersey, arms raised in the air, face showing pure euphoria, mouth open cheering.
 
 Zidane just scored his first header in the 27th minute. The crowd is exploding — people jumping, hugging strangers, French flags waving everywhere. Confetti and paper streamers in the air. Stadium floodlights blazing down on the pitch. Night atmosphere, dramatic shadows.
 
 The person should look like they are genuinely part of this crowd — same lighting, same color temperature, same emotional intensity.
 
 Visual style: Ultra-realistic DSLR sports photograph, ESPN broadcast aesthetic, shallow depth of field, cinematic framing, 8K, Canon 35mm. Keep facial features intact. No text or logos.`,
-    captionTemplates: JSON.stringify([
-      'POV: You were at the Stade de France in {year} when Zidane scored THAT header. Pure magic. 🇫🇷 #IfIWasThere',
-      'They say where were you when Zidane scored? I was THERE. {year}. Goosebumps every time. 🏆',
-      'What if you could step into {event}? This is what it felt like when {moment}. Legendary. 🙌',
-      'Still not over this moment. {event}. {moment}. History happened right here. ✨',
-      'One stadium. {moment}. And a moment that changed football forever. #POV',
-    ]),
-    hashtags: '#IfIWasThere #WorldCupFinal #France98 #Zidane #FootballHistory #AllezLesBleus',
-    viralScore: 8.5,
+      negative_prompt: 'blurry face, duplicate person, extra fingers, cropped face, distorted body, low quality, cartoon, painting, illustration, watermark, text, logo, player on field',
+      background_image: '',
+      insert_zone: '',
+    },
     status: 'active',
   },
 
   // ─── 4. LeBron's Block 2016 ────────────────────────────
   {
     id: '2016-lebron-block',
-    title: '2016 NBA Finals Game 7: LeBron\'s Chase-Down Block',
-    year: 2016,
-    location: 'Oracle Arena, Oakland, California',
-    sportType: 'basketball',
-    description: 'Game 7, tie game, 2 minutes left. LeBron James flies across the court to block Andre Iguodala\'s layup. Cavaliers complete the 3-1 comeback.',
-    keyMoment: 'LeBron flying through the air for the chase-down block',
-    eraClothing: '2016 Cavaliers jersey, casual NBA fan gear',
-    imagePrompt: `Place this person naturally into the crowd at Oracle Arena during Game 7 of the 2016 NBA Finals. The person is wearing a Cavaliers jersey or wine-and-gold gear, face showing intense anticipation turning to shock and joy. Scoreboard reads "Game 7, Q4 1:50".
+    title: 'LeBron Chase-Down Block — NBA Finals Game 7 2016',
+    category: 'basketball',
+    event_type: 'defensive_play',
+    scene: {
+      type: 'basketball_arena',
+      venue: 'Oracle Arena',
+      location: 'Oakland, California',
+      time_period: '2016',
+      lighting: 'arena',
+      weather: 'indoor',
+      crowd_density: 'very_high',
+      atmosphere: ['electric_tension', 'split_crowd', 'playoff_intensity', 'historic_implications'],
+      description: 'Game 7, tie game, 2 minutes left. LeBron James flies across the court to block Andre Iguodala\'s layup. Cavaliers complete the 3-1 comeback.',
+    },
+    emotion: {
+      primary: 'anticipation',
+      secondary: 'explosive_joy',
+      intensity: 0.97,
+      description: 'Intense anticipation turning to shock and joy, the tension of a tied Game 7 breaking into euphoria',
+    },
+    camera: {
+      style: 'broadcast_photography',
+      angle: 'spectator_view',
+      shot_type: 'medium_wide',
+      lens: '70mm',
+      depth_of_field: 'shallow',
+      lighting: 'arena_spotlights',
+    },
+    user: {
+      role: 'spectator',
+      clothing: '2016 Cavaliers jersey, wine-and-gold NBA fan gear',
+      pose: 'standing_cheering',
+      expression: 'shocked',
+      visibility: 'high',
+    },
+    entities: {
+      sport: 'basketball',
+      competition: 'NBA Finals',
+      team_a: 'Cleveland Cavaliers',
+      team_b: 'Golden State Warriors',
+      player: 'LeBron James',
+      people: ['LeBron James', 'Andre Iguodala'],
+      objects: ['scoreboard reading Game 7 Q4 1:50', 'basketball', 'NBA Finals logo'],
+    },
+    moment: {
+      minute: 46,
+      score_before: '89-89',
+      score_after: '89-89',
+      significance: 'The Block that defined the Cavaliers 3-1 comeback, Cleveland\'s first championship in 52 years',
+      description: 'LeBron flying through the air for the iconic chase-down block on Iguodala',
+    },
+    generation: {
+      prompt_template: `Place this person naturally into the crowd at Oracle Arena during Game 7 of the 2016 NBA Finals. The person is wearing a Cavaliers jersey or wine-and-gold gear, face showing intense anticipation turning to shock and joy. Scoreboard reads "Game 7, Q4 1:50".
 
-Lebron just made The Block on Iguodala. The arena is split — Cavs fans in the crowd are losing their minds, Warriors fans in disbelief. The hardwood floor gleaming under arena lights, the iconic Oracle Arena atmosphere, the tension of a tied Game 7.
+LeBron just made The Block on Iguodala. The arena is split — Cavs fans in the crowd are losing their minds, Warriors fans in disbelief. The hardwood floor gleaming under arena lights, the iconic Oracle Arena atmosphere, the tension of a tied Game 7.
 
 The person should look genuinely part of this historic moment — same arena lighting, same raw emotion, same intensity.
 
 Visual style: Ultra-realistic DSLR sports photography, ESPN broadcast aesthetic, NBA Finals atmosphere, dramatic arena lighting, shallow depth of field, 8K. Keep facial features intact. No text or logos.`,
-    captionTemplates: JSON.stringify([
-      'POV: You witnessed LeBron\'s chase-down block in Game 7. I was at Oracle Arena when history flipped. 🏀👑 #IfIWasThere',
-      'BLOCKED BY JAMES! I was THERE for {moment}. {year} NBA Finals. Still gives me chills. 🔥',
-      'What if you were courtside for the greatest block in NBA history? {event}. Legendary. 🙌',
-      'Game 7. Tie game. And then LeBron flew. {location}. {year}. The moment the Cavs believed. ✨',
-      'Still not over this. The block. The stop. The comeback. 3-1. And I witnessed it all. #POV',
-    ]),
-    hashtags: '#IfIWasThere #LeBron #TheBlock #NBAFinals #Cavaliers #Game7 #Basketball',
-    viralScore: 8.5,
+      negative_prompt: 'blurry face, duplicate person, extra fingers, cropped face, distorted body, low quality, cartoon, painting, illustration, watermark, text, logo, player on court',
+      background_image: '',
+      insert_zone: '',
+    },
     status: 'active',
   },
 
   // ─── 5. Istanbul 2005 ──────────────────────────────────
   {
     id: '2005-istanbul-miracle',
-    title: '2005 Champions League Final: The Miracle of Istanbul',
-    year: 2005,
-    location: 'Atatürk Olympic Stadium, Istanbul, Turkey',
-    sportType: 'football',
-    description: 'Liverpool came back from 3-0 down at halftime against AC Milan to win on penalties. The greatest comeback in Champions League history.',
-    keyMoment: 'Liverpool fans celebrating the equalizer to make it 3-3, pure disbelief and joy',
-    eraClothing: '2005 Liverpool jersey, mid-2000s casual wear',
-    imagePrompt: `Place this person naturally into the Liverpool fan section at the Atatürk Olympic Stadium during the 2005 Champions League Final. The person is wearing a 2005 Liverpool red jersey, face showing ecstatic joy mixed with disbelief, scarf raised above head.
+    title: 'The Miracle of Istanbul — Champions League Final 2005',
+    category: 'football',
+    event_type: 'comeback_celebration',
+    scene: {
+      type: 'soccer_stadium',
+      venue: 'Atatürk Olympic Stadium',
+      location: 'Istanbul, Turkey',
+      time_period: '2005',
+      lighting: 'night',
+      weather: 'clear',
+      crowd_density: 'very_high',
+      atmosphere: ['euphoric_celebration', 'red_flares', 'singing', 'tears_of_joy', 'unbelievable_comeback'],
+      description: 'Liverpool came back from 3-0 down at halftime against AC Milan to win on penalties. The greatest comeback in Champions League history.',
+    },
+    emotion: {
+      primary: 'euphoria',
+      secondary: 'disbelief',
+      intensity: 0.96,
+      description: 'Ecstatic joy mixed with utter disbelief, scarf raised above head, tears streaming',
+    },
+    camera: {
+      style: 'broadcast_photography',
+      angle: 'spectator_view',
+      shot_type: 'medium_wide',
+      lens: '35mm',
+      depth_of_field: 'shallow',
+      lighting: 'stadium_floodlights',
+    },
+    user: {
+      role: 'spectator',
+      clothing: '2005 Liverpool red jersey, mid-2000s casual wear',
+      pose: 'scarf_raised',
+      expression: 'euphoric',
+      visibility: 'high',
+    },
+    entities: {
+      sport: 'soccer',
+      competition: 'UEFA Champions League',
+      team_a: 'Liverpool',
+      team_b: 'AC Milan',
+      player: 'Steven Gerrard',
+      people: ['Liverpool players'],
+      objects: ['Champions League trophy', 'red flares', 'Liverpool scarves'],
+    },
+    moment: {
+      minute: 60,
+      score_before: '0-3',
+      score_after: '3-3',
+      significance: 'The greatest comeback in Champions League history — from 3-0 down to European champions',
+      description: 'Liverpool fans celebrating the equalizer, the impossible becoming real at the Atatürk',
+    },
+    generation: {
+      prompt_template: `Place this person naturally into the Liverpool fan section at the Atatürk Olympic Stadium during the 2005 Champions League Final. The person is wearing a 2005 Liverpool red jersey, face showing ecstatic joy mixed with disbelief, scarf raised above head.
 
-Liverpool just completed the comeback from 3-0 down. The crowd is in absolute euphoria — tears, singing "You\'ll Never Walk Alone", red flares and flags everywhere. Night atmosphere, stadium lights, the Champions League trophy visible in the distance.
+Liverpool just completed the comeback from 3-0 down. The crowd is in absolute euphoria — tears, singing "You'll Never Walk Alone", red flares and flags everywhere. Night atmosphere, stadium lights, the Champions League trophy visible in the distance.
 
 The person should look genuinely part of this impossible celebration — same lighting, same tears of joy, same historic intensity.
 
 Visual style: Ultra-realistic DSLR sports photography, Champions League broadcast aesthetic, dramatic stadium lighting, emotional crowd shots, cinematic framing, 8K. Keep facial features intact. No text or logos.`,
-    captionTemplates: JSON.stringify([
-      'POV: You were in Istanbul when Liverpool came back from 3-0 down. I still can\'t believe I witnessed {moment}. 🔴🏆 #IfIWasThere',
-      '3-0 at halftime. 3-3 at full time. Champions of Europe. And I was THERE at {location}. Goosebumps forever. 🙌',
-      'What if you could relive the Miracle of Istanbul? {event}. This is what it felt like. ✨',
-      'Still not over this night. {location}. {year}. The greatest comeback in football. I witnessed it. 🔥',
-      'You\'ll Never Walk Alone hit different that night. I was in that stadium. The miracle was real. #POV',
-    ]),
-    hashtags: '#IfIWasThere #MiracleOfIstanbul #Liverpool #UCL #ChampionsLeague #YNV #Football',
-    viralScore: 8.0,
+      negative_prompt: 'blurry face, duplicate person, extra fingers, cropped face, distorted body, low quality, cartoon, painting, illustration, watermark, text, logo, player on field, empty stadium',
+      background_image: '',
+      insert_zone: '',
+    },
     status: 'active',
   },
 
   // ─── 6. Maradona Goal of the Century ───────────────────
   {
     id: '1986-maradona-goal',
-    title: '1986 World Cup: Maradona\'s "Goal of the Century"',
-    year: 1986,
-    location: 'Estadio Azteca, Mexico City, Mexico',
-    sportType: 'football',
-    description: 'Diego Maradona dribbled past five England players from his own half to score the greatest goal in World Cup history.',
-    keyMoment: 'Maradona dribbling past the last defender, about to score',
-    eraClothing: '80s Argentina jersey, retro 80s casual clothes',
-    imagePrompt: `Place this person naturally into the Argentina fan section at Estadio Azteca during the 1986 World Cup quarter-final. The person is wearing a classic 1986 Argentina light blue striped jersey, retro 80s style, face showing absolute awe and joy, arms up in celebration.
+    title: 'Maradona Goal of the Century — World Cup 1986',
+    category: 'football',
+    event_type: 'iconic_goal',
+    scene: {
+      type: 'soccer_stadium',
+      venue: 'Estadio Azteca',
+      location: 'Mexico City, Mexico',
+      time_period: '1986',
+      lighting: 'afternoon',
+      weather: 'sunny',
+      crowd_density: 'very_high',
+      atmosphere: ['vintage_atmosphere', 'awe', 'ecstatic_disbelief', 'historic_moment'],
+      description: 'Diego Maradona dribbled past five England players from his own half to score the greatest goal in World Cup history.',
+    },
+    emotion: {
+      primary: 'awe',
+      secondary: 'ecstatic_joy',
+      intensity: 0.94,
+      description: 'Absolute awe and joy, hands on heads in disbelief, witnessing the impossible',
+    },
+    camera: {
+      style: 'vintage_photography',
+      angle: 'spectator_view',
+      shot_type: 'medium_wide',
+      lens: '50mm',
+      depth_of_field: 'medium',
+      lighting: 'warm_sunlight',
+    },
+    user: {
+      role: 'spectator',
+      clothing: '1986 Argentina light blue striped jersey, retro 80s style',
+      pose: 'hands_on_head',
+      expression: 'awestruck',
+      visibility: 'high',
+    },
+    entities: {
+      sport: 'soccer',
+      competition: 'FIFA World Cup',
+      team_a: 'Argentina',
+      team_b: 'England',
+      player: 'Diego Maradona',
+      people: ['Maradona', 'England defenders'],
+      objects: ['blue and white flags'],
+    },
+    moment: {
+      minute: 55,
+      score_before: '1-0',
+      score_after: '2-0',
+      significance: 'The greatest goal in World Cup history — 60 meters, 5 defenders, one immortal dribble',
+      description: 'Maradona dribbling past the last defender, about to slot the ball past Shilton',
+    },
+    generation: {
+      prompt_template: `Place this person naturally into the Argentina fan section at Estadio Azteca during the 1986 World Cup quarter-final. The person is wearing a classic 1986 Argentina light blue striped jersey, retro 80s style, face showing absolute awe and joy, arms up in celebration.
 
 Maradona just completed his 60-meter dribble past half the England team. The Argentina fans are in a state of ecstatic disbelief — some with hands on their heads, others jumping and screaming, blue and white flags everywhere. Sunny afternoon, classic Estadio Azteca atmosphere.
 
 The person should look naturally part of this 80s crowd — same warm Mexico sunlight, same vintage stadium feel, same historic emotion.
 
 Visual style: Ultra-realistic 80s sports photography, vintage broadcast aesthetic, warm sunlight, shallow depth of field, cinematic framing, 8K. Keep facial features intact. No text or logos.`,
-    captionTemplates: JSON.stringify([
-      'POV: You witnessed the greatest goal in football history. Maradona. Azteca. {year}. I was THERE. 🇦🇷⚽ #IfIWasThere',
-      'They still talk about {moment} at {event}. I saw it with my own eyes. Goosebumps every replay. 🐐',
-      'What if you were at Estadio Azteca when Maradona did the impossible? This is what it felt like. #POV',
-      'The Goal of the Century. {location}. {year}. And I was in that stadium. Still can\'t believe it. 🙌',
-      '60 meters. 5 defenders. 1 immortal goal. I witnessed history. {event}. Forever legendary. ✨',
-    ]),
-    hashtags: '#IfIWasThere #Maradona #GoalOfTheCentury #WorldCup #Argentina #FootballLegend #1986',
-    viralScore: 8.0,
+      negative_prompt: 'blurry face, duplicate person, extra fingers, cropped face, distorted body, low quality, cartoon, painting, illustration, watermark, text, logo, player on field',
+      background_image: '',
+      insert_zone: '',
+    },
     status: 'active',
   },
 
   // ─── 7. Iniesta 2010 ───────────────────────────────────
   {
     id: '2010-iniesta-winner',
-    title: '2010 World Cup Final: Iniesta\'s Extra-Time Winner',
-    year: 2010,
-    location: 'Soccer City, Johannesburg, South Africa',
-    sportType: 'football',
-    description: 'Andrés Iniesta scored the winning goal in the 116th minute to give Spain their first ever World Cup title.',
-    keyMoment: 'Iniesta\'s volley hitting the net in the 116th minute',
-    eraClothing: '2010 Spain red jersey, vuvuzela, casual summer wear',
-    imagePrompt: `Place this person naturally into the Spain fan section at Soccer City during the 2010 World Cup Final. The person is wearing a 2010 Spain red home jersey, face showing explosive joy, arms stretched wide, screaming in celebration.
+    title: 'Iniesta Extra-Time Winner — World Cup Final 2010',
+    category: 'football',
+    event_type: 'winning_goal',
+    scene: {
+      type: 'soccer_stadium',
+      venue: 'Soccer City',
+      location: 'Johannesburg, South Africa',
+      time_period: '2010',
+      lighting: 'night',
+      weather: 'clear',
+      crowd_density: 'very_high',
+      atmosphere: ['vuvuzelas', 'absolute_euphoria', 'tears_of_joy', 'national_pride', 'historic_first'],
+      description: 'Andrés Iniesta scored the winning goal in the 116th minute to give Spain their first ever World Cup title.',
+    },
+    emotion: {
+      primary: 'euphoria',
+      secondary: 'national_pride',
+      intensity: 0.97,
+      description: 'Explosive joy, arms stretched wide, screaming in celebration, tears streaming',
+    },
+    camera: {
+      style: 'broadcast_photography',
+      angle: 'spectator_view',
+      shot_type: 'medium_wide',
+      lens: '35mm',
+      depth_of_field: 'shallow',
+      lighting: 'warm_night',
+    },
+    user: {
+      role: 'spectator',
+      clothing: '2010 Spain red home jersey, vuvuzela, casual summer wear',
+      pose: 'arms_wide_open',
+      expression: 'euphoric',
+      visibility: 'high',
+    },
+    entities: {
+      sport: 'soccer',
+      competition: 'FIFA World Cup',
+      team_a: 'Spain',
+      team_b: 'Netherlands',
+      player: 'Andrés Iniesta',
+      people: ['Iniesta', 'Spanish players'],
+      objects: ['World Cup trophy', 'vuvuzelas', 'red and yellow flags'],
+    },
+    moment: {
+      minute: 116,
+      score_before: '0-0',
+      score_after: '1-0',
+      significance: 'Spain wins their first ever World Cup title — a nation\'s greatest sporting moment',
+      description: 'Iniesta\'s volley hitting the net in the 116th minute, the entire Spanish nation erupting as one',
+    },
+    generation: {
+      prompt_template: `Place this person naturally into the Spain fan section at Soccer City during the 2010 World Cup Final. The person is wearing a 2010 Spain red home jersey, face showing explosive joy, arms stretched wide, screaming in celebration.
 
 Iniesta just scored the winner in the 116th minute. Spain fans are in absolute euphoria — hugging strangers, tears streaming, red and yellow flags everywhere. The sound of vuvuzelas in the air. Night atmosphere, stadium lights, the World Cup trophy visible.
 
 The person should look genuinely part of this historic moment — same warm South African night lighting, same raw emotion, same intensity.
 
 Visual style: Ultra-realistic DSLR sports photography, World Cup broadcast aesthetic, dramatic stadium lighting, emotional celebration shots, cinematic framing, 8K, Canon 35mm. Keep facial features intact. No text or logos.`,
-    captionTemplates: JSON.stringify([
-      'POV: You were at Soccer City when Iniesta scored in the 116th minute. Spain\'s first World Cup. I was THERE. 🇪🇸🏆 #IfIWasThere',
-      '116 minutes. One kick. Eternal glory. I witnessed {moment} at {event}. Still get tears. 🙌',
-      'What if you were there when Spain changed football history? {location}. {year}. Legendary. ✨',
-      'The sound of vuvuzelas, the roar when Iniesta scored... I was in that stadium. Forever my memory. 🔥',
-      'Spain. World Champions. And I saw the moment it happened. {event}. #POV',
-    ]),
-    hashtags: '#IfIWasThere #Iniesta #WorldCupFinal #Spain2010 #TikiTaka #FootballHistory',
-    viralScore: 8.0,
+      negative_prompt: 'blurry face, duplicate person, extra fingers, cropped face, distorted body, low quality, cartoon, painting, illustration, watermark, text, logo, player on field',
+      background_image: '',
+      insert_zone: '',
+    },
     status: 'active',
   },
 
   // ─── 8. Bolt Beijing 2008 ──────────────────────────────
   {
     id: '2008-bolt-100m',
-    title: 'Beijing 2008 Olympics: Usain Bolt 100m World Record',
-    year: 2008,
-    location: 'Bird\'s Nest Stadium, Beijing, China',
-    sportType: 'athletics',
-    description: 'Usain Bolt shattered the 100m world record with 9.69 seconds — and celebrated before even crossing the finish line.',
-    keyMoment: 'Bolt crossing the finish line, arms spread wide, chest thumping, world record time on the clock',
-    eraClothing: '2008 Olympics t-shirt, summer casual wear',
-    imagePrompt: `Place this person naturally into the roaring crowd at the Bird\'s Nest Stadium during the Beijing 2008 Olympic 100m final. The person is wearing a 2008 Olympics t-shirt, face showing pure awe and excitement, clapping and cheering at maximum intensity.
+    title: 'Usain Bolt 100m World Record — Beijing Olympics 2008',
+    category: 'athletics',
+    event_type: 'world_record',
+    scene: {
+      type: 'athletics_stadium',
+      venue: 'Bird\'s Nest Stadium',
+      location: 'Beijing, China',
+      time_period: '2008',
+      lighting: 'night',
+      weather: 'clear',
+      crowd_density: 'very_high',
+      atmosphere: ['electric_energy', 'world_record_fever', 'olympic_spirit', 'cameras_flashing'],
+      description: 'Usain Bolt shattered the 100m world record with 9.69 seconds — and celebrated before even crossing the finish line.',
+    },
+    emotion: {
+      primary: 'awe',
+      secondary: 'excitement',
+      intensity: 0.93,
+      description: 'Pure awe and excitement, clapping and cheering at maximum intensity, witnessing human limits being broken',
+    },
+    camera: {
+      style: 'broadcast_photography',
+      angle: 'spectator_view',
+      shot_type: 'medium_wide',
+      lens: '70mm',
+      depth_of_field: 'medium',
+      lighting: 'olympic_stadium',
+    },
+    user: {
+      role: 'spectator',
+      clothing: '2008 Olympics t-shirt, summer casual wear',
+      pose: 'standing_cheering',
+      expression: 'awestruck',
+      visibility: 'high',
+    },
+    entities: {
+      sport: 'athletics',
+      competition: 'Olympic Games',
+      team_a: 'Jamaica',
+      team_b: '',
+      player: 'Usain Bolt',
+      people: ['Usain Bolt'],
+      objects: ['clock showing 9.69', 'Olympic flame', 'finish line'],
+    },
+    moment: {
+      minute: 0,
+      score_before: '',
+      score_after: '9.69s',
+      significance: 'Fastest man in history — world record while celebrating before the finish line',
+      description: 'Bolt crossing the finish line at 9.69, arms spread wide, chest thumping, the clock frozen at an impossible time',
+    },
+    generation: {
+      prompt_template: `Place this person naturally into the roaring crowd at the Bird's Nest Stadium during the Beijing 2008 Olympic 100m final. The person is wearing a 2008 Olympics t-shirt, face showing pure awe and excitement, clapping and cheering at maximum intensity.
 
-Usain Bolt just crossed the finish line at 9.69 — celebrating before he even finished. The clock shows the world record time. The crowd is going absolutely wild — people on their feet, cameras flashing everywhere, the Olympic flame burning in the distance. Night atmosphere under the iconic Bird\'s Nest architecture.
+Usain Bolt just crossed the finish line at 9.69 — celebrating before he even finished. The clock shows the world record time. The crowd is going absolutely wild — people on their feet, cameras flashing everywhere, the Olympic flame burning in the distance. Night atmosphere under the iconic Bird's Nest architecture.
 
 The person should look genuinely part of this Olympic crowd — same dramatic stadium lighting, same raw emotion, same historic atmosphere.
 
 Visual style: Ultra-realistic DSLR sports photography, Olympic broadcast aesthetic, dramatic stadium lighting, crowd energy, cinematic framing, 8K. Keep facial features intact. No text or logos.`,
-    captionTemplates: JSON.stringify([
-      'POV: You were inside the Bird\'s Nest when Bolt ran 9.69 and celebrated BEFORE the finish line. Still unreal. ⚡🇯🇲 #IfIWasThere',
-      '9.69 seconds that changed athletics forever. And I was in that stadium. {moment}. {year}. ⚡',
-      'What if you witnessed the fastest man in history at {location}? {event}. This is what it felt like. #POV',
-      'The sound when Bolt hit top speed. The clock. The celebration. I saw it all. {event}. Legendary. 🙌',
-      'Lightning Bolt. Bird\'s Nest. World Record. And I was THERE. Still get chills thinking about it. ✨',
-    ]),
-    hashtags: '#IfIWasThere #UsainBolt #Beijing2008 #Olympics #WorldRecord #LightningBolt #Athletics',
-    viralScore: 7.5,
+      negative_prompt: 'blurry face, duplicate person, extra fingers, cropped face, distorted body, low quality, cartoon, painting, illustration, watermark, text, logo, athlete on track',
+      background_image: '',
+      insert_zone: '',
+    },
     status: 'active',
   },
 
   // ─── 9. Man Utd 1999 ───────────────────────────────────
   {
     id: '1999-man-utd-treble',
-    title: '1999 Champions League Final: Manchester United\'s Stoppage-Time Comeback',
-    year: 1999,
-    location: 'Camp Nou, Barcelona, Spain',
-    sportType: 'football',
-    description: 'Manchester United scored twice in stoppage time — Solskjær\'s winner completing the Treble. The most dramatic ending ever.',
-    keyMoment: 'Solskjær\'s toe-poke winning goal in the 93rd minute, Old Trafford fans going berserk',
-    eraClothing: '1999 Manchester United jersey, late 90s casual wear',
-    imagePrompt: `Place this person naturally into the Man United fan section at Camp Nou during the 1999 Champions League Final. The person is wearing a 1999 Manchester United red jersey, face showing ecstatic shock, arms raised, mouth wide open screaming.
+    title: 'Solskjær Winner — Champions League Final 1999',
+    category: 'football',
+    event_type: 'stoppage_time_winner',
+    scene: {
+      type: 'soccer_stadium',
+      venue: 'Camp Nou',
+      location: 'Barcelona, Spain',
+      time_period: '1999',
+      lighting: 'night',
+      weather: 'clear',
+      crowd_density: 'very_high',
+      atmosphere: ['absolute_chaos', 'stoppage_time_madness', 'treble_clinching', 'iconic_moment'],
+      description: 'Manchester United scored twice in stoppage time — Solskjær\'s winner completing the Treble. The most dramatic ending ever.',
+    },
+    emotion: {
+      primary: 'ecstatic_shock',
+      secondary: 'chaos',
+      intensity: 1.0,
+      description: 'Absolute bedlam — people falling over seats, tears of joy, screaming, the most dramatic moment in club football',
+    },
+    camera: {
+      style: 'vintage_photography',
+      angle: 'spectator_view',
+      shot_type: 'medium_wide',
+      lens: '50mm',
+      depth_of_field: 'shallow',
+      lighting: 'stadium_floodlights',
+    },
+    user: {
+      role: 'spectator',
+      clothing: '1999 Manchester United red jersey, late 90s casual wear',
+      pose: 'arms_raised',
+      expression: 'ecstatic',
+      visibility: 'high',
+    },
+    entities: {
+      sport: 'soccer',
+      competition: 'UEFA Champions League',
+      team_a: 'Manchester United',
+      team_b: 'Bayern Munich',
+      player: 'Ole Gunnar Solskjær',
+      people: ['Solskjær', 'Manchester United players'],
+      objects: ['Champions League trophy'],
+    },
+    moment: {
+      minute: 93,
+      score_before: '1-1',
+      score_after: '2-1',
+      significance: 'Completes the Treble — the most dramatic ending in football history, two goals in stoppage time',
+      description: 'Solskjær\'s toe-poke winning goal in the 93rd minute, United fans in absolute bedlam at Camp Nou',
+    },
+    generation: {
+      prompt_template: `Place this person naturally into the Man United fan section at Camp Nou during the 1999 Champions League Final. The person is wearing a 1999 Manchester United red jersey, face showing ecstatic shock, arms raised, mouth wide open screaming.
 
 Solskjær just scored the winner in the 93rd minute. United fans are in absolute bedlam — total chaos, people falling over seats, tears of joy, red shirts and scarves everywhere. The Champions League trophy visible on the pitch. Night atmosphere, stadium lights, the iconic "Football, bloody hell" moment.
 
 The person should look genuinely part of this madness — same Camp Nou lighting, same raw disbelief, same historic intensity.
 
 Visual style: Ultra-realistic 90s sports photography, Champions League broadcast aesthetic, dramatic stadium lighting, celebration chaos, cinematic framing, 8K. Keep facial features intact. No text or logos.`,
-    captionTemplates: JSON.stringify([
-      'POV: You were at Camp Nou when Solskjær won it in the 93rd minute. The Treble. I was THERE. 🔴🏆 #IfIWasThere',
-      '"And Solskjær has won it!" Two goals. Stoppage time. The Treble. I witnessed {moment} at {event}. 🙌',
-      'What if you were there for the most dramatic ending in football? {event}. {location}. Legendary. ✨',
-      'Football. Bloody hell. I was in that stadium when United scored twice in stoppage time. #POV',
-      '{year}. Camp Nou. The night United conquered Europe. And I was part of that red sea of joy. Unforgettable. 🔥',
-    ]),
-    hashtags: '#IfIWasThere #ManUnited #ChampionsLeague #Treble #Solskjaer #FootballHistory #1999',
-    viralScore: 7.5,
+      negative_prompt: 'blurry face, duplicate person, extra fingers, cropped face, distorted body, low quality, cartoon, painting, illustration, watermark, text, logo, player on field',
+      background_image: '',
+      insert_zone: '',
+    },
     status: 'active',
   },
 
   // ─── 10. Super Bowl XLII Helmet Catch ─────────────────
   {
     id: '2008-superbowl-helmet-catch',
-    title: 'Super Bowl XLII: The Helmet Catch & Giants Upset',
-    year: 2008,
-    location: 'University of Phoenix Stadium, Glendale, Arizona',
-    sportType: 'american_football',
-    description: 'David Tyree pinned the ball against his helmet on 3rd down, setting up the Giants\' shocking upset of the undefeated 18-0 Patriots.',
-    keyMoment: 'David Tyree pinning the football against his helmet, Eli Manning escaping the sack',
-    eraClothing: '2008 Giants jersey, casual NFL fan gear',
-    imagePrompt: `Place this person naturally into the Giants fan section at the University of Phoenix Stadium during Super Bowl XLII. The person is wearing a 2008 Giants blue jersey, face showing pure shock and joy, hands on head in disbelief.
+    title: 'The Helmet Catch — Super Bowl XLII 2008',
+    category: 'american_football',
+    event_type: 'iconic_play',
+    scene: {
+      type: 'nfl_stadium',
+      venue: 'University of Phoenix Stadium',
+      location: 'Glendale, Arizona',
+      time_period: '2008',
+      lighting: 'night',
+      weather: 'indoor',
+      crowd_density: 'very_high',
+      atmosphere: ['electric_shock', 'impossible_becoming_possible', 'undefeated_falling', 'super_bowl_intensity'],
+      description: 'David Tyree pinned the ball against his helmet on 3rd down, setting up the Giants\' shocking upset of the undefeated 18-0 Patriots.',
+    },
+    emotion: {
+      primary: 'shock',
+      secondary: 'disbelief',
+      intensity: 0.95,
+      description: 'Pure shock and joy, hands on head, the impossible happening right before their eyes',
+    },
+    camera: {
+      style: 'broadcast_photography',
+      angle: 'spectator_view',
+      shot_type: 'medium_wide',
+      lens: '70mm',
+      depth_of_field: 'shallow',
+      lighting: 'super_bowl_lighting',
+    },
+    user: {
+      role: 'spectator',
+      clothing: '2008 Giants blue jersey, casual NFL fan gear',
+      pose: 'hands_on_head',
+      expression: 'shocked',
+      visibility: 'high',
+    },
+    entities: {
+      sport: 'american_football',
+      competition: 'Super Bowl XLII',
+      team_a: 'New York Giants',
+      team_b: 'New England Patriots',
+      player: 'David Tyree',
+      people: ['David Tyree', 'Eli Manning'],
+      objects: ['football', 'Super Bowl logo', 'confetti ready'],
+    },
+    moment: {
+      minute: 58,
+      score_before: '10-14',
+      score_after: '10-14',
+      significance: 'The greatest Super Bowl upset — the play that broke the undefeated Patriots',
+      description: 'David Tyree pinning the football against his helmet, Eli Manning escaping the sack on 3rd down',
+    },
+    generation: {
+      prompt_template: `Place this person naturally into the Giants fan section at the University of Phoenix Stadium during Super Bowl XLII. The person is wearing a 2008 Giants blue jersey, face showing pure shock and joy, hands on head in disbelief.
 
 Tyree just made the Helmet Catch. Giants fans are going absolutely insane — jumping, screaming, crying, blue jerseys everywhere. The stadium is electric with the impossible becoming possible — the undefeated Patriots about to lose. Night atmosphere, Super Bowl lighting, confetti ready.
 
 The person should look genuinely part of this shocking moment — same Super Bowl lighting, same raw disbelief, same historic electricity.
 
 Visual style: Ultra-realistic NFL photography, Super Bowl broadcast aesthetic, dramatic stadium lighting, emotional intensity, cinematic framing, 8K. Keep facial features intact. No text or logos.`,
-    captionTemplates: JSON.stringify([
-      'POV: You witnessed the Helmet Catch at Super Bowl XLII. 18-0 Patriots. And I was THERE when the Giants did the impossible. 🏈 #IfIWasThere',
-      'The Helmet Catch. The escape. The shock. I saw {moment} at {event} with my own eyes. Still gives me chills. 🙌',
-      'What if you were inside the stadium when the 18-0 Patriots lost? {location}. {year}. The greatest Super Bowl upset. ✨',
-      'Tyree pinned it to his helmet and everything changed. I was in that crowd. Pure disbelief. #POV 🔥',
-      'Still the most insane Super Bowl play ever. And I was THERE when history broke. {event}. 🏆',
-    ]),
-    hashtags: '#IfIWasThere #SuperBowl #HelmetCatch #Giants #NFL #SuperBowlXLII #DavidTyree',
-    viralScore: 7.5,
+      negative_prompt: 'blurry face, duplicate person, extra fingers, cropped face, distorted body, low quality, cartoon, painting, illustration, watermark, text, logo, player on field',
+      background_image: '',
+      insert_zone: '',
+    },
     status: 'active',
   },
 
   // ─── 11. Federer vs Nadal 2009 ─────────────────────────
   {
     id: '2009-federer-nadal-wimbledon',
-    title: '2009 Wimbledon Final: Federer vs Nadal',
-    year: 2009,
-    location: 'Centre Court, Wimbledon, London, England',
-    sportType: 'tennis',
-    description: 'Often called the greatest match ever played. Federer won 5-7, 7-6, 7-6, 3-6, 16-14 in a 4-hour 48-minute epic.',
-    keyMoment: 'Federer falling to his knees after winning match point 16-14 in the 5th set',
-    eraClothing: '2009 tennis whites, summer casual wear, Wimbledon hat',
-    imagePrompt: `Place this person naturally into the crowd on Centre Court at Wimbledon during the 2009 final. The person is wearing classic Wimbledon whites / summer tennis attire, face showing exhausted joy and awe, standing and applauding with the entire stadium.
+    title: 'Federer Wins 16-14 in the 5th — Wimbledon Final 2009',
+    category: 'tennis',
+    event_type: 'championship_point',
+    scene: {
+      type: 'tennis_court',
+      venue: 'Centre Court, Wimbledon',
+      location: 'London, England',
+      time_period: '2009',
+      lighting: 'afternoon',
+      weather: 'sunny',
+      crowd_density: 'high',
+      atmosphere: ['standing_ovation', 'golden_light', 'reverent_awe', 'strawberries_and_cream', 'historic_rivalry'],
+      description: 'Often called the greatest match ever played. Federer won 5-7, 7-6, 7-6, 3-6, 16-14 in a 4-hour 48-minute epic.',
+    },
+    emotion: {
+      primary: 'reverence',
+      secondary: 'exhausted_joy',
+      intensity: 0.90,
+      description: 'Exhausted joy and awe, standing and applauding greatness, the entire crowd united in appreciation',
+    },
+    camera: {
+      style: 'sports_photography',
+      angle: 'spectator_view',
+      shot_type: 'medium',
+      lens: '85mm',
+      depth_of_field: 'shallow',
+      lighting: 'golden_afternoon',
+    },
+    user: {
+      role: 'spectator',
+      clothing: 'Wimbledon whites, summer tennis attire, Wimbledon hat',
+      pose: 'standing_ovation',
+      expression: 'reverent',
+      visibility: 'high',
+    },
+    entities: {
+      sport: 'tennis',
+      competition: 'Wimbledon',
+      team_a: 'Roger Federer',
+      team_b: 'Rafael Nadal',
+      player: 'Roger Federer',
+      people: ['Federer', 'Nadal'],
+      objects: ['Wimbledon scoreboard showing 16-14', 'grass court', 'royal box'],
+    },
+    moment: {
+      minute: 288,
+      score_before: '15-14 (5th set)',
+      score_after: '16-14 (5th set)',
+      significance: 'Often called the greatest tennis match ever played — 4 hours 48 minutes of epic battle',
+      description: 'Federer falling to his knees after winning match point 16-14 in the 5th set, the crowd rising as one',
+    },
+    generation: {
+      prompt_template: `Place this person naturally into the crowd on Centre Court at Wimbledon during the 2009 final. The person is wearing classic Wimbledon whites / summer tennis attire, face showing exhausted joy and awe, standing and applauding with the entire stadium.
 
 Federer just won 16-14 in the 5th set. The crowd is on its feet giving a standing ovation to both players. The iconic Wimbledon scoreboard shows the epic scoreline. Late afternoon golden light on the grass court, the royal box visible, strawberries and cream atmosphere.
 
 The person should look genuinely part of this historic tennis moment — same warm Wimbledon sunlight, same reverent joy, same historic appreciation.
 
 Visual style: Ultra-realistic sports photography, Wimbledon broadcast aesthetic, golden afternoon light, grass court textures, cinematic framing, 8K. Keep facial features intact. No text or logos.`,
-    captionTemplates: JSON.stringify([
-      'POV: You were on Centre Court for the greatest tennis match ever. Federer 16-14 in the 5th. I was THERE. 🎾👑 #IfIWasThere',
-      '4 hours 48 minutes. 16-14 in the fifth. I witnessed {moment} at {event}. The best match in history. 🙌',
-      'What if you were at {location} for Federer vs Nadal {year}? The match that broke all records. Legendary. ✨',
-      'Still the most incredible match I\'ve ever seen. And I was sitting right there. {event}. Forever grateful. #POV',
-      'Centre Court. Golden light. Two legends. One immortal match. And I witnessed every point. 🏆',
-    ]),
-    hashtags: '#IfIWasThere #Wimbledon #Federer #Nadal #Tennis #CentreCourt #GOAT',
-    viralScore: 7.0,
+      negative_prompt: 'blurry face, duplicate person, extra fingers, cropped face, distorted body, low quality, cartoon, painting, illustration, watermark, text, logo, player on court',
+      background_image: '',
+      insert_zone: '',
+    },
     status: 'active',
   },
 
   // ─── 12. Dream Team 1992 ───────────────────────────────
   {
     id: '1992-dream-team',
-    title: '1992 Barcelona Olympics: The Dream Team',
-    year: 1992,
-    location: 'Palau Municipal d\'Esports, Barcelona, Spain',
-    sportType: 'basketball',
-    description: 'The first Olympic team with NBA superstars — Jordan, Magic, Bird, Barkley, Pippen. The most dominant team ever assembled, winning gold by an average of 44 points.',
-    keyMoment: 'Jordan and Magic laughing on the bench as Team USA wins gold',
-    eraClothing: '1992 USA Basketball jersey, retro 90s sportswear',
-    imagePrompt: `Place this person naturally into the crowd at the 1992 Barcelona Olympics basketball final. The person is wearing a classic 1992 USA Basketball Dream Team jersey, retro 90s style, face showing pure joy and awe, cheering as the Dream Team dominates.
+    title: 'The Dream Team Wins Gold — Barcelona Olympics 1992',
+    category: 'basketball',
+    event_type: 'gold_medal_celebration',
+    scene: {
+      type: 'basketball_arena',
+      venue: 'Palau Municipal d\'Esports',
+      location: 'Barcelona, Spain',
+      time_period: '1992',
+      lighting: 'arena',
+      weather: 'indoor',
+      crowd_density: 'very_high',
+      atmosphere: ['basketball_immortality', 'olympic_spirit', 'awe', 'legendary_team', 'gold_medal_moment'],
+      description: 'The first Olympic team with NBA superstars — Jordan, Magic, Bird, Barkley, Pippen. The most dominant team ever assembled, winning gold by an average of 44 points.',
+    },
+    emotion: {
+      primary: 'awe',
+      secondary: 'joy',
+      intensity: 0.91,
+      description: 'Pure joy and awe — not just cheering, but witnessing basketball immortality in person',
+    },
+    camera: {
+      style: 'vintage_photography',
+      angle: 'spectator_view',
+      shot_type: 'medium_wide',
+      lens: '50mm',
+      depth_of_field: 'medium',
+      lighting: 'arena_lighting',
+    },
+    user: {
+      role: 'spectator',
+      clothing: '1992 USA Basketball Dream Team jersey, retro 90s sportswear',
+      pose: 'cheering',
+      expression: 'awestruck',
+      visibility: 'high',
+    },
+    entities: {
+      sport: 'basketball',
+      competition: 'Olympic Games',
+      team_a: 'USA Dream Team',
+      team_b: 'Croatia',
+      player: 'Michael Jordan',
+      people: ['Michael Jordan', 'Magic Johnson', 'Larry Bird', 'Charles Barkley', 'Scottie Pippen'],
+      objects: ['Olympic rings', 'gold medal', 'USA flag'],
+    },
+    moment: {
+      minute: 0,
+      score_before: '',
+      score_after: '117-85',
+      significance: 'The most dominant basketball team ever assembled — NBA legends together on one Olympic team',
+      description: 'Jordan and Magic laughing on the bench as Team USA cruises to gold, the greatest assembly of talent ever',
+    },
+    generation: {
+      prompt_template: `Place this person naturally into the crowd at the 1992 Barcelona Olympics basketball final. The person is wearing a classic 1992 USA Basketball Dream Team jersey, retro 90s style, face showing pure joy and awe, cheering as the Dream Team dominates.
 
 Jordan, Magic, Bird, Barkley all on the court together. The crowd is in awe — not just cheering, but watching basketball immortality. The Olympic rings visible, the gold medal ceremony about to happen. The atmosphere of witnessing the greatest team ever assembled.
 
 The person should look genuinely part of this once-in-a-lifetime moment — same 90s arena lighting, same historic wonder, same joy.
 
 Visual style: Ultra-realistic 90s sports photography, Olympic broadcast aesthetic, arena lighting, vintage basketball atmosphere, cinematic framing, 8K. Keep facial features intact. No text or logos.`,
-    captionTemplates: JSON.stringify([
-      'POV: You saw the Dream Team play live. Jordan. Magic. Bird. On the SAME team. I was at {location} in {year}. 🏀🇺🇸 #IfIWasThere',
-      'The greatest team ever assembled. And I was in that arena watching {moment}. Still unreal. 🐐',
-      'What if you were at the {year} Olympics when NBA legends played together? {event}. Legendary. ✨',
-      'Jordan. Magic. Bird. Barkley. All on one team. One court. One gold medal. I witnessed history. #POV',
-      'Still can\'t believe I saw the Dream Team in person. {location}. {year}. The most dominant team ever. 🙌',
-    ]),
-    hashtags: '#IfIWasThere #DreamTeam #Barcelona1992 #NBA #Olympics #Jordan #Magic #Bird',
-    viralScore: 7.0,
+      negative_prompt: 'blurry face, duplicate person, extra fingers, cropped face, distorted body, low quality, cartoon, painting, illustration, watermark, text, logo, player on court',
+      background_image: '',
+      insert_zone: '',
+    },
     status: 'active',
   },
 
   // ─── 13. Liu Xiang 2004 ────────────────────────────────
   {
     id: '2004-liu-xiang-gold',
-    title: 'Athens 2004 Olympics: Liu Xiang 110m Hurdles Gold',
-    year: 2004,
-    location: 'Olympic Stadium, Athens, Greece',
-    sportType: 'athletics',
-    description: 'Liu Xiang became the first Asian man to win an Olympic gold in a sprint event, equaling the world record at 12.91 seconds.',
-    keyMoment: 'Liu Xiang crossing the finish line, seeing the time 12.91, realizing he is Olympic champion',
-    eraClothing: '2004 China Olympic red jacket, summer casual wear',
-    imagePrompt: `Place this person naturally into the celebrating crowd at the Athens Olympic Stadium during the 2004 110m hurdles final. The person is wearing a 2004 China Olympic red jacket, face showing tears of pride and joy, holding up a Chinese flag.
+    title: 'Liu Xiang 110m Hurdles Gold — Athens Olympics 2004',
+    category: 'athletics',
+    event_type: 'historic_gold_medal',
+    scene: {
+      type: 'athletics_stadium',
+      venue: 'Olympic Stadium',
+      location: 'Athens, Greece',
+      time_period: '2004',
+      lighting: 'evening',
+      weather: 'clear',
+      crowd_density: 'very_high',
+      atmosphere: ['national_pride', 'historic_breakthrough', 'tears_of_joy', 'olympic_spirit', 'flags_waving'],
+      description: 'Liu Xiang became the first Asian man to win an Olympic gold in a sprint event, equaling the world record at 12.91 seconds.',
+    },
+    emotion: {
+      primary: 'pride',
+      secondary: 'tears_of_joy',
+      intensity: 0.94,
+      description: 'Tears of pride and joy, the weight of history lifting, an entire continent celebrating',
+    },
+    camera: {
+      style: 'broadcast_photography',
+      angle: 'spectator_view',
+      shot_type: 'medium_wide',
+      lens: '70mm',
+      depth_of_field: 'medium',
+      lighting: 'golden_evening',
+    },
+    user: {
+      role: 'spectator',
+      clothing: '2004 China Olympic red jacket, summer casual wear',
+      pose: 'flag_raised',
+      expression: 'tearful_pride',
+      visibility: 'high',
+    },
+    entities: {
+      sport: 'athletics',
+      competition: 'Olympic Games',
+      team_a: 'China',
+      team_b: '',
+      player: 'Liu Xiang',
+      people: ['Liu Xiang'],
+      objects: ['Olympic flame', 'scoreboard showing 12.91', 'Chinese flag'],
+    },
+    moment: {
+      minute: 0,
+      score_before: '',
+      score_after: '12.91s',
+      significance: 'First Asian man to win Olympic gold in a sprint event, equaling the world record',
+      description: 'Liu Xiang crossing the finish line, seeing the time 12.91, realizing he is Olympic champion — history made',
+    },
+    generation: {
+      prompt_template: `Place this person naturally into the celebrating crowd at the Athens Olympic Stadium during the 2004 110m hurdles final. The person is wearing a 2004 China Olympic red jacket, face showing tears of pride and joy, holding up a Chinese flag.
 
 Liu Xiang just won gold with a world record-tying 12.91 seconds. The Chinese fans in the crowd are crying with pride — flags waving, strangers hugging, the weight of history lifting. The Olympic flame burning in the distance, the scoreboard showing the record time. Warm Athens evening light.
 
 The person should look genuinely part of this historic breakthrough — same golden Olympic lighting, same tears of pride, same moment of history.
 
 Visual style: Ultra-realistic sports photography, Olympic broadcast aesthetic, evening golden light, emotional crowd, cinematic framing, 8K. Keep facial features intact. No text or logos.`,
-    captionTemplates: JSON.stringify([
-      'POV: You were in Athens when Liu Xiang made history. First Asian man to win an Olympic sprint gold. I was THERE. 🇨🇳🥇 #IfIWasThere',
-      '12.91 seconds. Olympic record. History made. I witnessed {moment} at {event}. Still get emotional. 🙌',
-      'What if you were at {location} when Asia broke the barrier? {event}. {year}. Legendary moment. ✨',
-      'A nation watched. A continent celebrated. And I was in that stadium when Liu Xiang changed everything. #POV',
-      'The moment when the impossible became possible. {location}. {year}. I saw it with my own eyes. 🏃‍♂️💨',
-    ]),
-    hashtags: '#IfIWasThere #LiuXiang #Athens2004 #Olympics #China #Hurdles #GoldMedal #AsianPride',
-    viralScore: 7.0,
+      negative_prompt: 'blurry face, duplicate person, extra fingers, cropped face, distorted body, low quality, cartoon, painting, illustration, watermark, text, logo, athlete on track',
+      background_image: '',
+      insert_zone: '',
+    },
     status: 'active',
   },
 
   // ─── 14. Cricket World Cup 2019 ───────────────────────
   {
     id: '2019-cricket-wc-final',
-    title: '2019 Cricket World Cup Final: England\'s Super Over Victory',
-    year: 2019,
-    location: 'Lord\'s Cricket Ground, London, England',
-    sportType: 'cricket',
-    description: 'The most dramatic cricket match ever. Tied after 50 overs, tied after the Super Over, England won on boundary countback.',
-    keyMoment: 'England players celebrating as the winning run is scored off the deflected throw',
-    eraClothing: '2019 England cricket jersey, smart casual summer wear',
-    imagePrompt: `Place this person naturally into the crowd at Lord\'s during the 2019 Cricket World Cup Final. The person is wearing an England cricket jersey, face showing absolute tension turning into explosive joy, hands on head in disbelief.
+    title: 'Super Over Victory — Cricket World Cup Final 2019',
+    category: 'cricket',
+    event_type: 'dramatic_finish',
+    scene: {
+      type: 'cricket_ground',
+      venue: 'Lord\'s Cricket Ground',
+      location: 'London, England',
+      time_period: '2019',
+      lighting: 'evening',
+      weather: 'sunny',
+      crowd_density: 'very_high',
+      atmosphere: ['tension', 'ecstatic_shock', 'historic_finish', 'summer_evening', 'iconic_venue'],
+      description: 'The most dramatic cricket match ever. Tied after 50 overs, tied after the Super Over, England won on boundary countback.',
+    },
+    emotion: {
+      primary: 'tension',
+      secondary: 'explosive_joy',
+      intensity: 0.98,
+      description: 'Absolute tension exploding into ecstatic joy, hands on head in disbelief, the most dramatic finish ever',
+    },
+    camera: {
+      style: 'broadcast_photography',
+      angle: 'spectator_view',
+      shot_type: 'medium_wide',
+      lens: '70mm',
+      depth_of_field: 'medium',
+      lighting: 'golden_summer_evening',
+    },
+    user: {
+      role: 'spectator',
+      clothing: '2019 England cricket jersey, smart casual summer wear',
+      pose: 'hands_on_head',
+      expression: 'shocked',
+      visibility: 'high',
+    },
+    entities: {
+      sport: 'cricket',
+      competition: 'Cricket World Cup',
+      team_a: 'England',
+      team_b: 'New Zealand',
+      player: 'Ben Stokes',
+      people: ['England cricket players', 'New Zealand players'],
+      objects: ['World Cup trophy', 'Lord\'s pavilion', 'cricket ball'],
+    },
+    moment: {
+      minute: 0,
+      score_before: '241-241 (tied)',
+      score_after: 'England win on boundary countback',
+      significance: 'The most dramatic cricket match ever — tied twice, won on boundary countback at Lord\'s',
+      description: 'England players celebrating as the winning run deflects off Stokes\' bat, the crowd at Lord\'s erupting in ecstatic shock',
+    },
+    generation: {
+      prompt_template: `Place this person naturally into the crowd at Lord's during the 2019 Cricket World Cup Final. The person is wearing an England cricket jersey, face showing absolute tension turning into explosive joy, hands on head in disbelief.
 
-England just won on boundary countback after a tied Super Over. The crowd at Lord\'s is in a state of ecstatic shock — the most dramatic finish in cricket history. The iconic Lord\'s pavilion in the background, the World Cup trophy being prepared, summer evening light over the ground.
+England just won on boundary countback after a tied Super Over. The crowd at Lord's is in a state of ecstatic shock — the most dramatic finish in cricket history. The iconic Lord's pavilion in the background, the World Cup trophy being prepared, summer evening light over the ground.
 
-The person should look genuinely part of this cricket madness — same Lord\'s atmosphere, same raw emotion, same historic electricity.
+The person should look genuinely part of this cricket madness — same Lord's atmosphere, same raw emotion, same historic electricity.
 
-Visual style: Ultra-realistic sports photography, cricket broadcast aesthetic, golden summer evening light, iconic Lord\'s atmosphere, cinematic framing, 8K. Keep facial features intact. No text or logos.`,
-    captionTemplates: JSON.stringify([
-      'POV: You were at Lord\'s for the greatest cricket match ever. Super Over. Boundary countback. I was THERE. 🏏🏆 #IfIWasThere',
-      'Tied. Super Over tied. Won on boundaries. I witnessed {moment} at {event}. The most insane finish ever. 🙌',
-      'What if you were at {location} for the {year} Cricket World Cup Final? Still can\'t believe it happened. ✨',
-      'Lord\'s. World Cup Final. Super Over. And I was in that crowd when England won by the barest of margins. #POV 🔥',
-      'Still not over this. The deflection. The run. The boundary countback. I saw it all. {event}. 🏆',
-    ]),
-    hashtags: '#IfIWasThere #CricketWorldCup #Lords #EnglandCricket #SuperOver #Cricket #2019',
-    viralScore: 6.0,
+Visual style: Ultra-realistic sports photography, cricket broadcast aesthetic, golden summer evening light, iconic Lord's atmosphere, cinematic framing, 8K. Keep facial features intact. No text or logos.`,
+      negative_prompt: 'blurry face, duplicate person, extra fingers, cropped face, distorted body, low quality, cartoon, painting, illustration, watermark, text, logo, player on field',
+      background_image: '',
+      insert_zone: '',
+    },
     status: 'active',
   },
 
-  // ─── 15. 2014 World Cup Final Götze ───────────────────
+  // ─── 15. Götze 2014 World Cup Final ───────────────────
   {
     id: '2014-wc-final-gotze',
-    title: '2014 World Cup Final: Götze\'s Extra-Time Winner',
-    year: 2014,
-    location: 'Maracanã Stadium, Rio de Janeiro, Brazil',
-    sportType: 'football',
-    description: 'Mario Götze controlled the ball on his chest and volleyed into the net in the 113th minute, giving Germany their fourth World Cup over Messi\'s Argentina.',
-    keyMoment: 'Götze chesting the ball and volleying into the net, German bench exploding',
-    eraClothing: '2014 Germany jersey, casual summer wear',
-    imagePrompt: `Place this person naturally into the German fan section at the Maracanã during the 2014 World Cup Final. The person is wearing a 2014 Germany white jersey, face showing ecstatic joy, arms raised high, screaming in celebration.
+    title: 'Götze Extra-Time Winner — World Cup Final 2014',
+    category: 'football',
+    event_type: 'winning_goal',
+    scene: {
+      type: 'soccer_stadium',
+      venue: 'Maracanã Stadium',
+      location: 'Rio de Janeiro, Brazil',
+      time_period: '2014',
+      lighting: 'night',
+      weather: 'clear',
+      crowd_density: 'very_high',
+      atmosphere: ['absolute_delirium', 'tears_flowing', 'world_champions', 'iconic_venue', 'brazilian_night'],
+      description: 'Mario Götze controlled the ball on his chest and volleyed into the net in the 113th minute, giving Germany their fourth World Cup over Messi\'s Argentina.',
+    },
+    emotion: {
+      primary: 'euphoria',
+      secondary: 'delirium',
+      intensity: 0.96,
+      description: 'Ecstatic joy, arms raised high, screaming in celebration, the realization of winning the World Cup at the Maracanã',
+    },
+    camera: {
+      style: 'broadcast_photography',
+      angle: 'spectator_view',
+      shot_type: 'medium_wide',
+      lens: '35mm',
+      depth_of_field: 'shallow',
+      lighting: 'maracanã_night',
+    },
+    user: {
+      role: 'spectator',
+      clothing: '2014 Germany white jersey, casual summer wear',
+      pose: 'arms_raised',
+      expression: 'euphoric',
+      visibility: 'high',
+    },
+    entities: {
+      sport: 'soccer',
+      competition: 'FIFA World Cup',
+      team_a: 'Germany',
+      team_b: 'Argentina',
+      player: 'Mario Götze',
+      people: ['Götze', 'Messi', 'German players'],
+      objects: ['World Cup trophy'],
+    },
+    moment: {
+      minute: 113,
+      score_before: '0-0',
+      score_after: '1-0',
+      significance: 'Winning goal gives Germany their fourth World Cup, beating Messi\'s Argentina at the iconic Maracanã',
+      description: 'Götze chesting the ball and volleying into the net, the German bench exploding, World Cup glory at the Maracanã',
+    },
+    generation: {
+      prompt_template: `Place this person naturally into the German fan section at the Maracanã during the 2014 World Cup Final. The person is wearing a 2014 Germany white jersey, face showing ecstatic joy, arms raised high, screaming in celebration.
 
 Götze just scored the winner in the 113th minute. German fans are in absolute delirium — tears flowing, flags waving, the realization that they just won the World Cup at the Maracanã. The iconic stadium lit up at night, the World Cup trophy visible, Brazilian sunset fading.
 
 The person should look genuinely part of this triumphant moment — same Maracanã lighting, same raw euphoria, same historic achievement.
 
 Visual style: Ultra-realistic DSLR sports photography, World Cup broadcast aesthetic, dramatic stadium lighting, celebration intensity, cinematic framing, 8K, Canon 35mm. Keep facial features intact. No text or logos.`,
-    captionTemplates: JSON.stringify([
-      'POV: You were at the Maracanã when Götze scored in the 113th minute. Germany World Champions over Messi. I was THERE. 🇩🇪🏆 #IfIWasThere',
-      '113 minutes. One touch. Eternal glory. I witnessed {moment} at {event}. Goosebumps forever. 🙌',
-      'What if you were at {location} for the {year} World Cup Final? The night Germany conquered the world. ✨',
-      'Messi vs Germany. Extra time. Götze\'s magic. And I was in that crowd. {event}. Legendary. #POV',
-      'The Maracanã. World Cup Final. The winning goal. I saw it all happen. Forever my memory. 🔥',
-    ]),
-    hashtags: '#IfIWasThere #WorldCupFinal #Germany #Gotze #Maracana #Brazil2014 #Football',
-    viralScore: 7.0,
+      negative_prompt: 'blurry face, duplicate person, extra fingers, cropped face, distorted body, low quality, cartoon, painting, illustration, watermark, text, logo, player on field',
+      background_image: '',
+      insert_zone: '',
+    },
     status: 'active',
   },
 ];

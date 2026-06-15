@@ -2,10 +2,16 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useSession, signIn, signOut } from "next-auth/react";
-import type { Event, SportType } from "@/lib/types";
-import { SPORT_TYPES } from "@/lib/types";
+import type { Event } from "@/lib/types";
 
 const WORKER_URL = process.env.NEXT_PUBLIC_WORKER_URL ?? "http://localhost:8787";
+
+const CATEGORIES = [
+  'football', 'basketball', 'tennis', 'athletics',
+  'cricket', 'boxing', 'american_football', 'other',
+] as const;
+
+const EVENT_TYPES = ['sports', 'music', 'movies', 'news', 'other'] as const;
 
 async function adminFetch<T>(path: string, session: ReturnType<typeof useSession>["data"], options: RequestInit = {}): Promise<T> {
   const token = (session as { accessToken?: string } | null)?.accessToken;
@@ -33,10 +39,20 @@ export default function AdminPage() {
 
   // Form state
   const [form, setForm] = useState({
-    id: "", title: "", year: new Date().getFullYear(), location: "",
-    sportType: "football" as SportType, description: "", keyMoment: "",
-    eraClothing: "", imagePrompt: "", captionTemplates: "[]", hashtags: "",
-    viralScore: 5.0, thumbnailUrl: "", status: "active" as "active" | "draft",
+    id: "",
+    title: "",
+    category: "football" as string,
+    event_type: "sports" as string,
+    // Nested objects as JSON strings for easy textarea editing
+    sceneStr: JSON.stringify({ location: "", time_period: "", atmosphere: "", description: "" }, null, 2),
+    emotionStr: JSON.stringify({ primary: "", intensity: "", description: "" }, null, 2),
+    cameraStr: JSON.stringify({ angle: "", distance: "", lighting: "", style: "" }, null, 2),
+    userStr: JSON.stringify({ clothing: "", action: "", position: "", role: "spectator" }, null, 2),
+    entitiesStr: JSON.stringify({ people: [], objects: [], brands: [] }, null, 2),
+    momentStr: JSON.stringify({ key_action: "", timing: "", significance: "", description: "" }, null, 2),
+    generationStr: JSON.stringify({ prompt_template: "", negative_prompt: "", background_image: "", insert_zone: "" }, null, 2),
+    thumbnailUrl: "",
+    status: "active" as "active" | "draft",
   });
 
   const loadEvents = useCallback(async () => {
@@ -81,31 +97,71 @@ export default function AdminPage() {
     setEditing(null);
     setThumbnailFile(null);
     setThumbnailPreview(null);
-    setForm({ id: "", title: "", year: new Date().getFullYear(), location: "", sportType: "football", description: "", keyMoment: "", eraClothing: "", imagePrompt: "", captionTemplates: "[]", hashtags: "", viralScore: 5.0, thumbnailUrl: "", status: "active" });
+    setForm({
+      id: "", title: "", category: "football", event_type: "sports",
+      sceneStr: JSON.stringify({ location: "", time_period: "", atmosphere: "", description: "" }, null, 2),
+      emotionStr: JSON.stringify({ primary: "", intensity: "", description: "" }, null, 2),
+      cameraStr: JSON.stringify({ angle: "", distance: "", lighting: "", style: "" }, null, 2),
+      userStr: JSON.stringify({ clothing: "", action: "", position: "", role: "spectator" }, null, 2),
+      entitiesStr: JSON.stringify({ people: [], objects: [], brands: [] }, null, 2),
+      momentStr: JSON.stringify({ key_action: "", timing: "", significance: "", description: "" }, null, 2),
+      generationStr: JSON.stringify({ prompt_template: "", negative_prompt: "", background_image: "", insert_zone: "" }, null, 2),
+      thumbnailUrl: "", status: "active",
+    });
   };
 
   const startEdit = (ev: Event) => {
     setEditing(ev);
     setForm({
-      id: ev.id, title: ev.title, year: ev.year, location: ev.location || "",
-      sportType: ev.sportType, description: ev.description || "",
-      keyMoment: ev.keyMoment || "", eraClothing: ev.eraClothing || "",
-      imagePrompt: ev.imagePrompt, captionTemplates: ev.captionTemplates || "[]",
-      hashtags: ev.hashtags || "", viralScore: ev.viralScore,
+      id: ev.id,
+      title: ev.title,
+      category: ev.category,
+      event_type: ev.event_type || "",
+      sceneStr: JSON.stringify(ev.scene || {}, null, 2),
+      emotionStr: JSON.stringify(ev.emotion || {}, null, 2),
+      cameraStr: JSON.stringify(ev.camera || {}, null, 2),
+      userStr: JSON.stringify(ev.user || {}, null, 2),
+      entitiesStr: JSON.stringify(ev.entities || {}, null, 2),
+      momentStr: JSON.stringify(ev.moment || {}, null, 2),
+      generationStr: JSON.stringify(ev.generation || {}, null, 2),
       thumbnailUrl: ev.thumbnailUrl || "",
       status: ev.status as "active" | "draft",
     });
+  };
+
+  const parseJsonField = (str: string, fieldName: string): Record<string, unknown> => {
+    try {
+      return JSON.parse(str);
+    } catch {
+      throw new Error(`Invalid JSON in ${fieldName}`);
+    }
   };
 
   const handleSave = async () => {
     setSaving(true);
     setMsg(null);
     try {
+      // Build the request body with parsed JSON objects
+      const body = {
+        id: form.id || undefined,
+        title: form.title,
+        category: form.category,
+        event_type: form.event_type || undefined,
+        scene: parseJsonField(form.sceneStr, "scene"),
+        emotion: parseJsonField(form.emotionStr, "emotion"),
+        camera: parseJsonField(form.cameraStr, "camera"),
+        user: parseJsonField(form.userStr, "user"),
+        entities: parseJsonField(form.entitiesStr, "entities"),
+        moment: parseJsonField(form.momentStr, "moment"),
+        generation: parseJsonField(form.generationStr, "generation"),
+        thumbnailUrl: form.thumbnailUrl || undefined,
+        status: form.status,
+      };
+
       if (thumbnailFile) {
-        // Create or update with file upload
         const fd = new FormData();
         fd.append("thumbnail", thumbnailFile);
-        fd.append("metadata", JSON.stringify(form));
+        fd.append("metadata", JSON.stringify(body));
         if (editing) {
           await adminFetch(`/admin/events/${editing.id}`, session, {
             method: "PUT", body: fd,
@@ -118,15 +174,14 @@ export default function AdminPage() {
           setMsg("✅ Event created with thumbnail");
         }
       } else {
-        // No file — send JSON
         if (editing) {
           await adminFetch(`/admin/events/${editing.id}`, session, {
-            method: "PUT", body: JSON.stringify(form),
+            method: "PUT", body: JSON.stringify(body),
           });
           setMsg("✅ Event updated");
         } else {
           await adminFetch("/admin/events", session, {
-            method: "POST", body: JSON.stringify(form),
+            method: "POST", body: JSON.stringify(body),
           });
           setMsg("✅ Event created");
         }
@@ -152,7 +207,7 @@ export default function AdminPage() {
   };
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-6">
+    <div className="mx-auto max-w-4xl px-4 py-6">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-xl font-bold text-white">⚙️ Event Admin</h1>
         <div className="flex items-center gap-3">
@@ -165,47 +220,97 @@ export default function AdminPage() {
       <div className="rounded-xl border border-white/10 bg-gray-900/60 p-5 mb-6">
         <h2 className="text-sm font-semibold text-white mb-4">{editing ? "Edit Event" : "New Event"}</h2>
         <div className="grid grid-cols-2 gap-3">
+          {/* Basic fields */}
           <input placeholder="ID (slug)" value={form.id} onChange={e => setForm({...form, id: e.target.value})} className="col-span-2 rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-white" disabled={!!editing} />
           <input placeholder="Title" value={form.title} onChange={e => setForm({...form, title: e.target.value})} className="col-span-2 rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-white" />
-          <input placeholder="Year" type="number" value={form.year} onChange={e => setForm({...form, year: +e.target.value})} className="rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-white" />
-          <select value={form.sportType} onChange={e => setForm({...form, sportType: e.target.value as SportType})} className="rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-white">
-            {SPORT_TYPES.map(s => <option key={s} value={s}>{s}</option>)}
+          <select value={form.category} onChange={e => setForm({...form, category: e.target.value})} className="rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-white">
+            {CATEGORIES.map(s => <option key={s} value={s}>{s}</option>)}
           </select>
-          <input placeholder="Location" value={form.location} onChange={e => setForm({...form, location: e.target.value})} className="rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-white" />
-          <input placeholder="Viral Score" type="number" step="0.1" min="1" max="10" value={form.viralScore} onChange={e => setForm({...form, viralScore: +e.target.value})} className="rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-white" />
+          <select value={form.event_type} onChange={e => setForm({...form, event_type: e.target.value})} className="rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-white">
+            {EVENT_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+          </select>
           <select value={form.status} onChange={e => setForm({...form, status: e.target.value as "active"|"draft"})} className="rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-white">
             <option value="active">Active</option>
             <option value="draft">Draft</option>
           </select>
-          <input placeholder="Key Moment" value={form.keyMoment} onChange={e => setForm({...form, keyMoment: e.target.value})} className="col-span-2 rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-white" />
-          <input placeholder="Era Clothing" value={form.eraClothing} onChange={e => setForm({...form, eraClothing: e.target.value})} className="col-span-2 rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-white" />
-          <textarea placeholder="Image Prompt (img2img)" value={form.imagePrompt} onChange={e => setForm({...form, imagePrompt: e.target.value})} rows={4} className="col-span-2 rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-white font-mono" />
-          <textarea placeholder='Caption Templates (JSON array)' value={form.captionTemplates} onChange={e => setForm({...form, captionTemplates: e.target.value})} rows={2} className="col-span-2 rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-white font-mono" />
-          <input placeholder="Hashtags" value={form.hashtags} onChange={e => setForm({...form, hashtags: e.target.value})} className="col-span-2 rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-white" />
-          <label className="col-span-2 flex items-center gap-2 rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-gray-400 cursor-pointer hover:text-white hover:border-cyan-500/30 transition-colors">
-            📁 {form.thumbnailUrl ? "Change thumbnail" : "Upload thumbnail"}
-            <input type="file" accept="image/*" className="hidden" onChange={e => {
-              const f = e.target.files?.[0];
-              if (f) {
-                setThumbnailFile(f);
-                setThumbnailPreview(URL.createObjectURL(f));
-              }
-            }} />
-          </label>
-          {thumbnailPreview && (
-            <div className="col-span-2 rounded-lg overflow-hidden border border-white/10">
-              <img src={thumbnailPreview} alt="Thumbnail preview" className="w-full" />
-            </div>
-          )}
-          {form.thumbnailUrl && !thumbnailFile && (
-            <div className="col-span-2 rounded-lg overflow-hidden border border-white/10">
-              <img src={form.thumbnailUrl} alt="Current thumbnail" className="w-full" />
-            </div>
-          )}
-          <input placeholder="Description" value={form.description} onChange={e => setForm({...form, description: e.target.value})} className="col-span-2 rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-white" />
+
+          {/* Thumbnail */}
+          <div className="col-span-2 flex flex-col gap-2">
+            <input placeholder="Thumbnail URL (or upload below)" value={form.thumbnailUrl} onChange={e => setForm({...form, thumbnailUrl: e.target.value})} className="rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-white" />
+            <label className="flex items-center gap-2 rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-gray-400 cursor-pointer hover:text-white hover:border-cyan-500/30 transition-colors">
+              📁 Upload thumbnail
+              <input type="file" accept="image/*" className="hidden" onChange={e => {
+                const f = e.target.files?.[0];
+                if (f) {
+                  setThumbnailFile(f);
+                  setThumbnailPreview(URL.createObjectURL(f));
+                }
+              }} />
+            </label>
+            {thumbnailPreview && (
+              <div className="rounded-lg overflow-hidden border border-white/10">
+                <img src={thumbnailPreview} alt="Thumbnail preview" className="w-full max-h-48 object-cover" />
+              </div>
+            )}
+          </div>
+
+          {/* JSON Editor Fields */}
+          <div className="col-span-2 mt-2">
+            <p className="text-xs text-gray-500 mb-2">JSON Fields — edit as JSON objects</p>
+          </div>
+
+          {/* Scene */}
+          <div className="col-span-2 sm:col-span-1">
+            <label className="text-xs text-gray-400 mb-1 block">scene</label>
+            <textarea value={form.sceneStr} onChange={e => setForm({...form, sceneStr: e.target.value})}
+              rows={5} className="w-full rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-xs text-white font-mono" />
+          </div>
+
+          {/* Emotion */}
+          <div className="col-span-2 sm:col-span-1">
+            <label className="text-xs text-gray-400 mb-1 block">emotion</label>
+            <textarea value={form.emotionStr} onChange={e => setForm({...form, emotionStr: e.target.value})}
+              rows={5} className="w-full rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-xs text-white font-mono" />
+          </div>
+
+          {/* Camera */}
+          <div className="col-span-2 sm:col-span-1">
+            <label className="text-xs text-gray-400 mb-1 block">camera</label>
+            <textarea value={form.cameraStr} onChange={e => setForm({...form, cameraStr: e.target.value})}
+              rows={5} className="w-full rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-xs text-white font-mono" />
+          </div>
+
+          {/* User */}
+          <div className="col-span-2 sm:col-span-1">
+            <label className="text-xs text-gray-400 mb-1 block">user</label>
+            <textarea value={form.userStr} onChange={e => setForm({...form, userStr: e.target.value})}
+              rows={5} className="w-full rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-xs text-white font-mono" />
+          </div>
+
+          {/* Entities */}
+          <div className="col-span-2 sm:col-span-1">
+            <label className="text-xs text-gray-400 mb-1 block">entities</label>
+            <textarea value={form.entitiesStr} onChange={e => setForm({...form, entitiesStr: e.target.value})}
+              rows={5} className="w-full rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-xs text-white font-mono" />
+          </div>
+
+          {/* Moment */}
+          <div className="col-span-2 sm:col-span-1">
+            <label className="text-xs text-gray-400 mb-1 block">moment</label>
+            <textarea value={form.momentStr} onChange={e => setForm({...form, momentStr: e.target.value})}
+              rows={5} className="w-full rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-xs text-white font-mono" />
+          </div>
+
+          {/* Generation */}
+          <div className="col-span-2">
+            <label className="text-xs text-gray-400 mb-1 block">generation</label>
+            <textarea value={form.generationStr} onChange={e => setForm({...form, generationStr: e.target.value})}
+              rows={6} className="w-full rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-xs text-white font-mono" />
+          </div>
         </div>
+
         <div className="flex gap-2 mt-4">
-          <button onClick={handleSave} disabled={saving || !form.title || !form.imagePrompt}
+          <button onClick={handleSave} disabled={saving || !form.title || !form.generationStr}
             className="rounded-lg bg-cyan-600 px-4 py-2 text-sm font-medium text-white hover:bg-cyan-700 disabled:opacity-50">
             {saving ? "Saving..." : editing ? "Update" : "Create"}
           </button>
@@ -223,7 +328,9 @@ export default function AdminPage() {
             <div key={ev.id} className="flex items-center gap-3 rounded-xl border border-white/10 bg-gray-900/60 p-3">
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-white truncate">{ev.title}</p>
-                <p className="text-xs text-gray-400">{ev.sportType} · {ev.year} · Viral: {ev.viralScore} · <span className={ev.status === "active" ? "text-green-400" : "text-yellow-400"}>{ev.status}</span></p>
+                <p className="text-xs text-gray-400">
+                  {ev.category} · {ev.event_type || ""} · {ev.scene?.time_period || ""} · <span className={ev.status === "active" ? "text-green-400" : "text-yellow-400"}>{ev.status}</span>
+                </p>
               </div>
               <button onClick={() => startEdit(ev)} className="text-xs text-cyan-400 hover:underline">Edit</button>
               <button onClick={() => handleDelete(ev.id)} className="text-xs text-red-400 hover:underline">Del</button>

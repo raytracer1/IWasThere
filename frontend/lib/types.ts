@@ -9,34 +9,103 @@ export interface User {
 }
 
 // ─── Event ──────────────────────────────────────────────
-export const SPORT_TYPES = [
-  'football',
-  'basketball',
-  'tennis',
-  'athletics',
-  'cricket',
-  'boxing',
-  'american_football',
-  'other',
-] as const;
-
-export type SportType = (typeof SPORT_TYPES)[number];
-
 export type EventStatus = 'active' | 'draft' | 'archived';
+
+export interface InsertZone {
+  zone_id?: string;
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+  visibility?: string;
+  [key: string]: unknown;
+}
+
+export interface EventScene {
+  location?: string;
+  venue?: string;
+  time_period?: string;
+  type?: string;
+  lighting?: string;
+  weather?: string;
+  crowd_density?: string;
+  atmosphere?: string | string[];
+  description?: string;
+  [key: string]: unknown;
+}
+
+export interface EventEmotion {
+  primary?: string;
+  secondary?: string;
+  intensity?: number | string;
+  description?: string;
+  [key: string]: unknown;
+}
+
+export interface EventCamera {
+  angle?: string;
+  distance?: string;
+  depth_of_field?: string;
+  lighting?: string;
+  style?: string;
+  shot_type?: string;
+  lens?: string;
+  [key: string]: unknown;
+}
+
+export interface EventUser {
+  clothing?: string;
+  action?: string;
+  position?: string;
+  role?: string;
+  pose?: string;
+  expression?: string;
+  visibility?: string;
+  [key: string]: unknown;
+}
+
+export interface EventEntities {
+  people?: string[];
+  objects?: string[];
+  brands?: string[];
+  sport?: string;
+  competition?: string;
+  team_a?: string;
+  team_b?: string;
+  player?: string;
+  [key: string]: unknown;
+}
+
+export interface EventMoment {
+  key_action?: string;
+  timing?: string;
+  significance?: string;
+  description?: string;
+  minute?: number;
+  score_before?: string;
+  score_after?: string;
+  [key: string]: unknown;
+}
+
+export interface EventGeneration {
+  prompt_template: string;
+  negative_prompt?: string;
+  background_image?: string;
+  insert_zone?: string | InsertZone;
+}
 
 export interface Event {
   id: string;
   title: string;
-  year: number;
-  location?: string;
-  sportType: SportType;
-  description?: string;
-  keyMoment?: string;
-  eraClothing?: string;
-  imagePrompt: string;
-  captionTemplates: string;
-  hashtags: string;
-  viralScore: number;
+  category: string;
+  event_type?: string;
+  scene: EventScene;
+  emotion: EventEmotion;
+  camera: EventCamera;
+  user: EventUser;
+  entities: EventEntities;
+  moment: EventMoment;
+  generation: EventGeneration;
   thumbnailUrl?: string;
   status: EventStatus;
   createdAt: number;
@@ -62,8 +131,7 @@ export interface Generation {
   inputImageUrl?: string;
   outputImageUrl?: string;
   eventTitle?: string;
-  eventYear?: number;
-  eventSportType?: SportType;
+  eventCategory?: string;
   eventThumbnail?: string;
 }
 

@@ -1,9 +1,9 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
-import type { GenerationStatus, SportType } from "@/lib/types";
+import type { GenerationStatus } from "@/lib/types";
 
 interface BadgeProps extends React.HTMLAttributes<HTMLSpanElement> {
-  variant?: GenerationStatus | SportType | "queued" | "processing" | "completed" | "failed";
+  variant?: GenerationStatus | "queued" | "processing" | "completed" | "failed" | "football" | "basketball" | "tennis" | "athletics" | "cricket" | "boxing" | "american_football" | "other";
 }
 
 const variantStyles: Record<string, string> = {

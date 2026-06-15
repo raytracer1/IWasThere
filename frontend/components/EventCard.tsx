@@ -3,14 +3,7 @@
 import Link from "next/link";
 import type { Event } from "@/lib/types";
 
-function fireEmoji(viral: number): string {
-  if (viral >= 9) return "🔥🔥🔥";
-  if (viral >= 8) return "🔥🔥";
-  if (viral >= 7) return "🔥";
-  return "⭐";
-}
-
-const SPORT_ICON: Record<string, string> = {
+const CATEGORY_ICON: Record<string, string> = {
   football: "⚽",
   basketball: "🏀",
   tennis: "🎾",
@@ -22,6 +15,10 @@ const SPORT_ICON: Record<string, string> = {
 };
 
 export function EventCard({ event }: { event: Event }) {
+  const categoryIcon = CATEGORY_ICON[event.category] || "🏟️";
+  const timePeriod = event.scene?.time_period || "";
+  const momentDesc = event.moment?.description || event.moment?.key_action || "";
+
   return (
     <Link
       href={`/create/${event.id}`}
@@ -38,32 +35,34 @@ export function EventCard({ event }: { event: Event }) {
           />
         ) : (
           <div className="w-full h-full flex items-center justify-center text-5xl bg-gradient-to-br from-cyan-900/50 to-blue-900/50">
-            {SPORT_ICON[event.sportType] || "🏟️"}
+            {categoryIcon}
           </div>
         )}
         {/* Year Badge */}
-        <div className="absolute top-3 left-3 rounded-lg bg-black/70 backdrop-blur-sm px-2.5 py-1 text-xs font-bold text-white">
-          {event.year}
-        </div>
-        {/* Viral Badge */}
-        <div className="absolute top-3 right-3 rounded-lg bg-black/70 backdrop-blur-sm px-2 py-1 text-xs">
-          {fireEmoji(event.viralScore)} {event.viralScore}
+        {timePeriod && (
+          <div className="absolute top-3 left-3 rounded-lg bg-black/70 backdrop-blur-sm px-2.5 py-1 text-xs font-bold text-white">
+            {timePeriod}
+          </div>
+        )}
+        {/* Category Badge */}
+        <div className="absolute top-3 right-3 rounded-lg bg-black/70 backdrop-blur-sm px-2 py-1 text-xs text-white capitalize">
+          {categoryIcon} {event.category.replace("_", " ")}
         </div>
       </div>
 
       {/* Content */}
       <div className="p-4">
         <div className="flex items-center gap-2 mb-2">
-          <span className="text-xs text-cyan-400 font-medium">
-            {SPORT_ICON[event.sportType] || ""} {event.sportType.replace("_", " ")}
+          <span className="text-xs text-cyan-400 font-medium capitalize">
+            {event.category.replace("_", " ")}
           </span>
         </div>
         <h3 className="text-sm font-semibold text-white line-clamp-2 leading-snug group-hover:text-cyan-300 transition-colors">
           {event.title}
         </h3>
-        {event.keyMoment && (
+        {momentDesc && (
           <p className="mt-1.5 text-xs text-gray-400 line-clamp-1">
-            {event.keyMoment}
+            {momentDesc}
           </p>
         )}
       </div>

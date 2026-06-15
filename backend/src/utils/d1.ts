@@ -1,5 +1,17 @@
 import type { D1Database, D1Result } from '@cloudflare/workers-types';
-import type { User, Event, Generation, GenerationStatus, SportType } from '../shared';
+import type {
+  User,
+  Event,
+  Generation,
+  GenerationStatus,
+  EventScene,
+  EventEmotion,
+  EventCamera,
+  EventUser,
+  EventEntities,
+  EventMoment,
+  EventGeneration,
+} from '../shared';
 
 /**
  * Typed wrapper around Cloudflare D1 binding.
@@ -62,23 +74,23 @@ export class D1Helper {
   // ─── Events ───────────────────────────────────────────
 
   async getActiveEvents(
-    sportType?: string,
+    category?: string,
     page = 1,
     pageSize = 20
   ): Promise<{ events: Event[]; total: number }> {
     const offset = (page - 1) * pageSize;
-    const sportFilter = sportType ? 'AND sport_type = ?' : '';
-    const params = sportType ? [sportType, pageSize, offset] : [pageSize, offset];
+    const catFilter = category ? 'AND category = ?' : '';
+    const params = category ? [category, pageSize, offset] : [pageSize, offset];
 
     const countResult = await this.first<{ count: number }>(
-      `SELECT COUNT(*) as count FROM events WHERE status = 'active' ${sportFilter}`,
-      ...(sportType ? [sportType] : [])
+      `SELECT COUNT(*) as count FROM events WHERE status = 'active' ${catFilter}`,
+      ...(category ? [category] : [])
     );
 
     const rows = await this.all<Record<string, unknown>>(
       `SELECT * FROM events
-       WHERE status = 'active' ${sportFilter}
-       ORDER BY viral_score DESC, created_at DESC
+       WHERE status = 'active' ${catFilter}
+       ORDER BY created_at DESC
        LIMIT ? OFFSET ?`,
       ...params
     );
@@ -115,20 +127,19 @@ export class D1Helper {
 
   async createEvent(event: Omit<Event, 'createdAt'>): Promise<void> {
     await this.run(
-      `INSERT INTO events (id, title, year, location, sport_type, description, key_moment, era_clothing, image_prompt, caption_templates, hashtags, viral_score, thumbnail_url, status, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, unixepoch())`,
+      `INSERT INTO events (id, title, category, event_type, scene, emotion, camera, user, entities, moment, generation, thumbnail_url, status, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, unixepoch())`,
       event.id,
       event.title,
-      event.year,
-      event.location ?? null,
-      event.sportType,
-      event.description ?? null,
-      event.keyMoment ?? null,
-      event.eraClothing ?? null,
-      event.imagePrompt,
-      event.captionTemplates ?? null,
-      event.hashtags ?? null,
-      event.viralScore ?? 5.0,
+      event.category,
+      event.event_type ?? null,
+      jsonStringify(event.scene),
+      jsonStringify(event.emotion),
+      jsonStringify(event.camera),
+      jsonStringify(event.user),
+      jsonStringify(event.entities),
+      jsonStringify(event.moment),
+      jsonStringify(event.generation),
       event.thumbnailUrl ?? null,
       event.status
     );
@@ -138,10 +149,18 @@ export class D1Helper {
     const fields: string[] = [];
     const values: unknown[] = [];
 
+    // JSON object columns that need stringification
+    const jsonColumns = new Set(['scene', 'emotion', 'camera', 'user', 'entities', 'moment', 'generation']);
+
     for (const [key, value] of Object.entries(updates)) {
       if (value !== undefined) {
         fields.push(`${camelToSnake(key)} = ?`);
-        values.push(value);
+        // Stringify nested objects for JSON columns
+        if (jsonColumns.has(key) && typeof value === 'object' && value !== null) {
+          values.push(JSON.stringify(value));
+        } else {
+          values.push(value);
+        }
       }
     }
 
@@ -231,7 +250,7 @@ export class D1Helper {
       userId
     );
     const rows = await this.all<Record<string, unknown>>(
-      'SELECT g.*, e.title as event_title, e.year as event_year, e.sport_type as event_sport_type, e.thumbnail_url as event_thumbnail FROM generations g LEFT JOIN events e ON g.event_id = e.id WHERE g.user_id = ? ORDER BY g.created_at DESC LIMIT ? OFFSET ?',
+      `SELECT g.*, e.title as event_title, e.category as event_category, e.thumbnail_url as event_thumbnail FROM generations g LEFT JOIN events e ON g.event_id = e.id WHERE g.user_id = ? ORDER BY g.created_at DESC LIMIT ? OFFSET ?`,
       userId,
       pageSize,
       offset
@@ -248,16 +267,15 @@ export class D1Helper {
     return {
       id: row.id as string,
       title: row.title as string,
-      year: row.year as number,
-      location: (row.location as string) ?? undefined,
-      sportType: row.sport_type as SportType,
-      description: (row.description as string) ?? undefined,
-      keyMoment: (row.key_moment as string) ?? undefined,
-      eraClothing: (row.era_clothing as string) ?? undefined,
-      imagePrompt: row.image_prompt as string,
-      captionTemplates: (row.caption_templates as string) ?? '[]',
-      hashtags: (row.hashtags as string) ?? '',
-      viralScore: row.viral_score as number,
+      category: row.category as string,
+      event_type: (row.event_type as string) ?? undefined,
+      scene: jsonParse<EventScene>(row.scene as string) ?? {} as EventScene,
+      emotion: jsonParse<EventEmotion>(row.emotion as string) ?? {} as EventEmotion,
+      camera: jsonParse<EventCamera>(row.camera as string) ?? {} as EventCamera,
+      user: jsonParse<EventUser>(row.user as string) ?? {} as EventUser,
+      entities: jsonParse<EventEntities>(row.entities as string) ?? {} as EventEntities,
+      moment: jsonParse<EventMoment>(row.moment as string) ?? {} as EventMoment,
+      generation: jsonParse<EventGeneration>(row.generation as string) ?? {} as EventGeneration,
       thumbnailUrl: (row.thumbnail_url as string) ?? undefined,
       status: row.status as Event['status'],
       createdAt: row.created_at as number,
@@ -280,15 +298,36 @@ export class D1Helper {
       completedAt: (row.completed_at as number) ?? undefined,
       // Joined fields
       eventTitle: (row as { event_title?: string }).event_title,
-      eventYear: (row as { event_year?: number }).event_year,
-      eventSportType: (row as { event_sport_type?: string }).event_sport_type,
+      eventCategory: (row as { event_category?: string }).event_category,
       eventThumbnail: (row as { event_thumbnail?: string }).event_thumbnail,
     } as Generation & {
       eventTitle?: string;
-      eventYear?: number;
-      eventSportType?: string;
+      eventCategory?: string;
       eventThumbnail?: string;
     };
+  }
+}
+
+/** Safely parse a JSON string, returning null on failure. */
+function jsonParse<T>(raw: string | null | undefined): T | null {
+  if (!raw || raw === '{}' || raw === '[]') {
+    return JSON.parse(raw || '{}') as T;
+  }
+  try {
+    return JSON.parse(raw) as T;
+  } catch {
+    return null;
+  }
+}
+
+/** Safely stringify a value, returning '{}' on failure. */
+function jsonStringify(val: unknown): string {
+  if (val === undefined || val === null) return '{}';
+  if (typeof val === 'string') return val;
+  try {
+    return JSON.stringify(val);
+  } catch {
+    return '{}';
   }
 }
 

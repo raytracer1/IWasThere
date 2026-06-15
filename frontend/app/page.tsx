@@ -2,29 +2,32 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { fetchEvents } from "@/lib/api";
-import { SPORT_TYPES } from "@/lib/types";
 import type { Event } from "@/lib/types";
 import { EventCard } from "@/components/EventCard";
 
-const SPORT_TABS: { key: string; label: string }[] = [
+const CATEGORY_TABS: { key: string; label: string }[] = [
   { key: "", label: "All" },
-  ...SPORT_TYPES.map((s) => ({
-    key: s,
-    label: s.charAt(0).toUpperCase() + s.slice(1).replace("_", " "),
-  })),
+  { key: "football", label: "Football" },
+  { key: "basketball", label: "Basketball" },
+  { key: "tennis", label: "Tennis" },
+  { key: "athletics", label: "Athletics" },
+  { key: "cricket", label: "Cricket" },
+  { key: "boxing", label: "Boxing" },
+  { key: "american_football", label: "American Football" },
+  { key: "other", label: "Other" },
 ];
 
 export default function HomePage() {
   const [events, setEvents] = useState<Event[]>([]);
-  const [sportType, setSportType] = useState("");
+  const [category, setCategory] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const loadEvents = useCallback(async (sport?: string) => {
+  const loadEvents = useCallback(async (cat?: string) => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetchEvents(sport || undefined);
+      const res = await fetchEvents(cat || undefined);
       setEvents(res.data);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load events");
@@ -34,8 +37,8 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
-    loadEvents(sportType);
-  }, [sportType, loadEvents]);
+    loadEvents(category);
+  }, [category, loadEvents]);
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-6">
@@ -53,14 +56,14 @@ export default function HomePage() {
         </p>
       </div>
 
-      {/* Sport Tabs */}
+      {/* Category Tabs */}
       <div className="flex gap-1.5 overflow-x-auto pb-2 mb-6 no-scrollbar">
-        {SPORT_TABS.map((tab) => (
+        {CATEGORY_TABS.map((tab) => (
           <button
             key={tab.key}
-            onClick={() => setSportType(tab.key)}
+            onClick={() => setCategory(tab.key)}
             className={`shrink-0 rounded-full px-4 py-1.5 text-xs font-medium transition-colors ${
-              sportType === tab.key
+              category === tab.key
                 ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30"
                 : "bg-white/5 text-gray-400 border border-white/10 hover:text-white hover:bg-white/10"
             }`}
@@ -88,7 +91,7 @@ export default function HomePage() {
         <div className="text-center py-12">
           <p className="text-red-400 text-sm">{error}</p>
           <button
-            onClick={() => loadEvents(sportType)}
+            onClick={() => loadEvents(category)}
             className="mt-3 text-sm text-cyan-400 hover:underline"
           >
             Try again
