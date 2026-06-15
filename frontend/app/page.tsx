@@ -109,6 +109,12 @@ export default function HomePage() {
           ))}
         </div>
       )}
+
+      <footer className="mt-12 text-center">
+        <a href="/privacy" className="text-xs text-gray-500 hover:text-gray-400 underline">
+          Privacy Policy
+        </a>
+      </footer>
     </div>
   );
 }
