@@ -127,8 +127,8 @@ export class D1Helper {
 
   async createEvent(event: Omit<Event, 'createdAt'>): Promise<void> {
     await this.run(
-      `INSERT INTO events (id, title, category, event_type, scene, emotion, camera, user, entities, moment, generation, thumbnail_url, status, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, unixepoch())`,
+      `INSERT INTO events (id, title, category, event_type, scene, emotion, camera, user, entities, moment, generation, thumbnail_url, reference_video, status, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, unixepoch())`,
       event.id,
       event.title,
       event.category,
@@ -141,6 +141,7 @@ export class D1Helper {
       jsonStringify(event.moment),
       jsonStringify(event.generation),
       event.thumbnailUrl ?? null,
+      event.referenceVideo ?? null,
       event.status
     );
   }
@@ -277,6 +278,7 @@ export class D1Helper {
       moment: jsonParse<EventMoment>(row.moment as string) ?? {} as EventMoment,
       generation: jsonParse<EventGeneration>(row.generation as string) ?? {} as EventGeneration,
       thumbnailUrl: (row.thumbnail_url as string) ?? undefined,
+      referenceVideo: (row.reference_video as string) ?? undefined,
       status: row.status as Event['status'],
       createdAt: row.created_at as number,
     };

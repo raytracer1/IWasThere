@@ -34,6 +34,7 @@ export interface EventFormSaveData {
   body: Record<string, unknown>;
   thumbnailFile: File | null;
   backgroundFile: File | null;
+  videoFile: File | null;
 }
 
 interface EventFormProps {
@@ -65,6 +66,8 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
   const [thumbnailPreview, setThumbnailPreview] = useState<string | null>(null);
   const [backgroundFile, setBackgroundFile] = useState<File | null>(null);
   const [backgroundPreview, setBackgroundPreview] = useState<string | null>(null);
+  const [videoFile, setVideoFile] = useState<File | null>(null);
+  const [videoPreview, setVideoPreview] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
@@ -105,6 +108,8 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
     setThumbnailPreview(null);
     setBackgroundFile(null);
     setBackgroundPreview(null);
+    setVideoFile(null);
+    setVideoPreview(null);
     setMsg(null);
     initializedRef.current = ev?.id ?? "__new__";
   }, []);
@@ -115,12 +120,14 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
   }, [event, initForm]);
 
   const bgPreviewRef = useRef<string | null>(null);
+  const videoPreviewRef = useRef<string | null>(null);
 
   // Cleanup preview URLs on unmount
   useEffect(() => {
     return () => {
       if (previewUrlRef.current) URL.revokeObjectURL(previewUrlRef.current);
       if (bgPreviewRef.current) URL.revokeObjectURL(bgPreviewRef.current);
+      if (videoPreviewRef.current) URL.revokeObjectURL(videoPreviewRef.current);
     };
   }, []);
 
@@ -159,7 +166,7 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
         thumbnailUrl: form.thumbnailUrl || undefined,
         status: form.status,
       };
-      await onSave({ body, thumbnailFile, backgroundFile });
+      await onSave({ body, thumbnailFile, backgroundFile, videoFile });
       setMsg(isEdit ? "✅ Event updated" : "✅ Event created");
       if (!isEdit) {
         initForm(null);
@@ -280,6 +287,40 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
                 alt="Current background"
                 className="w-full max-h-64 object-contain"
               />
+            </div>
+          ) : null}
+        </div>
+
+        {/* Reference Video */}
+        <div className="col-span-2 flex flex-col gap-2">
+          <label className="flex items-center gap-2 rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-gray-400 cursor-pointer hover:text-white hover:border-cyan-500/30 transition-colors">
+            🎬 Upload reference video
+            <input
+              type="file"
+              accept="video/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (videoPreviewRef.current) {
+                  URL.revokeObjectURL(videoPreviewRef.current);
+                  videoPreviewRef.current = null;
+                }
+                if (file) {
+                  setVideoFile(file);
+                  const url = URL.createObjectURL(file);
+                  videoPreviewRef.current = url;
+                  setVideoPreview(url);
+                }
+              }}
+            />
+          </label>
+          {videoPreview ? (
+            <div className="rounded-lg overflow-hidden border border-white/10">
+              <video src={videoPreview} controls className="w-full max-h-64" />
+            </div>
+          ) : event?.referenceVideo ? (
+            <div className="rounded-lg overflow-hidden border border-white/10">
+              <video src={event.referenceVideo} controls className="w-full max-h-64" />
             </div>
           ) : null}
         </div>

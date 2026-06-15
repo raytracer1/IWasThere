@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { D1Helper } from '../utils/d1';
-import { generateSignedUrl } from '../utils/r2';
+import { signEventAssetUrls } from '../utils/r2';
 import { DEFAULT_PAGE_SIZE } from '../shared';
 import type { Bindings } from '../types';
 
@@ -20,23 +20,8 @@ eventsRouter.get('/', async (c) => {
 
   const { events, total } = await db.getActiveEvents(category, page, pageSize);
 
-  // Sign thumbnail & background R2 keys
-  const signed = await Promise.all(
-    events.map(async (ev) => ({
-      ...ev,
-      thumbnailUrl: ev.thumbnailUrl
-        ? ev.thumbnailUrl.startsWith('http')
-          ? ev.thumbnailUrl
-          : await generateSignedUrl(ev.thumbnailUrl, secret, workerUrl)
-        : undefined,
-      generation: {
-        ...ev.generation,
-        background_image: ev.generation?.background_image && !ev.generation.background_image.startsWith('http')
-          ? await generateSignedUrl(ev.generation.background_image, secret, workerUrl)
-          : ev.generation?.background_image,
-      },
-    }))
-  );
+  // Sign R2 asset URLs
+  const signed = await Promise.all(events.map((ev) => signEventAssetUrls(ev as unknown as Record<string, unknown>, secret, workerUrl)));
 
   return c.json({
     success: true,
@@ -60,24 +45,8 @@ eventsRouter.get('/:id', async (c) => {
     return c.json({ success: false, error: 'Event not found' }, 404);
   }
 
-  const bgImage = event.generation?.background_image;
-  return c.json({
-    success: true,
-    data: {
-      ...event,
-      thumbnailUrl: event.thumbnailUrl
-        ? event.thumbnailUrl.startsWith('http')
-          ? event.thumbnailUrl
-          : await generateSignedUrl(event.thumbnailUrl, secret, workerUrl)
-        : undefined,
-      generation: {
-        ...event.generation,
-        background_image: bgImage && !bgImage.startsWith('http')
-          ? await generateSignedUrl(bgImage, secret, workerUrl)
-          : bgImage,
-      },
-    },
-  });
+  const data = await signEventAssetUrls(event as unknown as Record<string, unknown>, secret, workerUrl);
+  return c.json({ success: true, data });
 });
 
 export default eventsRouter;

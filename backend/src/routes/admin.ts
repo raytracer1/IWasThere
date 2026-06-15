@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { D1Helper } from '../utils/d1';
-import { uploadToR2, deleteFromR2, generateSignedUrl } from '../utils/r2';
+import { uploadToR2, deleteFromR2, signEventAssetUrls } from '../utils/r2';
 import { MAX_THUMBNAIL_SIZE, DEFAULT_PAGE_SIZE } from '../shared';
 import type { Event } from '../shared';
 import type { Bindings } from '../types';
@@ -26,19 +26,8 @@ adminRouter.get('/events', async (c) => {
 
   const { events, total } = await db.getAllEvents(page, pageSize);
 
-  // Sign thumbnail & background R2 keys
-  const signed = await Promise.all(events.map(async (ev) => ({
-    ...ev,
-    thumbnailUrl: ev.thumbnailUrl && !ev.thumbnailUrl.startsWith('http')
-      ? await generateSignedUrl(ev.thumbnailUrl, secret, workerUrl)
-      : ev.thumbnailUrl,
-    generation: {
-      ...ev.generation,
-      background_image: ev.generation?.background_image && !ev.generation.background_image.startsWith('http')
-        ? await generateSignedUrl(ev.generation.background_image, secret, workerUrl)
-        : ev.generation?.background_image,
-    },
-  })));
+  // Sign R2 asset URLs
+  const signed = await Promise.all(events.map((ev) => signEventAssetUrls(ev as unknown as Record<string, unknown>, secret, workerUrl)));
 
   return c.json({ success: true, data: signed, total, page, pageSize });
 });
@@ -56,21 +45,8 @@ adminRouter.get('/events/:id', async (c) => {
     return c.json({ success: false, error: 'Event not found' }, 404);
   }
 
-  return c.json({
-    success: true,
-    data: {
-      ...event,
-      thumbnailUrl: event.thumbnailUrl && !event.thumbnailUrl.startsWith('http')
-        ? await generateSignedUrl(event.thumbnailUrl, secret, workerUrl)
-        : event.thumbnailUrl,
-      generation: {
-        ...event.generation,
-        background_image: event.generation?.background_image && !event.generation.background_image.startsWith('http')
-          ? await generateSignedUrl(event.generation.background_image, secret, workerUrl)
-          : event.generation?.background_image,
-      },
-    },
-  });
+  const data = await signEventAssetUrls(event as unknown as Record<string, unknown>, secret, workerUrl);
+  return c.json({ success: true, data });
 });
 
 /**
@@ -109,6 +85,15 @@ adminRouter.post('/events', async (c) => {
       const gen = (body.generation as Record<string, unknown>) || {};
       gen.background_image = bgKey;
       body.generation = gen;
+    }
+
+    // Handle reference video upload
+    const video = formData.get('video');
+    if (video && typeof video !== 'string') {
+      const vidFile = video as unknown as UploadedFile;
+      const vidKey = `videos/${crypto.randomUUID()}.${vidFile.name.split('.').pop() || 'mp4'}`;
+      await uploadToR2(c.env.ASSETS, vidKey, await vidFile.arrayBuffer(), vidFile.type);
+      body.referenceVideo = vidKey;
     }
   } else {
     body = await c.req.json();
@@ -192,6 +177,15 @@ adminRouter.put('/events/:id', async (c) => {
       const gen = (body.generation as Record<string, unknown>) || {};
       gen.background_image = bgKey;
       body.generation = gen;
+    }
+
+    // Handle reference video upload
+    const video = formData.get('video');
+    if (video && typeof video !== 'string') {
+      const vidFile = video as unknown as UploadedFile;
+      const vidKey = `videos/${crypto.randomUUID()}.${vidFile.name.split('.').pop() || 'mp4'}`;
+      await uploadToR2(c.env.ASSETS, vidKey, await vidFile.arrayBuffer(), vidFile.type);
+      body.referenceVideo = vidKey;
     }
   } else {
     body = await c.req.json<Record<string, unknown>>();

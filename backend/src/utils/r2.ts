@@ -117,6 +117,32 @@ export async function deleteFromR2(
 /**
  * Generate a unique filename for uploads.
  */
+/**
+ * Sign all R2 asset URLs in an event (thumbnail, background_image, reference_video).
+ */
+export async function signEventAssetUrls(
+  event: Record<string, unknown>,
+  secret: string,
+  workerUrl: string
+): Promise<Record<string, unknown>> {
+  const sign = async (key: string | undefined) => {
+    if (!key || key.startsWith('http')) return key;
+    return generateSignedUrl(key, secret, workerUrl);
+  };
+
+  const generation = (event.generation as Record<string, unknown>) || {};
+
+  return {
+    ...event,
+    thumbnailUrl: await sign(event.thumbnailUrl as string | undefined),
+    referenceVideo: await sign(event.referenceVideo as string | undefined),
+    generation: {
+      ...generation,
+      background_image: await sign(generation.background_image as string | undefined),
+    },
+  };
+}
+
 export function generateFileKey(
   userId: string,
   dir: string,

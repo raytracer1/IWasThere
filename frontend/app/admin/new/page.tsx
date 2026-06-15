@@ -12,10 +12,11 @@ export default function AdminNewPage() {
   const accessToken = (session as { accessToken?: string } | null)?.accessToken;
 
   const handleSave = async (data: EventFormSaveData) => {
-    if (data.thumbnailFile || data.backgroundFile) {
+    if (data.thumbnailFile || data.backgroundFile || data.videoFile) {
       const fd = new FormData();
       if (data.thumbnailFile) fd.append("thumbnail", data.thumbnailFile);
       if (data.backgroundFile) fd.append("background", data.backgroundFile);
+      if (data.videoFile) fd.append("video", data.videoFile);
       fd.append("metadata", JSON.stringify(data.body));
       await adminFetch("/admin/events", accessToken, {
         method: "POST",

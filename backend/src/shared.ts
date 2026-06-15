@@ -108,6 +108,7 @@ export interface Event {
   moment: EventMoment;
   generation: EventGeneration;
   thumbnailUrl?: string;
+  referenceVideo?: string;
   status: EventStatus;
   createdAt: number;
 }
