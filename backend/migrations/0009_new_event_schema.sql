@@ -19,7 +19,8 @@ ALTER TABLE events RENAME TO events_old;
 
 -- 2. Create new table with updated schema
 CREATE TABLE events (
-  id                TEXT PRIMARY KEY,
+  object_id         TEXT PRIMARY KEY,
+  id                TEXT NOT NULL UNIQUE,
   title             TEXT NOT NULL,
   category          TEXT NOT NULL,
   event_type        TEXT,
@@ -42,8 +43,9 @@ CREATE INDEX idx_events_status ON events(status);
 CREATE INDEX idx_events_created_at ON events(created_at);
 
 -- 4. Migrate data: convert old flat columns → new nested JSON structure
-INSERT INTO events (id, title, category, event_type, scene, emotion, camera, user, entities, moment, generation, thumbnail_url, status, created_at)
+INSERT INTO events (object_id, id, title, category, event_type, scene, emotion, camera, user, entities, moment, generation, thumbnail_url, status, created_at)
 SELECT
+  lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-4' || substr(hex(randomblob(2)),2) || '-' || substr('89ab',abs(random()) % 4 + 1,1) || substr(hex(randomblob(2)),2) || '-' || hex(randomblob(6))) AS object_id,
   id,
   title,
   sport_type AS category,

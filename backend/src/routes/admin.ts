@@ -38,6 +38,30 @@ adminRouter.get('/events', async (c) => {
 });
 
 /**
+ * GET /admin/events/:id — Single event detail (admin).
+ */
+adminRouter.get('/events/:id', async (c) => {
+  const db = new D1Helper(c.env.DB);
+  const secret = c.env.AUTH_SECRET ?? 'dev-secret';
+  const workerUrl = new URL(c.req.url).origin;
+
+  const event = await db.getEventById(c.req.param('id'));
+  if (!event) {
+    return c.json({ success: false, error: 'Event not found' }, 404);
+  }
+
+  return c.json({
+    success: true,
+    data: {
+      ...event,
+      thumbnailUrl: event.thumbnailUrl && !event.thumbnailUrl.startsWith('http')
+        ? await generateSignedUrl(event.thumbnailUrl, secret, workerUrl)
+        : event.thumbnailUrl,
+    },
+  });
+});
+
+/**
  * POST /admin/events — Create a new event.
  * Multipart: thumbnail (optional) + JSON metadata
  */
@@ -83,7 +107,7 @@ adminRouter.post('/events', async (c) => {
     }, 400);
   }
 
-  const id = (body.id as string) || (body.title as string).toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+  const id = crypto.randomUUID();
 
   await db.createEvent({
     id,
@@ -144,7 +168,7 @@ adminRouter.put('/events/:id', async (c) => {
   }
 
   await db.updateEvent(id, body);
-  return c.json({ success: true, data: { id } });
+  return c.json({ success: true, data: { id: existing.id } });
 });
 
 /**

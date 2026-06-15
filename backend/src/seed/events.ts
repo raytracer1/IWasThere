@@ -6,7 +6,7 @@ import type { Event } from '../shared';
 export const SEED_EVENTS: Omit<Event, 'createdAt'>[] = [
   // ─── 1. Messi 2022 World Cup Final ───────────────────────
   {
-    id: '2022-wc-final',
+    id: '7c100f01-01c4-4620-adcb-9ec7def510ff',
     title: 'Messi Trophy Celebration — World Cup Final 2022',
     category: 'football',
     event_type: 'trophy_celebration',
@@ -75,7 +75,7 @@ Visual style: Ultra-realistic DSLR sports photography, ESPN broadcast aesthetic,
 
   // ─── 2. Germany 7-1 Brazil ─────────────────────────────
   {
-    id: '2014-germany-7-1-brazil',
+    id: '95b57720-33a2-47e4-ad79-7dbccc0cc36d',
     title: 'Germany 5th Goal Celebration — World Cup Semi-Final 2014',
     category: 'football',
     event_type: 'goal_celebration',
@@ -144,7 +144,7 @@ Visual style: Ultra-realistic DSLR sports photography, dramatic stadium lighting
 
   // ─── 3. 1998 World Cup Final ───────────────────────────
   {
-    id: '1998-wc-final',
+    id: 'd9e4810a-b207-4792-87f0-81e6d0c58a1a',
     title: 'Zidane Header — World Cup Final 1998',
     category: 'football',
     event_type: 'goal_celebration',
@@ -213,7 +213,7 @@ Visual style: Ultra-realistic DSLR sports photograph, ESPN broadcast aesthetic, 
 
   // ─── 4. LeBron's Block 2016 ────────────────────────────
   {
-    id: '2016-lebron-block',
+    id: 'e4bebe71-89bb-4024-86bf-57165707e41c',
     title: 'LeBron Chase-Down Block — NBA Finals Game 7 2016',
     category: 'basketball',
     event_type: 'defensive_play',
@@ -282,7 +282,7 @@ Visual style: Ultra-realistic DSLR sports photography, ESPN broadcast aesthetic,
 
   // ─── 5. Istanbul 2005 ──────────────────────────────────
   {
-    id: '2005-istanbul-miracle',
+    id: 'e5ed7771-c7e7-430d-a101-309e1a40b59e',
     title: 'The Miracle of Istanbul — Champions League Final 2005',
     category: 'football',
     event_type: 'comeback_celebration',
@@ -351,7 +351,7 @@ Visual style: Ultra-realistic DSLR sports photography, Champions League broadcas
 
   // ─── 6. Maradona Goal of the Century ───────────────────
   {
-    id: '1986-maradona-goal',
+    id: '3d883933-57b3-47ac-81ca-71e3e46bbbaf',
     title: 'Maradona Goal of the Century — World Cup 1986',
     category: 'football',
     event_type: 'iconic_goal',
@@ -420,7 +420,7 @@ Visual style: Ultra-realistic 80s sports photography, vintage broadcast aestheti
 
   // ─── 7. Iniesta 2010 ───────────────────────────────────
   {
-    id: '2010-iniesta-winner',
+    id: 'c2ce6d25-ed93-46ab-bb6b-f1fdb1eeea54',
     title: 'Iniesta Extra-Time Winner — World Cup Final 2010',
     category: 'football',
     event_type: 'winning_goal',
@@ -489,7 +489,7 @@ Visual style: Ultra-realistic DSLR sports photography, World Cup broadcast aesth
 
   // ─── 8. Bolt Beijing 2008 ──────────────────────────────
   {
-    id: '2008-bolt-100m',
+    id: '5e7066e4-4bbf-4a3d-81bb-7e849e4c8413',
     title: 'Usain Bolt 100m World Record — Beijing Olympics 2008',
     category: 'athletics',
     event_type: 'world_record',
@@ -558,7 +558,7 @@ Visual style: Ultra-realistic DSLR sports photography, Olympic broadcast aesthet
 
   // ─── 9. Man Utd 1999 ───────────────────────────────────
   {
-    id: '1999-man-utd-treble',
+    id: 'd3fe395d-db8b-4bcc-af7b-0385615ee74b',
     title: 'Solskjær Winner — Champions League Final 1999',
     category: 'football',
     event_type: 'stoppage_time_winner',
@@ -627,7 +627,7 @@ Visual style: Ultra-realistic 90s sports photography, Champions League broadcast
 
   // ─── 10. Super Bowl XLII Helmet Catch ─────────────────
   {
-    id: '2008-superbowl-helmet-catch',
+    id: 'f1f12810-77c7-42ef-9d0b-fffc35d6ab96',
     title: 'The Helmet Catch — Super Bowl XLII 2008',
     category: 'american_football',
     event_type: 'iconic_play',
@@ -696,7 +696,7 @@ Visual style: Ultra-realistic NFL photography, Super Bowl broadcast aesthetic, d
 
   // ─── 11. Federer vs Nadal 2009 ─────────────────────────
   {
-    id: '2009-federer-nadal-wimbledon',
+    id: '27417a48-1f85-4a94-875c-537a0249e6da',
     title: 'Federer Wins 16-14 in the 5th — Wimbledon Final 2009',
     category: 'tennis',
     event_type: 'championship_point',
@@ -765,7 +765,7 @@ Visual style: Ultra-realistic sports photography, Wimbledon broadcast aesthetic,
 
   // ─── 12. Dream Team 1992 ───────────────────────────────
   {
-    id: '1992-dream-team',
+    id: 'd452d3db-10b1-4dfd-8fd5-b9914fe97bac',
     title: 'The Dream Team Wins Gold — Barcelona Olympics 1992',
     category: 'basketball',
     event_type: 'gold_medal_celebration',
@@ -834,7 +834,7 @@ Visual style: Ultra-realistic 90s sports photography, Olympic broadcast aestheti
 
   // ─── 13. Liu Xiang 2004 ────────────────────────────────
   {
-    id: '2004-liu-xiang-gold',
+    id: 'b2b632a2-d0e5-41f9-860f-f238545a58e3',
     title: 'Liu Xiang 110m Hurdles Gold — Athens Olympics 2004',
     category: 'athletics',
     event_type: 'historic_gold_medal',
@@ -903,7 +903,7 @@ Visual style: Ultra-realistic sports photography, Olympic broadcast aesthetic, e
 
   // ─── 14. Cricket World Cup 2019 ───────────────────────
   {
-    id: '2019-cricket-wc-final',
+    id: 'd9a1fa4c-acb3-4909-8bc8-d27ae8b060dc',
     title: 'Super Over Victory — Cricket World Cup Final 2019',
     category: 'cricket',
     event_type: 'dramatic_finish',
@@ -972,7 +972,7 @@ Visual style: Ultra-realistic sports photography, cricket broadcast aesthetic, g
 
   // ─── 15. Götze 2014 World Cup Final ───────────────────
   {
-    id: '2014-wc-final-gotze',
+    id: '0965fe85-17cc-45df-9660-00763801187a',
     title: 'Götze Extra-Time Winner — World Cup Final 2014',
     category: 'football',
     event_type: 'winning_goal',

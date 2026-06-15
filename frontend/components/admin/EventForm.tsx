@@ -47,7 +47,6 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
   const previewUrlRef = useRef<string | null>(null);
 
   const [form, setForm] = useState({
-    id: "",
     title: "",
     category: "football" as string,
     event_type: "sports" as string,
@@ -70,7 +69,6 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
   const initForm = useCallback((ev: Event | null | undefined) => {
     if (ev) {
       setForm({
-        id: ev.id,
         title: ev.title,
         category: ev.category,
         event_type: ev.event_type || "sports",
@@ -86,7 +84,6 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
       });
     } else {
       setForm({
-        id: "",
         title: "",
         category: "football",
         event_type: "sports",
@@ -141,7 +138,6 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
     setMsg(null);
     try {
       const body: Record<string, unknown> = {
-        id: form.id || undefined,
         title: form.title,
         category: form.category,
         event_type: form.event_type || undefined,
@@ -175,13 +171,6 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
 
       <div className="grid grid-cols-2 gap-3">
         {/* Basic fields */}
-        <input
-          placeholder="ID (slug)"
-          value={form.id}
-          onChange={(e) => setField("id", e.target.value)}
-          className="col-span-2 rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-white"
-          disabled={isEdit}
-        />
         <input
           placeholder="Title"
           value={form.title}
