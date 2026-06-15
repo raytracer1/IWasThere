@@ -41,7 +41,7 @@ export default function HomePage() {
   }, [category, loadEvents]);
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-6">
+    <div className="mx-auto max-w-4xl px-4 py-6">
       {/* Hero */}
       <div className="text-center mb-8">
         <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
@@ -75,7 +75,7 @@ export default function HomePage() {
 
       {/* Event Grid */}
       {loading ? (
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
           {Array.from({ length: 6 }).map((_, i) => (
             <div key={i} className="rounded-2xl bg-gray-900/60 animate-pulse">
               <div className="aspect-[4/3] bg-gray-800 rounded-t-2xl" />
@@ -103,7 +103,7 @@ export default function HomePage() {
           <p className="mt-4 text-gray-400 text-sm">No events found.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
           {events.map((event) => (
             <EventCard key={event.id} event={event} />
           ))}
