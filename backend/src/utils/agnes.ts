@@ -13,7 +13,7 @@ export async function generateImage(
   prompt: string,
   imageBase64: string,
   apiKey: string,
-  size = '1024x768'
+  size = '576x1024'
 ): Promise<string> {
   const resp = await fetch(`${AGNES_BASE}/images/generations`, {
     method: 'POST',

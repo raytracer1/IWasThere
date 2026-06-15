@@ -50,7 +50,7 @@ generateRouter.post('/', async (c) => {
 
   try {
     console.log('[generate] Calling Agnes AI (img2img)...');
-    const imageUrl = await generateImage(imagePrompt, dataUrl, apiKey, '1024x768');
+    const imageUrl = await generateImage(imagePrompt, dataUrl, apiKey, '576x1024');
     console.log(`[generate] Image URL: ${imageUrl}`);
 
     const imageResp = await fetch(imageUrl);
