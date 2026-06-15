@@ -61,6 +61,8 @@ adminRouter.post('/events', async (c) => {
 
   const contentType = c.req.header('Content-Type') ?? '';
 
+  const id = crypto.randomUUID();
+
   if (contentType.includes('multipart/form-data')) {
     const formData = await c.req.formData();
     const metadataStr = formData.get('metadata') as string;
@@ -72,7 +74,7 @@ adminRouter.post('/events', async (c) => {
       if (file.size > MAX_THUMBNAIL_SIZE) {
         return c.json({ success: false, error: 'Thumbnail too large' }, 400);
       }
-      thumbnailKey = `events/${crypto.randomUUID()}.${file.name.split('.').pop() || 'jpg'}`;
+      thumbnailKey = `events/${id}/thumbnail.${file.name.split('.').pop() || 'jpg'}`;
       await uploadToR2(c.env.ASSETS, thumbnailKey, await file.arrayBuffer(), file.type);
     }
 
@@ -80,7 +82,7 @@ adminRouter.post('/events', async (c) => {
     const background = formData.get('background');
     if (background && typeof background !== 'string') {
       const bgFile = background as unknown as UploadedFile;
-      const bgKey = `backgrounds/${crypto.randomUUID()}.${bgFile.name.split('.').pop() || 'jpg'}`;
+      const bgKey = `events/${id}/background.${bgFile.name.split('.').pop() || 'jpg'}`;
       await uploadToR2(c.env.ASSETS, bgKey, await bgFile.arrayBuffer(), bgFile.type);
       const gen = (body.generation as Record<string, unknown>) || {};
       gen.background_image = bgKey;
@@ -91,7 +93,7 @@ adminRouter.post('/events', async (c) => {
     const video = formData.get('video');
     if (video && typeof video !== 'string') {
       const vidFile = video as unknown as UploadedFile;
-      const vidKey = `videos/${crypto.randomUUID()}.${vidFile.name.split('.').pop() || 'mp4'}`;
+      const vidKey = `events/${id}/reference.${vidFile.name.split('.').pop() || 'mp4'}`;
       await uploadToR2(c.env.ASSETS, vidKey, await vidFile.arrayBuffer(), vidFile.type);
       body.referenceVideo = vidKey;
     }
@@ -114,8 +116,6 @@ adminRouter.post('/events', async (c) => {
       error: 'generation.prompt_template is required',
     }, 400);
   }
-
-  const id = crypto.randomUUID();
 
   await db.createEvent({
     id,
@@ -164,7 +164,7 @@ adminRouter.put('/events/:id', async (c) => {
       if (file.size > MAX_THUMBNAIL_SIZE) {
         return c.json({ success: false, error: 'Thumbnail too large' }, 400);
       }
-      thumbnailKey = `events/${crypto.randomUUID()}.${file.name.split('.').pop() || 'jpg'}`;
+      thumbnailKey = `events/${id}/thumbnail.${file.name.split('.').pop() || 'jpg'}`;
       await uploadToR2(c.env.ASSETS, thumbnailKey, await file.arrayBuffer(), file.type);
     }
 
@@ -172,7 +172,7 @@ adminRouter.put('/events/:id', async (c) => {
     const background = formData.get('background');
     if (background && typeof background !== 'string') {
       const bgFile = background as unknown as UploadedFile;
-      const bgKey = `backgrounds/${crypto.randomUUID()}.${bgFile.name.split('.').pop() || 'jpg'}`;
+      const bgKey = `events/${id}/background.${bgFile.name.split('.').pop() || 'jpg'}`;
       await uploadToR2(c.env.ASSETS, bgKey, await bgFile.arrayBuffer(), bgFile.type);
       const gen = (body.generation as Record<string, unknown>) || {};
       gen.background_image = bgKey;
@@ -183,7 +183,7 @@ adminRouter.put('/events/:id', async (c) => {
     const video = formData.get('video');
     if (video && typeof video !== 'string') {
       const vidFile = video as unknown as UploadedFile;
-      const vidKey = `videos/${crypto.randomUUID()}.${vidFile.name.split('.').pop() || 'mp4'}`;
+      const vidKey = `events/${id}/reference.${vidFile.name.split('.').pop() || 'mp4'}`;
       await uploadToR2(c.env.ASSETS, vidKey, await vidFile.arrayBuffer(), vidFile.type);
       body.referenceVideo = vidKey;
     }
@@ -211,9 +211,16 @@ adminRouter.delete('/events/:id', async (c) => {
     return c.json({ success: false, error: 'Event not found' }, 404);
   }
 
-  if (event.thumbnailUrl) {
+  // Delete all R2 assets
+  const r2Keys = [
+    event.thumbnailUrl,
+    event.referenceVideo,
+    (event.generation as unknown as Record<string, unknown>)?.background_image as string | undefined,
+  ].filter(Boolean) as string[];
+
+  for (const key of r2Keys) {
     try {
-      await deleteFromR2(c.env.ASSETS, event.thumbnailUrl);
+      await deleteFromR2(c.env.ASSETS, key);
     } catch { /* ignore R2 errors */ }
   }
 
