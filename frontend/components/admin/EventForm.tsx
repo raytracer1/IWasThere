@@ -203,7 +203,62 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
       </h2>
 
       <div className="grid grid-cols-2 gap-3">
-        {/* Basic fields */}
+        {/* 1. Reference Video */}
+        <div className="col-span-2 flex flex-col gap-2">
+          <label className="flex items-center gap-2 rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-gray-400 cursor-pointer hover:text-white hover:border-cyan-500/30 transition-colors">
+            🎬 Upload reference video
+            <input type="file" accept="video/*" className="hidden"
+              onChange={(e) => handleFileSelect(e.target.files?.[0], "reference")} />
+          </label>
+          {videoPreview ? (
+            <div className="rounded-lg overflow-hidden border border-white/10">
+              <video src={videoPreview} controls className="w-full max-h-64" />
+            </div>
+          ) : event?.referenceVideo ? (
+            <div className="rounded-lg overflow-hidden border border-white/10">
+              <video src={event.referenceVideo} controls className="w-full max-h-64" />
+            </div>
+          ) : null}
+        </div>
+
+        {/* 2. Thumbnail */}
+        <div className="col-span-2 flex flex-col gap-2">
+          <label className="flex items-center gap-2 rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-gray-400 cursor-pointer hover:text-white hover:border-cyan-500/30 transition-colors">
+            📁 Upload thumbnail
+            <input type="file" accept="image/*" className="hidden"
+              onChange={(e) => handleFileSelect(e.target.files?.[0], "thumbnail")} />
+          </label>
+          {thumbnailPreview ? (
+            <div className="rounded-lg overflow-hidden border border-white/10">
+              <img src={thumbnailPreview} alt="Thumbnail preview" className="w-full max-h-64 object-contain" />
+            </div>
+          ) : event?.thumbnailUrl && event.thumbnailUrl.startsWith('http') ? (
+            <div className="rounded-lg overflow-hidden border border-white/10">
+              <img src={event.thumbnailUrl} alt="Current thumbnail" className="w-full max-h-64 object-contain" />
+            </div>
+          ) : null}
+        </div>
+
+        {/* 3. Background Image */}
+        <div className="col-span-2 flex flex-col gap-2">
+          <label className="flex items-center gap-2 rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-gray-400 cursor-pointer hover:text-white hover:border-cyan-500/30 transition-colors">
+            🖼️ Upload background image
+            <input type="file" accept="image/*" className="hidden"
+              onChange={(e) => handleFileSelect(e.target.files?.[0], "background")} />
+          </label>
+          {backgroundPreview ? (
+            <div className="rounded-lg overflow-hidden border border-white/10">
+              <img src={backgroundPreview} alt="Background preview" className="w-full max-h-64 object-contain" />
+            </div>
+          ) : (event?.generation as unknown as Record<string, unknown>)?.background_image ? (
+            <div className="rounded-lg overflow-hidden border border-white/10">
+              <img src={(event?.generation as unknown as Record<string, unknown>).background_image as string}
+                alt="Current background" className="w-full max-h-64 object-contain" />
+            </div>
+          ) : null}
+        </div>
+
+        {/* 4. Basic fields */}
         <input
           placeholder="Title"
           value={form.title}
@@ -232,61 +287,6 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
           <option value="active">Active</option>
           <option value="draft">Draft</option>
         </select>
-
-        {/* Thumbnail */}
-        <div className="col-span-2 flex flex-col gap-2">
-          <label className="flex items-center gap-2 rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-gray-400 cursor-pointer hover:text-white hover:border-cyan-500/30 transition-colors">
-            📁 Upload thumbnail
-            <input type="file" accept="image/*" className="hidden"
-              onChange={(e) => handleFileSelect(e.target.files?.[0], "thumbnail")} />
-          </label>
-          {thumbnailPreview ? (
-            <div className="rounded-lg overflow-hidden border border-white/10">
-              <img src={thumbnailPreview} alt="Thumbnail preview" className="w-full max-h-64 object-contain" />
-            </div>
-          ) : event?.thumbnailUrl && event.thumbnailUrl.startsWith('http') ? (
-            <div className="rounded-lg overflow-hidden border border-white/10">
-              <img src={event.thumbnailUrl} alt="Current thumbnail" className="w-full max-h-64 object-contain" />
-            </div>
-          ) : null}
-        </div>
-
-        {/* Background Image */}
-        <div className="col-span-2 flex flex-col gap-2">
-          <label className="flex items-center gap-2 rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-gray-400 cursor-pointer hover:text-white hover:border-cyan-500/30 transition-colors">
-            🖼️ Upload background image
-            <input type="file" accept="image/*" className="hidden"
-              onChange={(e) => handleFileSelect(e.target.files?.[0], "background")} />
-          </label>
-          {backgroundPreview ? (
-            <div className="rounded-lg overflow-hidden border border-white/10">
-              <img src={backgroundPreview} alt="Background preview" className="w-full max-h-64 object-contain" />
-            </div>
-          ) : (event?.generation as unknown as Record<string, unknown>)?.background_image ? (
-            <div className="rounded-lg overflow-hidden border border-white/10">
-              <img src={(event?.generation as unknown as Record<string, unknown>).background_image as string}
-                alt="Current background" className="w-full max-h-64 object-contain" />
-            </div>
-          ) : null}
-        </div>
-
-        {/* Reference Video */}
-        <div className="col-span-2 flex flex-col gap-2">
-          <label className="flex items-center gap-2 rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-gray-400 cursor-pointer hover:text-white hover:border-cyan-500/30 transition-colors">
-            🎬 Upload reference video
-            <input type="file" accept="video/*" className="hidden"
-              onChange={(e) => handleFileSelect(e.target.files?.[0], "reference")} />
-          </label>
-          {videoPreview ? (
-            <div className="rounded-lg overflow-hidden border border-white/10">
-              <video src={videoPreview} controls className="w-full max-h-64" />
-            </div>
-          ) : event?.referenceVideo ? (
-            <div className="rounded-lg overflow-hidden border border-white/10">
-              <video src={event.referenceVideo} controls className="w-full max-h-64" />
-            </div>
-          ) : null}
-        </div>
 
         {/* JSON Editor Fields */}
         <div className="col-span-2 mt-2">
