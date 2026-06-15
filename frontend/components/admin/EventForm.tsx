@@ -228,7 +228,7 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
               <img
                 src={thumbnailPreview}
                 alt="Thumbnail preview"
-                className="w-full max-h-48 object-cover"
+                className="w-full max-h-64 object-contain"
               />
             </div>
           ) : form.thumbnailUrl ? (
@@ -236,7 +236,7 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
               <img
                 src={form.thumbnailUrl}
                 alt="Current thumbnail"
-                className="w-full max-h-48 object-cover"
+                className="w-full max-h-64 object-contain"
               />
             </div>
           ) : null}
@@ -270,7 +270,7 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
               <img
                 src={backgroundPreview}
                 alt="Background preview"
-                className="w-full max-h-48 object-cover"
+                className="w-full max-h-64 object-contain"
               />
             </div>
           ) : (event?.generation as unknown as Record<string, unknown>)?.background_image ? (
@@ -278,7 +278,7 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
               <img
                 src={(event?.generation as unknown as Record<string, unknown>).background_image as string}
                 alt="Current background"
-                className="w-full max-h-48 object-cover"
+                className="w-full max-h-64 object-contain"
               />
             </div>
           ) : null}
