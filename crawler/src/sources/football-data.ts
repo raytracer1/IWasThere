@@ -1,6 +1,6 @@
 /**
- * Football-Data.org 比赛数据获取
- * 一次请求拿到当天所有比赛（比 TheSportsDB 12 次请求更稳定）
+ * Football-Data.org 统一数据源
+ * — 比赛列表、直播状态、进球事件、时间估算
  */
 
 import type { MatchEvent, EventTrigger } from '../types';
@@ -208,4 +208,172 @@ function generateKeywords(match: MatchEvent, score: string): string[] {
   }
 
   return keywords;
+}
+
+// ─── Goal Events & Timing ──────────────────────────
+
+export interface GoalEvent {
+  elapsed: number;
+  extra: number | null;
+  teamName: string;
+  playerName: string;
+  detail: string;
+  score: string;
+}
+
+export interface FixtureInfo {
+  id: number;
+  kickoffUtc: string;
+  homeTeam: string;
+  awayTeam: string;
+  status: string;
+  elapsed: number | null;
+}
+
+/**
+ * 获取今天正在直播的所有比赛，用于控制录制启停。
+ */
+export async function getLiveMatches(date: string): Promise<FixtureInfo[]> {
+  if (!API_KEY) return [];
+
+  try {
+    const results: FixtureInfo[] = [];
+    for (const status of ['LIVE', 'IN_PLAY', 'PAUSED']) {
+      const r = await fetch(`${API_BASE}/matches?dateFrom=${date}&dateTo=${date}&status=${status}`, {
+        headers: { 'X-Auth-Token': API_KEY },
+        signal: AbortSignal.timeout(30_000),
+      });
+      const data = await r.json();
+      for (const m of data?.matches ?? []) {
+        results.push({
+          id: m.id,
+          kickoffUtc: m.utcDate,
+          homeTeam: m.homeTeam?.name ?? '',
+          awayTeam: m.awayTeam?.name ?? '',
+          status: m.status ?? '?',
+          elapsed: m.minute ?? null,
+        });
+      }
+    }
+    return results;
+  } catch (err) {
+    console.warn('  ⚠️  getLiveMatches error:', String(err).slice(0, 80));
+    return [];
+  }
+}
+
+/**
+ * 根据球队名 + 日期查找正在进行的 match。
+ */
+export async function findLiveFixture(
+  homeTeam: string, awayTeam: string, date: string,
+): Promise<FixtureInfo | null> {
+  if (!API_KEY) return null;
+  try {
+    for (const status of ['LIVE', 'IN_PLAY', 'PAUSED']) {
+      const r = await fetch(`${API_BASE}/matches?dateFrom=${date}&dateTo=${date}&status=${status}`, {
+        headers: { 'X-Auth-Token': API_KEY, 'X-Unfold-Goals': 'true' },
+        signal: AbortSignal.timeout(30_000),
+      });
+      const data = await r.json();
+      for (const m of data?.matches ?? []) {
+        const h = (m.homeTeam?.name ?? '').toLowerCase();
+        const a = (m.awayTeam?.name ?? '').toLowerCase();
+        if ((h.includes(homeTeam.toLowerCase()) || homeTeam.toLowerCase().includes(h)) &&
+            (a.includes(awayTeam.toLowerCase()) || awayTeam.toLowerCase().includes(a))) {
+          return { id: m.id, kickoffUtc: m.utcDate, homeTeam: m.homeTeam?.name ?? homeTeam, awayTeam: m.awayTeam?.name ?? awayTeam, status: m.status ?? '?', elapsed: m.minute ?? null };
+        }
+      }
+    }
+    return null;
+  } catch (err) {
+    console.warn('  ⚠️  findLiveFixture error:', String(err).slice(0, 80));
+    return null;
+  }
+}
+
+/**
+ * 获取 match 的最新进球事件（只返回比 knownCount 多的新进球）。
+ */
+export async function getGoalEvents(fixtureId: number, knownCount = 0): Promise<GoalEvent[]> {
+  if (!API_KEY) return [];
+  try {
+    const r = await fetch(`${API_BASE}/matches/${fixtureId}`, {
+      headers: { 'X-Auth-Token': API_KEY },
+      signal: AbortSignal.timeout(30_000),
+    });
+    const data = await r.json();
+    const allGoals = data?.goals ?? [];
+    const goals: GoalEvent[] = allGoals.map((g: any) => ({
+      elapsed: g.minute ?? 0,
+      extra: g.injuryTime ?? null,
+      teamName: g.team?.name ?? '',
+      playerName: g.scorer?.name ?? '',
+      detail: g.type === 'PENALTY' ? 'Penalty' : g.type === 'OWN' ? 'Own Goal' : 'Normal Goal',
+      score: g.score ? `${g.score.home ?? 0}-${g.score.away ?? 0}` : '?-?',
+    }));
+    return goals.length > knownCount ? goals.slice(knownCount) : [];
+  } catch (err) {
+    console.warn('  ⚠️  getGoalEvents error:', String(err).slice(0, 80));
+    return [];
+  }
+}
+
+/**
+ * 用开球时间 + 进球分钟数估算 UTC 毫秒时间戳。
+ * 上半场 0-45', 下半场 46-90'（+15' 中场休息）
+ */
+export function estimateGoalUtcMs(kickoffUtc: string, elapsed: number): number {
+  const kickoff = new Date(kickoffUtc).getTime();
+  const offsetSec = elapsed <= 45 ? elapsed * 60 : (elapsed + 15) * 60;
+  return kickoff + offsetSec * 1000;
+}
+
+/**
+ * 查找今天最近的开球时间（用于控制录制启停）。
+ * 返回 null = 今天没有比赛需要录制。
+ */
+export async function getNearestKickoff(date: string): Promise<{ label: string; kickoffUtc: string; status: string } | null> {
+  if (!API_KEY) return null;
+  try {
+    const r = await fetch(`${API_BASE}/matches?dateFrom=${date}&dateTo=${date}`, {
+      headers: { 'X-Auth-Token': API_KEY },
+      signal: AbortSignal.timeout(30_000),
+    });
+    const data = await r.json();
+    const now = Date.now();
+    let nearest: { label: string; kickoffUtc: string; status: string; diff: number } | null = null;
+
+    for (const m of data?.matches ?? []) {
+      const status = m.status ?? '';
+      const kickoffUtc = m.utcDate ?? '';
+      if (!kickoffUtc || status === 'FINISHED') continue;
+
+      const kickoffMs = new Date(kickoffUtc).getTime();
+      const diff = kickoffMs - now;
+      const isLive = ['IN_PLAY', 'LIVE', 'PAUSED', '1H', '2H', 'HT'].includes(status);
+      // 忽略 30 分钟后才开始的比赛
+      if (!isLive && diff > 30 * 60 * 1000) continue;
+
+      const label = `${m.homeTeam?.name ?? '?'} vs ${m.awayTeam?.name ?? '?'}`;
+      if (!nearest || diff < nearest.diff) {
+        nearest = { label, kickoffUtc, status, diff };
+      }
+    }
+    return nearest ? { label: nearest.label, kickoffUtc: nearest.kickoffUtc, status: nearest.status } : null;
+  } catch {
+    return null;
+  }
+}
+
+// ─── Fixture ID 缓存 ──────────────────────────────
+
+const fixtureCache = new Map<string, number>();
+
+export function getCachedFixtureId(homeTeam: string, awayTeam: string, date: string): number | undefined {
+  return fixtureCache.get(`${homeTeam.toLowerCase()}-${awayTeam.toLowerCase()}-${date}`);
+}
+
+export function setCachedFixtureId(homeTeam: string, awayTeam: string, date: string, id: number): void {
+  fixtureCache.set(`${homeTeam.toLowerCase()}-${awayTeam.toLowerCase()}-${date}`, id);
 }
