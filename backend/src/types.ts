@@ -6,8 +6,6 @@ export type Bindings = {
   ASSETS: R2Bucket;
   AGNES_API_KEY: string;
   AUTH_SECRET: string;
-  CLOUDINARY_CLOUD_NAME?: string;
-  CLOUDINARY_UPLOAD_PRESET?: string;
   R2_ACCESS_KEY_ID?: string;
   R2_SECRET_ACCESS_KEY?: string;
   R2_ACCOUNT_ID?: string;

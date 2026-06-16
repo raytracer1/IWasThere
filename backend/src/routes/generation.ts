@@ -33,27 +33,6 @@ generationRouter.get('/:id', async (c) => {
             await db.updateGenerationStatus(gen.id, 'completed', outputKey, undefined, undefined);
             gen.status = 'completed';
             gen.outputImage = outputKey;
-            // Delete Cloudinary photo (signed API call)
-            const cloudName = c.env.CLOUDINARY_CLOUD_NAME;
-            const apiKey = (c.env as any).CLOUDINARY_API_KEY as string;
-            const apiSecret = (c.env as any).CLOUDINARY_API_SECRET as string;
-            if (cloudName && apiKey && apiSecret && gen.inputImage && gen.inputImage.includes('::')) {
-              const [publicId] = gen.inputImage.split('::');
-              const timestamp = String(Math.floor(Date.now() / 1000));
-              const signatureInput = `public_id=${publicId}&timestamp=${timestamp}${apiSecret}`;
-              const sigBuf = await crypto.subtle.digest('SHA-1', new TextEncoder().encode(signatureInput));
-              const signature = Array.from(new Uint8Array(sigBuf)).map(b => b.toString(16).padStart(2, '0')).join('');
-              try {
-                const resp = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/destroy`, {
-                  method: 'POST',
-                  body: new URLSearchParams({ public_id: publicId, api_key: apiKey, timestamp, signature }),
-                });
-                const result = await resp.text();
-                console.log(`[gen] Cloudinary delete ${publicId}: ${result.slice(0, 100)}`);
-              } catch (err) {
-                console.error(`[gen] Cloudinary delete error:`, err);
-              }
-            }
           }
         } catch (err) {
           console.error('[gen] Download error:', err);

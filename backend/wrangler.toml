@@ -20,13 +20,7 @@ bucket_name = "ifiwasthere-assets"
 
 [vars]
 ENVIRONMENT = "development"
-CLOUDINARY_CLOUD_NAME = "dyp64wduz"
 ADMIN_EMAILS = "zhengbijun123@gmail.com"
-
-# Set via wrangler secret put:
-#   CLOUDINARY_UPLOAD_PRESET
-#   CLOUDINARY_API_KEY
-#   CLOUDINARY_API_SECRET
 
 [dev]
 port = 8787
