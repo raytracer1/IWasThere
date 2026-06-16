@@ -15,16 +15,18 @@ binding = "ASSETS"
 bucket_name = "ifiwasthere-assets"
 
 # Secrets (set via wrangler secret put):
-#   AGNES_API_KEY       — Agnes AI API key
-#   AUTH_SECRET         — JWT signing secret (shared with NextAuth)
-#   R2_ACCESS_KEY_ID    — R2 API Token Access Key
-#   R2_SECRET_ACCESS_KEY — R2 API Token Secret
+#   AGNES_API_KEY          — Agnes AI API key
+#   AUTH_SECRET            — JWT signing secret
 
 [vars]
 ENVIRONMENT = "development"
-R2_ACCOUNT_ID = "50372a88bbcd6bb498358574ef749daf"
-R2_BUCKET_NAME = "ifiwasthere-assets"
+CLOUDINARY_CLOUD_NAME = "dyp64wduz"
 ADMIN_EMAILS = "zhengbijun123@gmail.com"
+
+# Set via wrangler secret put:
+#   CLOUDINARY_UPLOAD_PRESET
+#   CLOUDINARY_API_KEY
+#   CLOUDINARY_API_SECRET
 
 [dev]
 port = 8787
