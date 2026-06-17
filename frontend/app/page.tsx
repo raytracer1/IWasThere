@@ -46,8 +46,7 @@ export default function HomePage() {
           </span>
         </h1>
         <p className="mt-3 text-sm text-gray-400 max-w-md mx-auto">
-          Upload a selfie and see yourself at the greatest games ever played.
-          Free. No sign-up needed to browse.
+          Upload a selfie and step into the greatest moments in history.
         </p>
       </div>
 
