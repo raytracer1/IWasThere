@@ -3,6 +3,7 @@ import { cors } from 'hono/cors';
 import { authMiddleware, requireAdmin } from './middleware/auth';
 import eventsRouter from './routes/events';
 import authRouter from './routes/auth';
+import meRouter from './routes/me';
 import generateRouter from './routes/generate';
 import generationRouter from './routes/generation';
 import adminRouter from './routes/admin';
@@ -91,10 +92,15 @@ app.get('/health', (c) => {
 app.route('/auth', authRouter);
 app.route('/events', eventsRouter);
 
-app.route('/generate', generateRouter);
-app.route('/generation', generationRouter);
+// ─── Auth Routes ────────────────────────────────────────
+const auth = new Hono();
+auth.use('*', authMiddleware());
+auth.route('/me', meRouter);
+auth.route('/generate', generateRouter);
+auth.route('/generation', generationRouter);
+app.route('/', auth);
 
-// ─── Admin Routes (auth required) ──────────────────────
+// ─── Admin Routes (auth + admin required) ───────────────
 const admin = new Hono();
 admin.use('*', authMiddleware());
 admin.use('*', requireAdmin());

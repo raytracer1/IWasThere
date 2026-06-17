@@ -51,10 +51,12 @@ export async function fetchEvent(
 }
 
 export async function triggerGenerate(
-  body: GenerateRequest
+  body: GenerateRequest,
+  token?: string
 ): Promise<ApiResponse<{ generationId: string; status: string }>> {
   return apiFetch("/generate", {
     method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
     body: JSON.stringify(body),
   });
 }

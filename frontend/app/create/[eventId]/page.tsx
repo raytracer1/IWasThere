@@ -2,6 +2,7 @@
 
 import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
+import { useSession, signIn } from "next-auth/react";
 import { fetchEvent, triggerGenerate } from "@/lib/api";
 import type { Event } from "@/lib/types";
 import { UploadSelfie } from "@/components/UploadSelfie";
@@ -67,6 +68,8 @@ export default function CreatePage({
 }) {
   const { eventId } = use(params);
   const router = useRouter();
+  const { data: session } = useSession();
+  const accessToken = (session as { accessToken?: string } | null)?.accessToken;
 
   const [event, setEvent] = useState<Event | null>(null);
   const [loading, setLoading] = useState(true);
@@ -125,7 +128,7 @@ export default function CreatePage({
           ? { teamA, teamB, score: `${scoreA}-${scoreB}`, mood, userTeam: userTeam || teamA, codeA: teamAInfo?.code || '', codeB: teamBInfo?.code || '' }
           : undefined;
 
-      const res = await triggerGenerate({ eventId, imageBase64, football });
+      const res = await triggerGenerate({ eventId, imageBase64, football }, accessToken);
       if (res.data?.generationId) {
         router.push(`/result/${res.data.generationId}`);
       }
@@ -378,26 +381,36 @@ export default function CreatePage({
       )}
 
       {/* Generate Button */}
-      <button
-        onClick={handleGenerate}
-        disabled={!imageBase64 || generating}
-        className={`w-full rounded-xl py-3.5 text-sm font-bold transition-all ${
-          imageBase64 && !generating
-            ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white hover:opacity-90 shadow-lg shadow-cyan-500/25"
-            : "bg-gray-800 text-gray-500 cursor-not-allowed"
-        }`}
-      >
-        {generating ? (
-          <span className="flex items-center justify-center gap-2">
-            <span className="animate-spin">⏳</span>
-            Generating...
-          </span>
-        ) : imageBase64 ? (
-          `⚡ Step Into ${timePeriod}`
-        ) : (
-          "Upload a selfie to continue"
-        )}
-      </button>
+      {(() => {
+        const needsAuth = !accessToken;
+        const needsSelfie = !imageBase64;
+        const needsFootball = isFootball && (!teamA || !teamB || scoreA === null || scoreB === null);
+        const canGenerate = !needsAuth && !needsSelfie && !needsFootball && !generating;
+
+        let label = "Generate";
+        if (generating) label = "Generating...";
+        else if (needsAuth) label = "Sign in to generate";
+        else if (needsSelfie) label = "Upload a selfie to continue";
+        else if (needsFootball) label = "Select teams and score";
+        else label = "⚡ Step Into";
+
+        return (
+          <button
+            onClick={needsAuth ? () => signIn("google") : handleGenerate}
+            disabled={!canGenerate && !needsAuth}
+            className={`w-full rounded-xl py-3.5 text-sm font-bold transition-all ${
+              canGenerate
+                ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white hover:opacity-90 shadow-lg shadow-cyan-500/25"
+                : needsAuth
+                ? "bg-white text-gray-900 hover:bg-gray-100"
+                : "bg-gray-800 text-gray-500 cursor-not-allowed"
+            }`}
+          >
+            {generating && <span className="animate-spin mr-2">⏳</span>}
+            {label}
+          </button>
+        );
+      })()}
     </div>
   );
 }
