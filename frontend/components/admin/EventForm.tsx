@@ -74,6 +74,7 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
 
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [priceStr, setPriceStr] = useState("0");
 
   const initForm = useCallback((ev: Event | null | undefined) => {
     if (ev) {
@@ -92,6 +93,7 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
         videoKey: toKey(ev.referenceVideo || ""),
         status: ev.status as "active" | "draft",
       });
+      setPriceStr(String(ev.price ?? 0));
     } else {
       setForm({
         title: "",
@@ -105,6 +107,7 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
         videoKey: "",
         status: "active",
       });
+      setPriceStr("0");
     }
     setThumbnailFile(null);
     setThumbnailPreview(null);
@@ -160,7 +163,7 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
         title: form.title,
         category: form.category,
         aspectRatio: form.aspectRatio,
-        price: form.price,
+        price: parseFloat(priceStr) || 0,
         scene: parseJson(form.sceneStr, "scene"),
         camera: parseJson(form.cameraStr, "camera"),
         generation: parseJson(form.generationStr, "generation"),
@@ -264,13 +267,17 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
           <option value="1:1">1:1 (Square)</option>
         </select>
         <input
-          type="number"
-          min={0}
-          max={999}
-          value={form.price}
-          onChange={(e) => setForm((prev) => ({ ...prev, price: parseInt(e.target.value) || 0 }))}
-          placeholder="Price (credits)"
-          className="rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-white w-20"
+          type="text"
+          inputMode="decimal"
+          value={priceStr}
+          onChange={(e) => {
+            const v = e.target.value;
+            if (v === "" || /^\d+(\.\d{0,2})?$/.test(v)) {
+              setPriceStr(v);
+            }
+          }}
+          placeholder="0"
+          className="rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-white w-16"
         />
         <select
           value={form.status}
