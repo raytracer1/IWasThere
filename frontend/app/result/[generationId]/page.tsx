@@ -177,12 +177,12 @@ export default function ResultPage({
                 {(gen.football && gen.eventCategory === 'football') && (() => {
                 const fb = JSON.parse(gen.football!);
                 return (
-                  <div className="absolute top-3 right-3 z-10 flex items-center gap-2 rounded-lg bg-black/80 backdrop-blur-sm border border-white/20 px-3 py-2 shadow-xl">
-                    <span className="text-xs font-bold text-gray-900 dark:text-white truncate max-w-20">{fb.teamA}</span>
-                    {fb.codeA && <img src={`https://flagcdn.com/w40/${fb.codeA}.png`} alt="" className="w-5 h-3.5 rounded-sm shadow" />}
-                    <span className="text-lg font-black text-white tabular-nums bg-white/10 px-2 py-0.5 rounded">{fb.score}</span>
-                    {fb.codeB && <img src={`https://flagcdn.com/w40/${fb.codeB}.png`} alt="" className="w-5 h-3.5 rounded-sm shadow" />}
-                    <span className="text-xs font-bold text-gray-900 dark:text-white truncate max-w-20">{fb.teamB}</span>
+                  <div className="absolute top-3 right-3 z-10 flex items-center gap-1 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
+                    <span className="text-[10px] font-bold text-white truncate max-w-16">{fb.teamA}</span>
+                    {fb.codeA && <img src={`https://flagcdn.com/w40/${fb.codeA}.png`} alt="" className="w-3.5 h-2.5 rounded-sm" />}
+                    <span className="text-[10px] font-black text-white tabular-nums">{fb.score}</span>
+                    {fb.codeB && <img src={`https://flagcdn.com/w40/${fb.codeB}.png`} alt="" className="w-3.5 h-2.5 rounded-sm" />}
+                    <span className="text-[10px] font-bold text-white truncate max-w-16">{fb.teamB}</span>
                   </div>
                 );
               })()}
@@ -201,12 +201,12 @@ export default function ResultPage({
                 {(gen.football && gen.eventCategory === 'football') && (() => {
                 const fb = JSON.parse(gen.football!);
                 return (
-                  <div className="absolute top-3 right-3 z-10 flex items-center gap-2 rounded-lg bg-black/80 backdrop-blur-sm border border-white/20 px-3 py-2 shadow-xl">
-                    <span className="text-xs font-bold text-gray-900 dark:text-white truncate max-w-20">{fb.teamA}</span>
-                    {fb.codeA && <img src={`https://flagcdn.com/w40/${fb.codeA}.png`} alt="" className="w-5 h-3.5 rounded-sm shadow" />}
-                    <span className="text-lg font-black text-white tabular-nums bg-white/10 px-2 py-0.5 rounded">{fb.score}</span>
-                    {fb.codeB && <img src={`https://flagcdn.com/w40/${fb.codeB}.png`} alt="" className="w-5 h-3.5 rounded-sm shadow" />}
-                    <span className="text-xs font-bold text-gray-900 dark:text-white truncate max-w-20">{fb.teamB}</span>
+                  <div className="absolute top-3 right-3 z-10 flex items-center gap-1 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
+                    <span className="text-[10px] font-bold text-white truncate max-w-16">{fb.teamA}</span>
+                    {fb.codeA && <img src={`https://flagcdn.com/w40/${fb.codeA}.png`} alt="" className="w-3.5 h-2.5 rounded-sm" />}
+                    <span className="text-[10px] font-black text-white tabular-nums">{fb.score}</span>
+                    {fb.codeB && <img src={`https://flagcdn.com/w40/${fb.codeB}.png`} alt="" className="w-3.5 h-2.5 rounded-sm" />}
+                    <span className="text-[10px] font-bold text-white truncate max-w-16">{fb.teamB}</span>
                   </div>
                 );
               })()}
