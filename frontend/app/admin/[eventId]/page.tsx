@@ -7,14 +7,19 @@ import type { Event } from "@/lib/types";
 import AuthGuard from "@/components/admin/AuthGuard";
 import EventForm, { type EventFormSaveData } from "@/components/admin/EventForm";
 import { adminFetch } from "@/lib/admin-api";
+import { compressToWebP } from "@/lib/image-utils";
 
-function buildKey(file: File, eventId: string, name: string): string {
-  return `events/${eventId}/${name}.${file.name.split('.').pop() || 'bin'}`;
+function buildKey(ext: string, eventId: string, name: string): string {
+  return `events/${eventId}/${name}.${ext}`;
 }
 
 async function uploadFile(file: File, eventId: string, name: string, token?: string): Promise<void> {
+  let uploadFile = file;
+  if (file.type.startsWith('image/') && file.type !== 'image/webp') {
+    uploadFile = await compressToWebP(file);
+  }
   const fd = new FormData();
-  fd.append("file", file);
+  fd.append("file", uploadFile);
   await adminFetch(`/admin/upload?eventId=${eventId}&name=${name}`, token, { method: "POST", body: fd });
 }
 
@@ -56,18 +61,18 @@ export default function AdminEditPage({
     // Step 1: Upload files (parallel), key is deterministic
     const uploads: Promise<void>[] = [];
     if (data.thumbnailFile) {
-      data.body.thumbnailUrl = buildKey(data.thumbnailFile, eventId, "thumbnail");
-      uploads.push(uploadFile(data.thumbnailFile, eventId, "thumbnail", accessToken));
+      data.body.thumbnailUrl = buildKey('webp', eventId, 'thumbnail');
+      uploads.push(uploadFile(data.thumbnailFile, eventId, 'thumbnail', accessToken));
     }
     if (data.backgroundFile) {
       const gen = (data.body.generation as Record<string, unknown>) || {};
-      gen.background_image = buildKey(data.backgroundFile, eventId, "background");
+      gen.background_image = buildKey('webp', eventId, 'background');
       data.body.generation = gen;
-      uploads.push(uploadFile(data.backgroundFile, eventId, "background", accessToken));
+      uploads.push(uploadFile(data.backgroundFile, eventId, 'background', accessToken));
     }
     if (data.videoFile) {
-      data.body.referenceVideo = buildKey(data.videoFile, eventId, "reference");
-      uploads.push(uploadFile(data.videoFile, eventId, "reference", accessToken));
+      data.body.referenceVideo = buildKey(data.videoFile.name.split('.').pop() || 'mp4', eventId, 'reference');
+      uploads.push(uploadFile(data.videoFile, eventId, 'reference', accessToken));
     }
     await Promise.all(uploads);
 
