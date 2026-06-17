@@ -2,7 +2,7 @@
 export interface VideoItem {
   id: string;           // unique ID within the source
   title: string;
-  category: 'sports' | 'fiction' | 'history';
+  category: 'sports' | 'music' | 'movies' | 'news' | 'other';
   description?: string;
   videoUrl: string;     // direct download URL (or page URL if need to scrape)
   thumbnailUrl?: string;

@@ -48,7 +48,7 @@ export async function searchTikTok(keyword: string, count = 10): Promise<VideoCa
       candidates.push({
         id: `tt-${v.video_id}`,
         title: v.title?.slice(0, 100) ?? 'Untitled',
-        category: 'sports',
+        category: 'other',
         videoUrl: v.play,               // Direct download URL
         thumbnailUrl: v.cover,
         duration: v.duration,

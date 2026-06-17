@@ -23,7 +23,7 @@ class _EventFormScreenState extends ConsumerState<EventFormScreen> {
   late TextEditingController _descriptionController;
   late TextEditingController _priceController;
 
-  String _category = 'sports';
+  String _category = 'other';
   String _status = 'draft';
   File? _videoFile;
   File? _thumbnailFile;

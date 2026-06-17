@@ -15,22 +15,23 @@ const SUBREDDIT_MAP: Record<string, VideoItem['category']> = {
   // Sports
   sports: 'sports', soccer: 'sports', nba: 'sports', nfl: 'sports',
   formula1: 'sports', mma: 'sports', boxing: 'sports', hockey: 'sports',
-  // Fiction (music, movies, TV, entertainment)
-  music: 'fiction', concerts: 'fiction', listentothis: 'fiction', hiphopheads: 'fiction',
-  electronicmusic: 'fiction', popheads: 'fiction',
-  movies: 'fiction', trailers: 'fiction', television: 'fiction',
-  // History (news, world events, politics)
-  news: 'history', worldnews: 'history', politics: 'history', technology: 'history',
-  // General video-heavy subs (high yield) → default to sports
-  funny: 'sports', interestingasfuck: 'sports', Damnthatsinteresting: 'sports',
-  nextfuckinglevel: 'sports', BeAmazed: 'sports', oddlysatisfying: 'sports',
-  Unexpected: 'sports', publicfreakout: 'sports', Whatcouldgowrong: 'sports',
-  instant_regret: 'sports', natureismetal: 'sports', AbruptChaos: 'sports',
+  // Music
+  music: 'music', concerts: 'music', listentothis: 'music', hiphopheads: 'music',
+  electronicmusic: 'music', popheads: 'music',
+  // Movies
+  movies: 'movies', trailers: 'movies', television: 'movies',
+  // News
+  news: 'news', worldnews: 'news', politics: 'news', technology: 'news',
+  // General video-heavy subs (high yield)
+  funny: 'other', interestingasfuck: 'other', Damnthatsinteresting: 'other',
+  nextfuckinglevel: 'other', BeAmazed: 'other', oddlysatisfying: 'other',
+  Unexpected: 'other', publicfreakout: 'other', Whatcouldgowrong: 'other',
+  instant_regret: 'other', natureismetal: 'other', AbruptChaos: 'other',
   // Video-focused subs
-  videos: 'sports', youtubehaiku: 'sports', DeepIntoYouTube: 'sports',
-  mealtimevideos: 'sports', Documentaries: 'sports',
+  videos: 'other', youtubehaiku: 'other', DeepIntoYouTube: 'other',
+  mealtimevideos: 'other', Documentaries: 'other',
   // Highlight subs (sports clips)
-  highlightgifs: 'sports', sportsarefun: 'sports',
+  highlightgifs: 'other', sportsarefun: 'other',
 };
 
 // Domains that yt-dlp can download from
@@ -156,10 +157,10 @@ function isYoutubeShort(url: string): boolean {
 function guessCategory(title: string, subreddit: string): VideoItem['category'] {
   const lower = (title + ' ' + subreddit).toLowerCase();
   if (/sport|football|soccer|basketball|nba|nfl|ufc|boxing|match|race|f1|goal|touchdown|hockey|baseball|tennis/i.test(lower)) return 'sports';
-  if (/music|song|concert|band|guitar|piano|sing|rap|album|ft\.|feat\.|dj\b|mix\b|live performance/i.test(lower)) return 'fiction';
-  if (/trailer|movie|film|teaser|cinema|actor|actress|netflix|hbo|series|episode/i.test(lower)) return 'fiction';
-  if (/news|breaking|trump|biden|president|election|vote|congress|war|protest|speech|press|senate|supreme court/i.test(lower)) return 'history';
-  return 'sports';
+  if (/music|song|concert|band|guitar|piano|sing|rap|album|ft\.|feat\.|dj\b|mix\b|live performance/i.test(lower)) return 'music';
+  if (/trailer|movie|film|teaser|cinema|actor|actress|netflix|hbo|series|episode/i.test(lower)) return 'movies';
+  if (/news|breaking|trump|biden|president|election|vote|congress|war|protest|speech|press|senate|supreme court/i.test(lower)) return 'news';
+  return 'other';
 }
 
 /**

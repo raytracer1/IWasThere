@@ -8,7 +8,7 @@ export const SEED_EVENTS: Omit<Event, 'createdAt'>[] = [
   {
     id: '7c100f01-01c4-4620-adcb-9ec7def510ff',
     title: 'Messi Trophy Celebration — World Cup Final 2022',
-    category: 'sports',
+    category: 'football',
     event_type: 'trophy_celebration',
     scene: {
       type: 'soccer_stadium',
@@ -77,7 +77,7 @@ Visual style: Ultra-realistic DSLR sports photography, ESPN broadcast aesthetic,
   {
     id: '95b57720-33a2-47e4-ad79-7dbccc0cc36d',
     title: 'Germany 5th Goal Celebration — World Cup Semi-Final 2014',
-    category: 'sports',
+    category: 'football',
     event_type: 'goal_celebration',
     scene: {
       type: 'soccer_stadium',
@@ -146,7 +146,7 @@ Visual style: Ultra-realistic DSLR sports photography, dramatic stadium lighting
   {
     id: 'd9e4810a-b207-4792-87f0-81e6d0c58a1a',
     title: 'Zidane Header — World Cup Final 1998',
-    category: 'sports',
+    category: 'football',
     event_type: 'goal_celebration',
     scene: {
       type: 'soccer_stadium',
@@ -215,7 +215,7 @@ Visual style: Ultra-realistic DSLR sports photograph, ESPN broadcast aesthetic, 
   {
     id: 'e4bebe71-89bb-4024-86bf-57165707e41c',
     title: 'LeBron Chase-Down Block — NBA Finals Game 7 2016',
-    category: 'sports',
+    category: 'basketball',
     event_type: 'defensive_play',
     scene: {
       type: 'basketball_arena',
@@ -284,7 +284,7 @@ Visual style: Ultra-realistic DSLR sports photography, ESPN broadcast aesthetic,
   {
     id: 'e5ed7771-c7e7-430d-a101-309e1a40b59e',
     title: 'The Miracle of Istanbul — Champions League Final 2005',
-    category: 'sports',
+    category: 'football',
     event_type: 'comeback_celebration',
     scene: {
       type: 'soccer_stadium',
@@ -353,7 +353,7 @@ Visual style: Ultra-realistic DSLR sports photography, Champions League broadcas
   {
     id: '3d883933-57b3-47ac-81ca-71e3e46bbbaf',
     title: 'Maradona Goal of the Century — World Cup 1986',
-    category: 'sports',
+    category: 'football',
     event_type: 'iconic_goal',
     scene: {
       type: 'soccer_stadium',
@@ -422,7 +422,7 @@ Visual style: Ultra-realistic 80s sports photography, vintage broadcast aestheti
   {
     id: 'c2ce6d25-ed93-46ab-bb6b-f1fdb1eeea54',
     title: 'Iniesta Extra-Time Winner — World Cup Final 2010',
-    category: 'sports',
+    category: 'football',
     event_type: 'winning_goal',
     scene: {
       type: 'soccer_stadium',
@@ -491,7 +491,7 @@ Visual style: Ultra-realistic DSLR sports photography, World Cup broadcast aesth
   {
     id: '5e7066e4-4bbf-4a3d-81bb-7e849e4c8413',
     title: 'Usain Bolt 100m World Record — Beijing Olympics 2008',
-    category: 'sports',
+    category: 'athletics',
     event_type: 'world_record',
     scene: {
       type: 'athletics_stadium',
@@ -560,7 +560,7 @@ Visual style: Ultra-realistic DSLR sports photography, Olympic broadcast aesthet
   {
     id: 'd3fe395d-db8b-4bcc-af7b-0385615ee74b',
     title: 'Solskjær Winner — Champions League Final 1999',
-    category: 'sports',
+    category: 'football',
     event_type: 'stoppage_time_winner',
     scene: {
       type: 'soccer_stadium',
@@ -629,7 +629,7 @@ Visual style: Ultra-realistic 90s sports photography, Champions League broadcast
   {
     id: 'f1f12810-77c7-42ef-9d0b-fffc35d6ab96',
     title: 'The Helmet Catch — Super Bowl XLII 2008',
-    category: 'sports',
+    category: 'american_football',
     event_type: 'iconic_play',
     scene: {
       type: 'nfl_stadium',
@@ -698,7 +698,7 @@ Visual style: Ultra-realistic NFL photography, Super Bowl broadcast aesthetic, d
   {
     id: '27417a48-1f85-4a94-875c-537a0249e6da',
     title: 'Federer Wins 16-14 in the 5th — Wimbledon Final 2009',
-    category: 'sports',
+    category: 'tennis',
     event_type: 'championship_point',
     scene: {
       type: 'tennis_court',
@@ -767,7 +767,7 @@ Visual style: Ultra-realistic sports photography, Wimbledon broadcast aesthetic,
   {
     id: 'd452d3db-10b1-4dfd-8fd5-b9914fe97bac',
     title: 'The Dream Team Wins Gold — Barcelona Olympics 1992',
-    category: 'sports',
+    category: 'basketball',
     event_type: 'gold_medal_celebration',
     scene: {
       type: 'basketball_arena',
@@ -836,7 +836,7 @@ Visual style: Ultra-realistic 90s sports photography, Olympic broadcast aestheti
   {
     id: 'b2b632a2-d0e5-41f9-860f-f238545a58e3',
     title: 'Liu Xiang 110m Hurdles Gold — Athens Olympics 2004',
-    category: 'sports',
+    category: 'athletics',
     event_type: 'historic_gold_medal',
     scene: {
       type: 'athletics_stadium',
@@ -905,7 +905,7 @@ Visual style: Ultra-realistic sports photography, Olympic broadcast aesthetic, e
   {
     id: 'd9a1fa4c-acb3-4909-8bc8-d27ae8b060dc',
     title: 'Super Over Victory — Cricket World Cup Final 2019',
-    category: 'sports',
+    category: 'cricket',
     event_type: 'dramatic_finish',
     scene: {
       type: 'cricket_ground',
@@ -974,7 +974,7 @@ Visual style: Ultra-realistic sports photography, cricket broadcast aesthetic, g
   {
     id: '0965fe85-17cc-45df-9660-00763801187a',
     title: 'Götze Extra-Time Winner — World Cup Final 2014',
-    category: 'sports',
+    category: 'football',
     event_type: 'winning_goal',
     scene: {
       type: 'soccer_stadium',

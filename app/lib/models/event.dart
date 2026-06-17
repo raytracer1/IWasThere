@@ -42,7 +42,7 @@ class Event {
     return Event(
       id: json['id'] as String,
       title: json['title'] as String,
-      category: (json['category'] as String?) ?? 'sports',
+      category: (json['category'] as String?) ?? 'other',
       eventType: json['event_type'] as String?,
       scene: (json['scene'] as Map<String, dynamic>?) ?? {},
       emotion: (json['emotion'] as Map<String, dynamic>?) ?? {},
