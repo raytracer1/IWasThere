@@ -265,6 +265,8 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
           <option value="9:16">9:16 (Portrait)</option>
           <option value="16:9">16:9 (Landscape)</option>
           <option value="1:1">1:1 (Square)</option>
+          <option value="4:3">4:3 (Traditional)</option>
+          <option value="3:4">3:4 (Portrait)</option>
         </select>
         <input
           type="text"

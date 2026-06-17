@@ -5,13 +5,15 @@ import { generateImage, submitVideo } from '../utils/agnes';
 import type { Bindings } from '../types';
 
 const ASPECT_SIZES: Record<string, string> = {
-  '9:16': '576x1024',
-  '16:9': '1024x576',
-  '1:1': '1024x1024',
+  '9:16': '720x1280',   // 720p portrait
+  '16:9': '1280x720',   // 720p landscape
+  '1:1': '720x720',     // 720p square
+  '4:3': '960x720',
+  '3:4': '720x960',
 };
 
 function aspectToSize(aspectRatio?: string): string {
-  return ASPECT_SIZES[aspectRatio ?? ''] || '576x1024';
+  return ASPECT_SIZES[aspectRatio ?? ''] || '1280x720';
 }
 
 const generateRouter = new Hono<{ Bindings: Bindings }>();
