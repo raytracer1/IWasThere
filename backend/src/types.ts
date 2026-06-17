@@ -13,4 +13,5 @@ export type Bindings = {
   ADMIN_EMAILS: string;
   ENVIRONMENT: string;
   CORS_ORIGIN?: string;
+  SKIP_AUTH?: string;      // "true" to bypass auth in local dev
 };

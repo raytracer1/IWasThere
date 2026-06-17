@@ -62,6 +62,21 @@ export function jwtMiddleware() {
  */
 export function authMiddleware() {
   return createMiddleware(async (c, next) => {
+    // Dev mode: skip real auth, set a fake admin user
+    if (c.env.SKIP_AUTH === 'true') {
+      c.set('user', {
+        id: 'dev-user',
+        email: 'dev@localhost',
+        name: 'Dev Admin',
+        image: '',
+        role: 'admin',
+        credits: 999,
+        createdAt: Date.now(),
+      });
+      await next();
+      return;
+    }
+
     const result = await verifyJwt(c);
     if (result instanceof Response) return result;
     const payload = result;
@@ -101,6 +116,11 @@ export function authMiddleware() {
  */
 export function requireAdmin() {
   return createMiddleware(async (c, next) => {
+    // Dev mode: skip admin check (authMiddleware already sets fake admin)
+    if (c.env.SKIP_AUTH === 'true') {
+      await next();
+      return;
+    }
     const user = c.get('user');
     if (user.role !== 'admin') {
       return c.json({ success: false, error: 'Admin access required' }, 403);

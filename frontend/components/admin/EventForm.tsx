@@ -4,17 +4,12 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import type { Event } from "@/lib/types";
 
 const CATEGORIES = [
-  "sports", "fiction", "history",
+  "football", "basketball", "tennis", "athletics",
+  "cricket", "boxing", "american_football", "other",
 ] as const;
 
-const EVENT_TYPES = ["sports", "fiction", "history"] as const;
-
 const DEFAULT_SCENE = { location: "", time_period: "", atmosphere: "", description: "" };
-const DEFAULT_EMOTION = { primary: "", intensity: "", description: "" };
 const DEFAULT_CAMERA = { angle: "", distance: "", lighting: "", style: "" };
-const DEFAULT_USER = { clothing: "", action: "", position: "", role: "spectator" };
-const DEFAULT_ENTITIES = { people: [], objects: [], brands: [] };
-const DEFAULT_MOMENT = { key_action: "", timing: "", significance: "", description: "" };
 const DEFAULT_GENERATION = { prompt_template: "", negative_prompt: "", background_image: "", insert_zone: "" };
 
 function stringify(obj: Record<string, unknown>): string {
@@ -60,13 +55,8 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
   const [form, setForm] = useState({
     title: "",
     category: "football" as string,
-    event_type: "sports" as string,
     sceneStr: stringify(DEFAULT_SCENE),
-    emotionStr: stringify(DEFAULT_EMOTION),
     cameraStr: stringify(DEFAULT_CAMERA),
-    userStr: stringify(DEFAULT_USER),
-    entitiesStr: stringify(DEFAULT_ENTITIES),
-    momentStr: stringify(DEFAULT_MOMENT),
     generationStr: stringify(DEFAULT_GENERATION),
     thumbnailUrl: "",
     videoKey: "",
@@ -88,13 +78,8 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
       setForm({
         title: ev.title,
         category: ev.category,
-        event_type: ev.event_type || "sports",
         sceneStr: stringify(ev.scene || (DEFAULT_SCENE as Record<string, unknown>)),
-        emotionStr: stringify(ev.emotion || (DEFAULT_EMOTION as Record<string, unknown>)),
         cameraStr: stringify(ev.camera || (DEFAULT_CAMERA as Record<string, unknown>)),
-        userStr: stringify(ev.user || (DEFAULT_USER as Record<string, unknown>)),
-        entitiesStr: stringify(ev.entities || (DEFAULT_ENTITIES as Record<string, unknown>)),
-        momentStr: stringify(ev.moment || (DEFAULT_MOMENT as Record<string, unknown>)),
         generationStr: stringify({
           ...((ev.generation as unknown as Record<string, unknown>) || DEFAULT_GENERATION),
           background_image: toKey(((ev.generation as unknown as Record<string, unknown>)?.background_image as string) || ""),
@@ -106,14 +91,9 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
     } else {
       setForm({
         title: "",
-        category: "football",
-        event_type: "sports",
+        category: "sports",
         sceneStr: stringify(DEFAULT_SCENE),
-        emotionStr: stringify(DEFAULT_EMOTION),
         cameraStr: stringify(DEFAULT_CAMERA),
-        userStr: stringify(DEFAULT_USER),
-        entitiesStr: stringify(DEFAULT_ENTITIES),
-        momentStr: stringify(DEFAULT_MOMENT),
         generationStr: stringify(DEFAULT_GENERATION),
         thumbnailUrl: "",
         videoKey: "",
@@ -173,13 +153,8 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
       const body: Record<string, unknown> = {
         title: form.title,
         category: form.category,
-        event_type: form.event_type || undefined,
         scene: parseJson(form.sceneStr, "scene"),
-        emotion: parseJson(form.emotionStr, "emotion"),
         camera: parseJson(form.cameraStr, "camera"),
-        user: parseJson(form.userStr, "user"),
-        entities: parseJson(form.entitiesStr, "entities"),
-        moment: parseJson(form.momentStr, "moment"),
         generation: parseJson(form.generationStr, "generation"),
         thumbnailUrl: form.thumbnailUrl || undefined,
         referenceVideo: form.videoKey || undefined,
@@ -272,13 +247,6 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
           {CATEGORIES.map((s) => (<option key={s} value={s}>{s}</option>))}
         </select>
         <select
-          value={form.event_type}
-          onChange={(e) => setForm((prev) => ({ ...prev, event_type: e.target.value }))}
-          className="rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-white"
-        >
-          {EVENT_TYPES.map((t) => (<option key={t} value={t}>{t}</option>))}
-        </select>
-        <select
           value={form.status}
           onChange={(e) => setForm((prev) => ({ ...prev, status: e.target.value as "active" | "draft" }))}
           className="rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-white"
@@ -287,40 +255,22 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
           <option value="draft">Draft</option>
         </select>
 
-        {/* JSON Editor Fields */}
+        {/* JSON Editor Fields — only scene, camera, generation remain */}
         <div className="col-span-2 mt-2">
-          <p className="text-xs text-gray-500 mb-2">JSON Fields — edit as JSON objects</p>
+          <p className="text-xs text-gray-500 mb-2">
+            JSON Fields — teams, score, mood are set by users on the create page
+          </p>
         </div>
 
         <div className="col-span-2 sm:col-span-1">
           <label className="text-xs text-gray-400 mb-1 block">scene</label>
           <textarea value={form.sceneStr} onChange={(e) => setForm((prev) => ({ ...prev, sceneStr: e.target.value }))}
-            rows={5} className="w-full rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-xs text-white font-mono" />
-        </div>
-        <div className="col-span-2 sm:col-span-1">
-          <label className="text-xs text-gray-400 mb-1 block">emotion</label>
-          <textarea value={form.emotionStr} onChange={(e) => setForm((prev) => ({ ...prev, emotionStr: e.target.value }))}
-            rows={5} className="w-full rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-xs text-white font-mono" />
+            rows={4} className="w-full rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-xs text-white font-mono" />
         </div>
         <div className="col-span-2 sm:col-span-1">
           <label className="text-xs text-gray-400 mb-1 block">camera</label>
           <textarea value={form.cameraStr} onChange={(e) => setForm((prev) => ({ ...prev, cameraStr: e.target.value }))}
-            rows={5} className="w-full rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-xs text-white font-mono" />
-        </div>
-        <div className="col-span-2 sm:col-span-1">
-          <label className="text-xs text-gray-400 mb-1 block">user</label>
-          <textarea value={form.userStr} onChange={(e) => setForm((prev) => ({ ...prev, userStr: e.target.value }))}
-            rows={5} className="w-full rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-xs text-white font-mono" />
-        </div>
-        <div className="col-span-2 sm:col-span-1">
-          <label className="text-xs text-gray-400 mb-1 block">entities</label>
-          <textarea value={form.entitiesStr} onChange={(e) => setForm((prev) => ({ ...prev, entitiesStr: e.target.value }))}
-            rows={5} className="w-full rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-xs text-white font-mono" />
-        </div>
-        <div className="col-span-2 sm:col-span-1">
-          <label className="text-xs text-gray-400 mb-1 block">moment</label>
-          <textarea value={form.momentStr} onChange={(e) => setForm((prev) => ({ ...prev, momentStr: e.target.value }))}
-            rows={5} className="w-full rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-xs text-white font-mono" />
+            rows={4} className="w-full rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-xs text-white font-mono" />
         </div>
         <div className="col-span-2">
           <label className="text-xs text-gray-400 mb-1 block">generation</label>

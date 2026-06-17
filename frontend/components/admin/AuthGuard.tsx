@@ -5,6 +5,11 @@ import { useSession, signIn } from "next-auth/react";
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const { status } = useSession();
 
+  // Skip auth in local dev
+  if (process.env.NODE_ENV === "development") {
+    return <>{children}</>;
+  }
+
   if (status === "loading") {
     return (
       <div className="mx-auto max-w-lg px-4 py-16 text-center">
