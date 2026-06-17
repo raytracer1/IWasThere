@@ -9,9 +9,11 @@ const generationRouter = new Hono<{ Bindings: Bindings }>();
 generationRouter.get('/', async (c) => {
   const db = new D1Helper(c.env.DB);
   const user = c.get('user');
+  const dbUser = await db.getUserByEmail(user.email);
+  const userId = dbUser?.id || user.id;
   const page = parseInt(c.req.query('page') ?? '1', 10);
   const pageSize = parseInt(c.req.query('pageSize') ?? '20', 10);
-  const { generations, total } = await db.getUserGenerations(user.id, page, pageSize);
+  const { generations, total } = await db.getUserGenerations(userId, page, pageSize);
 
   // Build full thumbnail URL from public bucket
   const publicBase = c.env.R2_PUBLIC_URL || `${new URL(c.req.url).origin}/public`;
@@ -30,6 +32,8 @@ generationRouter.get('/:id', async (c) => {
   const secret = c.env.AUTH_SECRET ?? 'dev-secret';
   const workerUrl = new URL(c.req.url).origin;
   const user = c.get('user');
+  const dbUser = await db.getUserByEmail(user.email);
+  const userId = dbUser?.id || user.id;
 
   const gen = await db.getGenerationById(c.req.param('id'));
   if (!gen) {
@@ -37,7 +41,7 @@ generationRouter.get('/:id', async (c) => {
   }
 
   // Only the creator can view
-  if (gen.userId !== user.id) {
+  if (gen.userId !== userId) {
     return c.json({ success: false, error: 'Not authorized' }, 403);
   }
 

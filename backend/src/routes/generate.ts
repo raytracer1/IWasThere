@@ -45,18 +45,19 @@ generateRouter.post('/', async (c) => {
   // ─── Credit check ──────────────────────────────────────
   const user = c.get('user');
   const dbUser = await db.getUserByEmail(user.email);
-  const credits = dbUser?.credits ?? 0;
   const price = event.price ?? 0;
-  if (price > 0 && credits < price) {
-    return c.json({ success: false, error: `Insufficient credits. Need ${price}, have ${credits}.` }, 402);
+  if (price > 0 && (dbUser?.credits ?? 0) < price) {
+    return c.json({ success: false, error: `Insufficient credits. Need ${price}, have ${dbUser?.credits ?? 0}.` }, 402);
   }
+
+  const userId = dbUser?.id || user.id;
 
   const { imagePrompt } = compileEventPrompts(event, football);
   const generationId = crypto.randomUUID();
 
   await db.createGeneration({
     id: generationId,
-    userId: user.id,
+    userId,
     eventId,
     inputImage: 'base64-direct',
     status: 'processing',
