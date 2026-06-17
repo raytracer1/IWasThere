@@ -4,11 +4,10 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import type { Event } from "@/lib/types";
 
 const CATEGORIES = [
-  "football", "basketball", "tennis", "athletics",
-  "cricket", "boxing", "american_football", "other",
+  "sports", "fiction", "history",
 ] as const;
 
-const EVENT_TYPES = ["sports", "music", "movies", "news", "other"] as const;
+const EVENT_TYPES = ["sports", "fiction", "history"] as const;
 
 const DEFAULT_SCENE = { location: "", time_period: "", atmosphere: "", description: "" };
 const DEFAULT_EMOTION = { primary: "", intensity: "", description: "" };

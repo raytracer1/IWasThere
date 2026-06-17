@@ -14,7 +14,8 @@ class CategoryTabs extends StatelessWidget {
   static const _categories = [
     {'key': null, 'label': 'All', 'icon': Icons.grid_view},
     {'key': 'sports', 'label': 'Sports', 'icon': Icons.sports_soccer},
-    {'key': 'music', 'label': 'Music', 'icon': Icons.music_note},
+    {'key': 'fiction', 'label': 'Fiction', 'icon': Icons.movie},
+    {'key': 'history', 'label': 'History', 'icon': Icons.history},
   ];
 
   @override

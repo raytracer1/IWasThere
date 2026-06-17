@@ -89,14 +89,10 @@ class AppTheme {
     switch (category.toLowerCase()) {
       case 'sports':
         return const Color(0xFF3B82F6); // Blue
-      case 'music':
+      case 'fiction':
         return const Color(0xFFA855F7); // Purple
-      case 'movies':
+      case 'history':
         return const Color(0xFFF59E0B); // Amber
-      case 'news':
-        return const Color(0xFFEF4444); // Red
-      case 'other':
-        return const Color(0xFF6B7280); // Gray
       default:
         return _primaryColor;
     }

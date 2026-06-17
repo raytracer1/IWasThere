@@ -108,7 +108,7 @@ CREATE TABLE events (
   title             TEXT NOT NULL,        -- e.g. "1998 World Cup Final: France vs Brazil"
   year              INTEGER NOT NULL,
   location          TEXT,                 -- e.g. "Stade de France, Paris"
-  sport_type        TEXT NOT NULL,        -- football, basketball, tennis, athletics, cricket, boxing, american_football, other
+  sport_type        TEXT NOT NULL,        -- sports, fiction, history
   description       TEXT,
   key_moment        TEXT,                 -- e.g. "Zidane's first header in the 27th minute"
   era_clothing      TEXT,                 -- e.g. "late 90s casual wear, France jerseys"
@@ -143,7 +143,7 @@ CREATE TABLE generations (
 ## Data Models (TypeScript)
 
 ```typescript
-type SportType = 'football' | 'basketball' | 'tennis' | 'athletics' | 'cricket' | 'boxing' | 'american_football' | 'other';
+type SportType = 'sports' | 'fiction' | 'history';
 type GenerationStatus = 'queued' | 'processing' | 'completed' | 'failed';
 
 interface Event {

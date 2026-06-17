@@ -77,8 +77,7 @@ export async function fetchPexelsVideos(apiKey: string, maxResults: number): Pro
 function guessCategory(url: string): VideoItem['category'] {
   const lower = url.toLowerCase();
   if (/sport|soccer|basketball|football|game|match|race|workout/.test(lower)) return 'sports';
-  if (/music|concert|dance|song|band|guitar|piano|sing/.test(lower)) return 'music';
-  if (/movie|film|cinema|scene|actor|trailer/.test(lower)) return 'movies';
-  if (/news|report|interview|press|conference/.test(lower)) return 'news';
-  return 'other';
+  if (/movie|film|cinema|scene|actor|trailer|fiction|fantasy|novel|story|drama/.test(lower)) return 'fiction';
+  if (/history|war|ancient|century|revolution|historical|battle|empire/.test(lower)) return 'history';
+  return 'sports';
 }

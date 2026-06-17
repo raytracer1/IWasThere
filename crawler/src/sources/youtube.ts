@@ -16,23 +16,21 @@ const POPULAR_CHANNELS: Channel[] = [
   { id: 'UCDVYQ4Zhbm3S2dlz7P1GBDg', name: 'NFL', category: 'sports' },
   { id: 'UCvgfXK4nTYKudb0rFR6noLA', name: 'UFC', category: 'sports' },
 
-  // Music
-  { id: 'UC5nc_ZtjKW1htCVZVRxlQAQ', name: 'MrSuicideSheep', category: 'music' },
+  // Fiction (music, movies, entertainment)
+  { id: 'UC5nc_ZtjKW1htCVZVRxlQAQ', name: 'MrSuicideSheep', category: 'fiction' },
+  { id: 'UCi8e0iOVk1fEOogdfu4YgfA', name: 'MovieClips', category: 'fiction' },
 
-  // Movies
-  { id: 'UCi8e0iOVk1fEOogdfu4YgfA', name: 'MovieClips', category: 'movies' },
+  // History (news channels)
+  { id: 'UC16niRr50-MSBwiO3YDb3RA', name: 'BBC News', category: 'history' },
+  { id: 'UCupvZG-5ko_eiXAupbDfxWw', name: 'CNN', category: 'history' },
+  { id: 'UCXIJgqnII2ZOINSWNOGFThA', name: 'Fox News', category: 'history' },
+  { id: 'UCeY0bbntWzzVIaj2z3QigXg', name: 'NBC News', category: 'history' },
 
-  // News
-  { id: 'UC16niRr50-MSBwiO3YDb3RA', name: 'BBC News', category: 'news' },
-  { id: 'UCupvZG-5ko_eiXAupbDfxWw', name: 'CNN', category: 'news' },
-  { id: 'UCXIJgqnII2ZOINSWNOGFThA', name: 'Fox News', category: 'news' },
-  { id: 'UCeY0bbntWzzVIaj2z3QigXg', name: 'NBC News', category: 'news' },
-
-  // General / Viral
-  { id: 'UCX6OQ3DkcsbYNE6H8uQQuVA', name: 'MrBeast', category: 'other' },
-  { id: 'UCqFzWxSCi39LnW1JKFR3efg', name: 'SNL', category: 'other' },
-  { id: 'UCBJycsmduvYEL83R_U4JriQ', name: 'MKBHD', category: 'other' },
-  { id: 'UCXuqSBlHAE6Xw-yeJA0Tunw', name: 'Linus Tech Tips', category: 'other' },
+  // General / Viral → sports
+  { id: 'UCX6OQ3DkcsbYNE6H8uQQuVA', name: 'MrBeast', category: 'sports' },
+  { id: 'UCqFzWxSCi39LnW1JKFR3efg', name: 'SNL', category: 'sports' },
+  { id: 'UCBJycsmduvYEL83R_U4JriQ', name: 'MKBHD', category: 'sports' },
+  { id: 'UCXuqSBlHAE6Xw-yeJA0Tunw', name: 'Linus Tech Tips', category: 'sports' },
 ];
 
 // ─── YouTube RSS Parser ────────────────────────────────────
@@ -185,10 +183,10 @@ async function fetchYoutubeDataApi(apiKey: string, maxResults: number): Promise<
   const items: VideoItem[] = [];
   const categories = [
     { videoCategoryId: '17', category: 'sports' as const },
-    { videoCategoryId: '10', category: 'music' as const },
-    { videoCategoryId: '1',  category: 'movies' as const },
-    { videoCategoryId: '25', category: 'news' as const },
-    { videoCategoryId: '0',  category: 'other' as const }, // all
+    { videoCategoryId: '10', category: 'fiction' as const },
+    { videoCategoryId: '1',  category: 'fiction' as const },
+    { videoCategoryId: '25', category: 'history' as const },
+    { videoCategoryId: '0',  category: 'sports' as const }, // all
   ];
 
   for (const { videoCategoryId, category } of categories) {
@@ -313,10 +311,9 @@ export async function searchYoutubeByKeyword(keyword: string, maxResults = 5): P
 function guessCategory(title: string): VideoItem['category'] {
   const lower = title.toLowerCase();
   if (/sport|football|soccer|basketball|nba|nfl|ufc|boxing/i.test(lower)) return 'sports';
-  if (/music|song|concert|performance/i.test(lower)) return 'music';
-  if (/movie|film|trailer|teaser/i.test(lower)) return 'movies';
-  if (/news|breaking|press|speech/i.test(lower)) return 'news';
-  return 'other';
+  if (/music|song|concert|performance|movie|film|trailer|teaser/i.test(lower)) return 'fiction';
+  if (/news|breaking|press|speech|history|war|ancient/i.test(lower)) return 'history';
+  return 'sports';
 }
 
 function sleep(ms: number) {

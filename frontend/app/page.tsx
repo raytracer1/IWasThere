@@ -7,14 +7,9 @@ import { EventCard } from "@/components/EventCard";
 
 const CATEGORY_TABS: { key: string; label: string }[] = [
   { key: "", label: "All" },
-  { key: "football", label: "Football" },
-  { key: "basketball", label: "Basketball" },
-  { key: "tennis", label: "Tennis" },
-  { key: "athletics", label: "Athletics" },
-  { key: "cricket", label: "Cricket" },
-  { key: "boxing", label: "Boxing" },
-  { key: "american_football", label: "American Football" },
-  { key: "other", label: "Other" },
+  { key: "sports", label: "Sports" },
+  { key: "fiction", label: "Fiction" },
+  { key: "history", label: "History" },
 ];
 
 export default function HomePage() {

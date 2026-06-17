@@ -4,10 +4,10 @@ import type { VideoItem } from '../types';
 const parser = new RssParser();
 
 const RSS_FEEDS: { url: string; category: VideoItem['category'] }[] = [
-  { url: 'https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en', category: 'news' },
-  { url: 'https://feeds.bbci.co.uk/news/world/rss.xml', category: 'news' },
+  { url: 'https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en', category: 'history' },
+  { url: 'https://feeds.bbci.co.uk/news/world/rss.xml', category: 'history' },
   { url: 'https://www.espn.com/espn/rss/news', category: 'sports' },
-  { url: 'https://feeds.reuters.com/reuters/topNews', category: 'news' },
+  { url: 'https://feeds.reuters.com/reuters/topNews', category: 'history' },
 ];
 
 /**

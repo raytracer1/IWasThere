@@ -11,7 +11,6 @@ class ApiConfig {
   static const int defaultPageSize = 20;
 
   static const List<String> categories = [
-    'football', 'basketball', 'tennis', 'athletics',
-    'cricket', 'boxing', 'american_football', 'other',
+    'sports', 'fiction', 'history',
   ];
 }
