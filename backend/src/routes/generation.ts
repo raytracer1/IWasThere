@@ -18,7 +18,9 @@ generationRouter.get('/', async (c) => {
   const publicBase = c.env.R2_PUBLIC_URL || `${new URL(c.req.url).origin}/public`;
   const data = generations.map((g) => ({
     ...g,
-    eventThumbnail: g.eventThumbnail ? `${publicBase}/${g.eventThumbnail}` : undefined,
+    eventThumbnail: g.eventThumbnail
+      ? (g.eventThumbnail.startsWith('http') ? g.eventThumbnail : `${publicBase}/${g.eventThumbnail}`)
+      : undefined,
   }));
 
   return c.json({ success: true, data, total, page, pageSize });
