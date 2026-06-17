@@ -1,12 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession, signIn, signOut } from "next-auth/react";
 import { ThemeToggle } from "./ThemeToggle";
-
-const WORKER_URL = process.env.NEXT_PUBLIC_WORKER_URL ?? "http://localhost:8787";
+import { useUserStore } from "@/store/user";
 
 export function Navbar() {
   const pathname = usePathname();
@@ -14,19 +13,13 @@ export function Navbar() {
   const user = session?.user;
   const email = user?.email;
   const accessToken = (session as { accessToken?: string } | null)?.accessToken;
-  const [credits, setCredits] = useState<number | null>(null);
+  const credits = useUserStore((s) => s.credits);
+  const refreshCredits = useUserStore((s) => s.refreshCredits);
 
   useEffect(() => {
     if (!accessToken) return;
-    fetch(`${WORKER_URL}/me`, {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    })
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.success) setCredits(d.data.credits);
-      })
-      .catch(() => {});
-  }, [accessToken]);
+    refreshCredits(accessToken);
+  }, [accessToken, refreshCredits]);
 
   if (pathname === "/login") return null;
 

@@ -21,7 +21,7 @@ authRouter.post('/login', async (c) => {
 
   if (!user) {
     await db.createUser({
-      id: sub,
+      id: crypto.randomUUID(),
       email,
       name,
       image: picture,

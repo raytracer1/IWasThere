@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useSession, signIn } from "next-auth/react";
 import { fetchEvent, triggerGenerate } from "@/lib/api";
 import type { Event } from "@/lib/types";
+import { useUserStore } from "@/store/user";
 import { UploadSelfie } from "@/components/UploadSelfie";
 
 const CATEGORY_ICON: Record<string, string> = {
@@ -130,6 +131,7 @@ export default function CreatePage({
 
       const res = await triggerGenerate({ eventId, imageBase64, football }, accessToken);
       if (res.data?.generationId) {
+        useUserStore.getState().refreshCredits(accessToken!);
         router.push(`/result/${res.data.generationId}`);
       }
     } catch (err) {

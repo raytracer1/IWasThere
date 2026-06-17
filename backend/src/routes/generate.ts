@@ -53,8 +53,8 @@ generateRouter.post('/', async (c) => {
   const generationId = crypto.randomUUID();
 
   // Deduct credits
-  if (price > 0) {
-    await db.deductCredits(user.id, price);
+  if (price > 0 && dbUser) {
+    await db.deductCredits(dbUser.id, price);
   }
 
   await db.createGeneration({
