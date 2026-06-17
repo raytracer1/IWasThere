@@ -68,6 +68,8 @@ export default function ResultPage({
   const [selectedCaption, setSelectedCaption] = useState<string | undefined>();
 
   useEffect(() => {
+    if (!accessToken) return;
+
     let timer: ReturnType<typeof setInterval>;
     let stopped = false;
 
