@@ -80,8 +80,8 @@ export default function CreatePage({
   // ─── Football customization state ──────────────────────────
   const [teamA, setTeamA] = useState("");
   const [teamB, setTeamB] = useState("");
-  const [scoreA, setScoreA] = useState<number | null>(null);
-  const [scoreB, setScoreB] = useState<number | null>(null);
+  const [scoreA, setScoreA] = useState<number | null>(0);
+  const [scoreB, setScoreB] = useState<number | null>(0);
   const [userTeam, setUserTeam] = useState("");
   const [mood, setMood] = useState("euphoria");
 
