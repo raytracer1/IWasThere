@@ -4,6 +4,16 @@ import { compileEventPrompts } from '../utils/promptBuilder';
 import { generateImage, submitVideo } from '../utils/agnes';
 import type { Bindings } from '../types';
 
+const ASPECT_SIZES: Record<string, string> = {
+  '9:16': '576x1024',
+  '16:9': '1024x576',
+  '1:1': '1024x1024',
+};
+
+function aspectToSize(aspectRatio?: string): string {
+  return ASPECT_SIZES[aspectRatio ?? ''] || '576x1024';
+}
+
 const generateRouter = new Hono<{ Bindings: Bindings }>();
 
 generateRouter.post('/', async (c) => {
@@ -46,7 +56,8 @@ generateRouter.post('/', async (c) => {
 
   try {
     // Step 1: Generate image with Agnes (base64 → image URL on Agnes servers)
-    const generatedImageUrl = await generateImage(imagePrompt, selfieBase64, apiKey, '576x1024');
+    const size = aspectToSize(event.aspectRatio);
+    const generatedImageUrl = await generateImage(imagePrompt, selfieBase64, apiKey, size);
     console.log(`[generate] Image done: ${generatedImageUrl}`);
 
     // Store the image URL directly
@@ -54,7 +65,8 @@ generateRouter.post('/', async (c) => {
 
     // Step 2: Submit video with the Agnes-hosted image URL
     console.log(`[generate] Step 2: Video`);
-    const taskId = await submitVideo(imagePrompt, generatedImageUrl, apiKey, 121, 24);
+    const [w, h] = size.split('x').map(Number);
+    const taskId = await submitVideo(imagePrompt, generatedImageUrl, apiKey, 121, 24, w, h);
     console.log(`[generate] Video task: ${taskId}`);
 
     await db.updateGeneration(generationId, { agnesJobId: taskId });

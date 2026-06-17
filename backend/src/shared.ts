@@ -58,6 +58,7 @@ export interface Event {
   title: string;
   category: string;
   event_type?: string;
+  aspectRatio?: string;     // "9:16" | "16:9" | "1:1"
   scene: EventScene;
   camera: EventCamera;
   generation: EventGeneration;
