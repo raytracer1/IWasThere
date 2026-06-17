@@ -85,6 +85,9 @@ export interface Generation {
   captions?: string;          // JSON string
   selectedCaption?: string;
   football?: string;          // JSON string of football overlay data
+  eventTitle?: string;        // joined from events
+  eventCategory?: string;     // joined from events
+  eventThumbnail?: string;    // joined from events
   createdAt: number;
   completedAt?: number;
 }

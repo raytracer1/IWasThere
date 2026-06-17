@@ -1,7 +1,6 @@
 import { Hono } from 'hono';
 import { D1Helper } from '../utils/d1';
 import { generateSignedUrl } from '../utils/r2';
-import { pollVideo } from '../utils/agnes';
 import type { Bindings } from '../types';
 
 const generationRouter = new Hono<{ Bindings: Bindings }>();
@@ -30,7 +29,6 @@ generationRouter.get('/:id', async (c) => {
   const db = new D1Helper(c.env.DB);
   const secret = c.env.AUTH_SECRET ?? 'dev-secret';
   const workerUrl = new URL(c.req.url).origin;
-  const apiKey = c.env.AGNES_API_KEY;
   const user = c.get('user');
 
   const gen = await db.getGenerationById(c.req.param('id'));
@@ -41,34 +39,6 @@ generationRouter.get('/:id', async (c) => {
   // Only the creator can view
   if (gen.userId !== user.id) {
     return c.json({ success: false, error: 'Not authorized' }, 403);
-  }
-
-  // Poll video status if still processing
-  if (gen.status === 'processing' && gen.agnesJobId && apiKey) {
-    console.log(`[gen] Polling Agnes task=${gen.agnesJobId}`);
-    try {
-      const videoUrl = await pollVideo(gen.agnesJobId, apiKey);
-      console.log(`[gen] Poll result: ${videoUrl ? 'DONE' : 'still processing'}`);
-      if (videoUrl) {
-        await db.updateGeneration(gen.id, { outputVideo: videoUrl, status: 'completed' });
-        gen.status = 'completed';
-        gen.outputVideo = videoUrl;
-        // Deduct credits on first completion
-        try {
-          const event = await db.getEventById(gen.eventId);
-          const price = event?.price ?? 0;
-          if (price > 0) {
-            const dbUser = await db.getUserByEmail(user.email);
-            if (dbUser) await db.deductCredits(dbUser.id, price);
-          }
-        } catch {}
-      }
-    } catch (err) {
-      console.error('[gen] Agnes failed:', err);
-      await db.updateGenerationStatus(gen.id, 'failed', undefined, err instanceof Error ? err.message : 'Unknown error');
-      gen.status = 'failed';
-      gen.errorMessage = err instanceof Error ? err.message : 'Unknown error';
-    }
   }
 
   // If URL starts with http, return directly (Agnes-hosted); otherwise sign (R2 key)

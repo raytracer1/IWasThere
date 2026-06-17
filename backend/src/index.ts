@@ -133,34 +133,63 @@ app.notFound((c) => {
   return c.json({ success: false, error: 'Not found' }, 404);
 });
 
-export default app;
-
-// ─── Cron: cleanup old generations (3 day retention) ──────
+// ─── Cron: poll generations + cleanup ─────────────────────
 
 import { D1Helper } from './utils/d1';
 import { deleteFromR2 } from './utils/r2';
+import { pollVideo } from './utils/agnes';
+
+async function pollGenerations(env: Bindings) {
+  const db = new D1Helper(env.DB);
+  const apiKey = env.AGNES_API_KEY;
+  if (!apiKey) return;
+
+  const processing = await db.getProcessingGenerations();
+  if (processing.length === 0) return;
+
+  console.log(`[cron] Polling ${processing.length} processing generations`);
+
+  for (const gen of processing) {
+    try {
+      const videoUrl = await pollVideo(gen.agnesJobId!, apiKey);
+      if (videoUrl) {
+        await db.updateGeneration(gen.id, { outputVideo: videoUrl, status: 'completed' });
+        console.log(`[cron] Completed: ${gen.id}`);
+
+        // Deduct credits on first completion
+        try {
+          const event = await db.getEventById(gen.eventId);
+          const price = event?.price ?? 0;
+          if (price > 0) await db.deductCredits(gen.userId, price);
+        } catch {}
+      }
+    } catch (err) {
+      console.error(`[cron] Failed: ${gen.id}`, String(err));
+      await db.updateGenerationStatus(gen.id, 'failed', undefined, String(err));
+    }
+  }
+}
 
 async function cleanupGenerations(env: Bindings) {
   const db = new D1Helper(env.DB);
   const expired = await db.getExpiredGenerations(3);
-
   if (expired.length === 0) return;
-
   console.log(`[cron] Cleaning up ${expired.length} expired generations`);
-
   for (const gen of expired) {
-    // Delete R2 files
     const keys = [gen.inputImage, gen.outputImage].filter(Boolean) as string[];
     for (const key of keys) {
       try { await deleteFromR2(env.ASSETS, key); } catch {}
     }
-    // Delete DB record
     try { await db.deleteGeneration(gen.id); } catch {}
   }
-
-  console.log(`[cron] Cleanup complete`);
 }
 
-export const scheduled: ExportedHandlerScheduledHandler<Bindings> = async (_event, env) => {
+async function scheduled(_event: ScheduledEvent, env: Bindings) {
+  await pollGenerations(env);
   await cleanupGenerations(env);
+}
+
+export default {
+  fetch: app.fetch,
+  scheduled,
 };

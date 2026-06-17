@@ -218,7 +218,7 @@ export class D1Helper {
     );
   }
 
-  async getGenerationById(id: string): Promise<Generation | null> {
+  async getGenerationById(id: string): Promise<GenerationWithEvent | null> {
     const row = await this.first<Record<string, unknown>>(
       `SELECT g.*, e.title as event_title, e.category as event_category, e.thumbnail_url as event_thumbnail
        FROM generations g LEFT JOIN events e ON g.event_id = e.id
@@ -272,7 +272,7 @@ export class D1Helper {
     userId: string,
     page = 1,
     pageSize = 20
-  ): Promise<{ generations: Generation[]; total: number }> {
+  ): Promise<{ generations: GenerationWithEvent[]; total: number }> {
     const offset = (page - 1) * pageSize;
     const countResult = await this.first<{ count: number }>(
       'SELECT COUNT(*) as count FROM generations WHERE user_id = ?',
@@ -299,6 +299,13 @@ export class D1Helper {
     const rows = await this.all<Record<string, unknown>>(
       'SELECT * FROM generations WHERE created_at < ?',
       cutoff
+    );
+    return rows.results.map((row) => this.mapGeneration(row));
+  }
+
+  async getProcessingGenerations(): Promise<Generation[]> {
+    const rows = await this.all<Record<string, unknown>>(
+      "SELECT * FROM generations WHERE status = 'processing' AND agnes_job_id IS NOT NULL"
     );
     return rows.results.map((row) => this.mapGeneration(row));
   }
@@ -340,14 +347,10 @@ export class D1Helper {
       createdAt: row.created_at as number,
       completedAt: (row.completed_at as number) ?? undefined,
       // Joined fields
-      eventTitle: (row as { event_title?: string }).event_title,
-      eventCategory: (row as { event_category?: string }).event_category,
-      eventThumbnail: (row as { event_thumbnail?: string }).event_thumbnail,
-    } as Generation & {
-      eventTitle?: string;
-      eventCategory?: string;
-      eventThumbnail?: string;
-    };
+      eventTitle: (row as Record<string, unknown>).event_title as string | undefined,
+      eventCategory: (row as Record<string, unknown>).event_category as string | undefined,
+      eventThumbnail: (row as Record<string, unknown>).event_thumbnail as string | undefined,
+    } as GenerationWithEvent;
   }
 }
 

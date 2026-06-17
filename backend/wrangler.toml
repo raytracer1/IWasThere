@@ -33,6 +33,6 @@ port = 8787
 [observability]
 enabled = true
 
-# Cleanup old generations every hour
+# Poll generations every 30s + cleanup every hour
 [triggers]
-crons = ["0 * * * *"]
+crons = ["* * * * *", "0 * * * *"]
