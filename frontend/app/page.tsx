@@ -36,7 +36,7 @@ export default function HomePage() {
   }, [category, loadEvents]);
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-6 flex flex-col flex-1">
+    <div className="mx-auto w-full max-w-4xl px-4 py-6 flex flex-col flex-1">
       {/* Hero */}
       <div className="text-center mb-8">
         <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl">
