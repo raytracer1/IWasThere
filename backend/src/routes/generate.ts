@@ -42,9 +42,11 @@ generateRouter.post('/', async (c) => {
 
   // ─── Credit check ──────────────────────────────────────
   const user = c.get('user');
+  const dbUser = await db.getUserByEmail(user.email);
+  const credits = dbUser?.credits ?? 0;
   const price = event.price ?? 0;
-  if (price > 0 && user.credits < price) {
-    return c.json({ success: false, error: `Insufficient credits. Need ${price}, have ${user.credits}.` }, 402);
+  if (price > 0 && credits < price) {
+    return c.json({ success: false, error: `Insufficient credits. Need ${price}, have ${credits}.` }, 402);
   }
 
   const { imagePrompt } = compileEventPrompts(event, football);
