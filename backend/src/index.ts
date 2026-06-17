@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { authMiddleware, requireAdmin } from './middleware/auth';
 import eventsRouter from './routes/events';
-
+import authRouter from './routes/auth';
 import generateRouter from './routes/generate';
 import generationRouter from './routes/generation';
 import adminRouter from './routes/admin';
@@ -88,8 +88,8 @@ app.get('/health', (c) => {
 });
 
 // ─── Public Routes (no auth required) ──────────────────
+app.route('/auth', authRouter);
 app.route('/events', eventsRouter);
-// /admin/upload is handled in adminRouter
 
 app.route('/generate', generateRouter);
 app.route('/generation', generationRouter);

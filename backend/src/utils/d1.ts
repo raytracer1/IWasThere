@@ -67,6 +67,18 @@ export class D1Helper {
     );
   }
 
+  async createUser(user: Omit<User, 'createdAt' | 'role'>): Promise<void> {
+    await this.run(
+      `INSERT OR IGNORE INTO users (id, email, name, image, credits, created_at)
+       VALUES (?, ?, ?, ?, ?, unixepoch())`,
+      user.id,
+      user.email,
+      user.name ?? null,
+      user.image ?? null,
+      user.credits ?? 1.0
+    );
+  }
+
   // ─── Events ───────────────────────────────────────────
 
   async getActiveEvents(

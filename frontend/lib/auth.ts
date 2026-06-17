@@ -14,6 +14,24 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     async jwt({ token, account, profile }) {
       if (account?.provider === "google") {
         const secret = new TextEncoder().encode(process.env.AUTH_SECRET);
+
+        // Call backend to create user on first login
+        const workerUrl = process.env.NEXT_PUBLIC_WORKER_URL ?? 'http://localhost:8787';
+        try {
+          await fetch(`${workerUrl}/auth/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              sub: token.sub,
+              email: token.email,
+              name: token.name,
+              picture: token.picture,
+            }),
+          });
+        } catch {
+          // Non-critical — user creation can be retried later
+        }
+
         token.accessToken = await new SignJWT({
           sub: token.sub,
           email: token.email,

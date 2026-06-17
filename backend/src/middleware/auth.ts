@@ -1,5 +1,4 @@
 import { createMiddleware } from 'hono/factory';
-import { D1Helper } from '../utils/d1';
 import type { Context } from 'hono';
 import type { User } from '../shared';
 
@@ -57,12 +56,12 @@ export function jwtMiddleware() {
 }
 
 /**
- * Verify JWT + lookup user in DB. Returns 401 if user doesn't exist.
- * Refreshes name/image on each request.
+ * Verify JWT and set user from token payload.
+ * Admin role is determined by ADMIN_EMAILS env var — no DB query.
  */
 export function authMiddleware() {
   return createMiddleware(async (c, next) => {
-    // Dev mode: skip real auth, set a fake admin user
+    // Dev mode: skip real auth
     if (c.env.SKIP_AUTH === 'true') {
       c.set('user', {
         id: 'dev-user',
@@ -81,32 +80,19 @@ export function authMiddleware() {
     if (result instanceof Response) return result;
     const payload = result;
 
-    const db = new D1Helper(c.env.DB);
     const adminEmails = (c.env.ADMIN_EMAILS ?? '').split(',').map((e: string) => e.trim().toLowerCase());
     const isAdmin = adminEmails.includes(payload.email?.toLowerCase() ?? '');
 
-    let user = await db.getUserByEmail(payload.email ?? '');
-    if (!user) {
-      return c.json({ success: false, error: 'User not found' }, 401);
-    }
-
-    // Refresh name/image
-    await db.upsertUser({
+    c.set('user', {
       id: payload.sub,
       email: payload.email ?? '',
       name: payload.name,
       image: payload.picture,
-      credits: user.credits,
+      role: isAdmin ? 'admin' : 'user',
+      credits: 0,
+      createdAt: 0,
     });
 
-    // Re-fetch after upsert
-    const refreshed = await db.getUserByEmail(payload.email ?? '');
-    if (!refreshed) {
-      return c.json({ success: false, error: 'User not found' }, 401);
-    }
-    user = refreshed;
-    user.role = isAdmin ? 'admin' : 'user';
-    c.set('user', user);
     await next();
   });
 }
