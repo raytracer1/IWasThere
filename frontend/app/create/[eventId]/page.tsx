@@ -162,7 +162,6 @@ export default function CreatePage({
 
   const categoryIcon = CATEGORY_ICON[event.category] || "🏟️";
   const timePeriod = event.scene?.time_period || "";
-  const location = event.scene?.location || "";
   const momentDesc = event.scene?.description || "";
   const atmosphere = event.scene?.atmosphere || "";
   const isFootball = event.category === "football";
@@ -174,12 +173,9 @@ export default function CreatePage({
         <div className="inline-flex items-center gap-2 rounded-full bg-cyan-500/10 border border-cyan-500/20 px-3 py-1 text-xs text-cyan-300 mb-3">
           {categoryIcon} {event.category.replace("_", " ")} · {timePeriod}
         </div>
-        <h1 className="text-xl font-bold text-white">{event.title}</h1>
-        {location && (
-          <p className="text-sm text-gray-400 mt-1">📍 {location}</p>
-        )}
+        <h1 className="text-xl font-bold text-gray-900 dark:text-white">{event.title}</h1>
         {momentDesc && (
-          <div className="mt-4 rounded-xl bg-gray-900/60 border border-white/10 overflow-hidden text-left">
+          <div className="mt-4 rounded-xl bg-gray-900/60 border border-gray-300 dark:border-white/10 overflow-hidden text-left">
             {event.thumbnailUrl && (
               <div className="aspect-video w-full overflow-hidden">
                 <img
@@ -202,15 +198,15 @@ export default function CreatePage({
 
       {/* 🆕 Football Scoreboard — TV broadcast style */}
       {isFootball && (
-        <div className="mb-6 rounded-xl bg-gray-900/60 border border-white/10 p-5">
-          <h2 className="text-sm font-semibold text-white mb-4">
+        <div className="mb-6 rounded-xl bg-gray-900/60 border border-gray-300 dark:border-white/10 p-5">
+          <h2 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">
             ⚽ Customize Your Match
           </h2>
 
           {/* Live Scoreboard */}
-          <div className="rounded-xl bg-gradient-to-b from-gray-800 to-gray-900 border border-white/10 overflow-hidden mb-4">
+          <div className="rounded-xl bg-gradient-to-b from-gray-800 to-gray-900 border border-gray-300 dark:border-white/10 overflow-hidden mb-4">
             {/* Top bar — league label */}
-            <div className="bg-gray-800/50 border-b border-white/5 px-4 py-1.5 flex items-center justify-center gap-2">
+            <div className="bg-gray-800/50 border-b border-gray-200 dark:border-white/5 px-4 py-1.5 flex items-center justify-center gap-2">
               <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
               <span className="text-xs text-gray-400 uppercase tracking-widest">Live</span>
             </div>
@@ -221,7 +217,7 @@ export default function CreatePage({
               <div className="flex-1 flex flex-col items-center gap-2 min-w-0">
                 {teamA ? (() => { const t = WORLD_CUP_TEAMS.find(t => t.name === teamA); return (<>
                   <img src={flagUrl(t!.code)} alt={teamA} className="w-10 h-7 rounded shadow-md object-cover" />
-                  <span className="text-sm font-bold text-white text-center leading-tight truncate max-w-full">{teamA}</span>
+                  <span className="text-sm font-bold text-gray-900 dark:text-white text-center leading-tight truncate max-w-full">{teamA}</span>
                 </>); })() : (
                   <span className="text-xs text-gray-600">Team A</span>
                 )}
@@ -242,7 +238,7 @@ export default function CreatePage({
               <div className="flex-1 flex flex-col items-center gap-2 min-w-0">
                 {teamB ? (() => { const t = WORLD_CUP_TEAMS.find(t => t.name === teamB); return (<>
                   <img src={flagUrl(t!.code)} alt={teamB} className="w-10 h-7 rounded shadow-md object-cover" />
-                  <span className="text-sm font-bold text-white text-center leading-tight truncate max-w-full">{teamB}</span>
+                  <span className="text-sm font-bold text-gray-900 dark:text-white text-center leading-tight truncate max-w-full">{teamB}</span>
                 </>); })() : (
                   <span className="text-xs text-gray-600">Team B</span>
                 )}
@@ -257,7 +253,7 @@ export default function CreatePage({
               <select
                 value={teamA}
                 onChange={(e) => setTeamA(e.target.value)}
-                className="w-full rounded-lg bg-gray-800 border border-white/10 px-2 py-2 text-sm text-white"
+                className="w-full rounded-lg bg-gray-800 border border-gray-300 dark:border-white/10 px-2 py-2 text-sm text-white"
               >
                 <option value="">Select team...</option>
                 {WORLD_CUP_TEAMS.map((t) => (
@@ -273,14 +269,14 @@ export default function CreatePage({
                   value={scoreA ?? ""}
                   onChange={(e) => setScoreA(e.target.value === "" ? null : parseInt(e.target.value))}
                   placeholder="0"
-                  className="w-11 rounded-lg bg-gray-800 border border-white/10 px-0 py-2 text-center text-sm text-white"
+                  className="w-11 rounded-lg bg-gray-800 border border-gray-300 dark:border-white/10 px-0 py-2 text-center text-sm text-white"
                 />
                 <span className="text-gray-500">:</span>
                 <input type="number" min={0} max={99}
                   value={scoreB ?? ""}
                   onChange={(e) => setScoreB(e.target.value === "" ? null : parseInt(e.target.value))}
                   placeholder="0"
-                  className="w-11 rounded-lg bg-gray-800 border border-white/10 px-0 py-2 text-center text-sm text-white"
+                  className="w-11 rounded-lg bg-gray-800 border border-gray-300 dark:border-white/10 px-0 py-2 text-center text-sm text-white"
                 />
               </div>
             </div>
@@ -290,7 +286,7 @@ export default function CreatePage({
               <select
                 value={teamB}
                 onChange={(e) => setTeamB(e.target.value)}
-                className="w-full rounded-lg bg-gray-800 border border-white/10 px-2 py-2 text-sm text-white"
+                className="w-full rounded-lg bg-gray-800 border border-gray-300 dark:border-white/10 px-2 py-2 text-sm text-white"
               >
                 <option value="">Select team...</option>
                 {WORLD_CUP_TEAMS.map((t) => (
@@ -318,7 +314,7 @@ export default function CreatePage({
                       className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-all ${
                         active
                           ? "border-cyan-500 bg-cyan-500/10 text-white"
-                          : "border-white/10 bg-gray-800 text-gray-400 hover:border-white/20"
+                          : "border-white/10 bg-gray-800 text-gray-400 hover:border-gray-300 dark:border-white/20"
                       }`}
                     >
                       {info && <img src={flagUrl(info.code)} alt={t} className="w-6 h-4 rounded shadow" />}
@@ -342,7 +338,7 @@ export default function CreatePage({
                   className={`rounded-lg border px-3 py-2 text-sm transition-all ${
                     mood === m.value
                       ? "border-cyan-500 bg-cyan-500/10 text-white"
-                      : "border-white/10 bg-gray-800 text-gray-400 hover:border-white/20"
+                      : "border-white/10 bg-gray-800 text-gray-400 hover:border-gray-300 dark:border-white/20"
                   }`}
                 >
                   {m.emoji} {m.label}
@@ -355,7 +351,7 @@ export default function CreatePage({
 
       {/* Selfie Upload */}
       <div className="mb-6">
-        <h2 className="text-sm font-semibold text-white mb-3">
+        <h2 className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
           📸 Upload your selfie
         </h2>
         <UploadSelfie
@@ -402,7 +398,7 @@ export default function CreatePage({
               canGenerate
                 ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-white hover:opacity-90 shadow-lg shadow-cyan-500/25"
                 : needsAuth
-                ? "bg-white text-gray-900 hover:bg-gray-100"
+                ? "bg-white text-gray-900 hover:bg-gray-100 border border-gray-300"
                 : "bg-gray-800 text-gray-500 cursor-not-allowed"
             }`}
           >

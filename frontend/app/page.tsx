@@ -36,13 +36,13 @@ export default function HomePage() {
   }, [category, loadEvents]);
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-6">
+    <div className="mx-auto max-w-4xl px-4 py-6 flex flex-col flex-1">
       {/* Hero */}
       <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold tracking-tight text-white sm:text-4xl">
+        <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white sm:text-4xl">
           Step into historic{" "}
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-blue-500">
-            sports moments
+            moments
           </span>
         </h1>
         <p className="mt-3 text-sm text-gray-400 max-w-md mx-auto">
@@ -105,7 +105,7 @@ export default function HomePage() {
         </div>
       )}
 
-      <footer className="mt-12 text-center">
+      <footer className="mt-auto pt-12 text-center">
         <a href="/privacy" className="text-xs text-gray-500 hover:text-gray-400 underline">
           Privacy Policy
         </a>

@@ -40,7 +40,7 @@ export function EventCard({ event }: { event: Event }) {
         )}
         {/* Year Badge */}
         {timePeriod && (
-          <div className="absolute top-3 left-3 rounded-lg bg-black/70 backdrop-blur-sm px-2.5 py-1 text-xs font-bold text-white">
+          <div className="absolute top-3 left-3 rounded-lg bg-black/70 backdrop-blur-sm px-2.5 py-1 text-xs font-bold text-gray-900 dark:text-white">
             {timePeriod}
           </div>
         )}
@@ -57,7 +57,7 @@ export function EventCard({ event }: { event: Event }) {
             {event.category.replace("_", " ")}
           </span>
         </div>
-        <h3 className="text-sm font-semibold text-white line-clamp-2 leading-snug group-hover:text-cyan-300 transition-colors">
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-white line-clamp-2 leading-snug group-hover:text-cyan-300 transition-colors">
           {event.title}
         </h3>
         {momentDesc && (

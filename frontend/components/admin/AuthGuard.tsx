@@ -21,7 +21,7 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
   if (status === "unauthenticated") {
     return (
       <div className="mx-auto max-w-md px-4 py-20 text-center">
-        <h1 className="text-2xl font-bold text-white mb-3">⚡ IfIWasThere Admin</h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">⚡ IfIWasThere Admin</h1>
         <p className="text-sm text-gray-400 mb-6">Sign in with an admin Google account.</p>
         <button
           onClick={() => signIn("google")}

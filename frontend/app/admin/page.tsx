@@ -49,13 +49,13 @@ export default function AdminListPage() {
       <div className="mx-auto max-w-4xl px-4 py-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <h1 className="text-xl font-bold text-white">⚙️ Event Admin</h1>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white">⚙️ Event Admin</h1>
         </div>
 
         {/* New Event Button */}
         <button
           onClick={() => router.push("/admin/new")}
-          className="mb-6 rounded-lg bg-cyan-600 px-4 py-2 text-sm font-medium text-white hover:bg-cyan-700 transition-colors"
+          className="mb-6 rounded-lg bg-cyan-600 px-4 py-2 text-sm font-medium text-gray-900 dark:text-white hover:bg-cyan-700 transition-colors"
         >
           + New Event
         </button>
@@ -96,7 +96,7 @@ export default function AdminListPage() {
                 {/* Info */}
                 <div className="p-3">
                   <p className="text-xs text-gray-400 mb-1">{ev.event_type || ""} · {ev.scene?.time_period || ""}</p>
-                  <h3 className="text-sm font-semibold text-white line-clamp-2 leading-snug mb-2">
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-white line-clamp-2 leading-snug mb-2">
                     {ev.title}
                   </h3>
                   <div className="flex gap-2">

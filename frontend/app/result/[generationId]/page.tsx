@@ -122,7 +122,7 @@ export default function ResultPage({
           <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-cyan-500/10 border border-cyan-500/20 mb-6">
             <span className="text-3xl animate-pulse">⚡</span>
           </div>
-          <h2 className="text-lg font-semibold text-white mb-2">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
             Creating your video...
           </h2>
           <p className="text-sm text-gray-400">
@@ -144,7 +144,7 @@ export default function ResultPage({
       {isFailed && (
         <div className="text-center py-16">
           <span className="text-5xl">😔</span>
-          <h2 className="mt-4 text-lg font-semibold text-white">Generation failed</h2>
+          <h2 className="mt-4 text-lg font-semibold text-gray-900 dark:text-white">Generation failed</h2>
           <p className="mt-2 text-sm text-gray-400">
             {gen?.errorMessage || "Something went wrong. Try a different selfie or event."}
           </p>
@@ -178,11 +178,11 @@ export default function ResultPage({
                 const fb = JSON.parse(gen.football!);
                 return (
                   <div className="absolute top-3 right-3 z-10 flex items-center gap-2 rounded-lg bg-black/80 backdrop-blur-sm border border-white/20 px-3 py-2 shadow-xl">
-                    <span className="text-xs font-bold text-white truncate max-w-20">{fb.teamA}</span>
+                    <span className="text-xs font-bold text-gray-900 dark:text-white truncate max-w-20">{fb.teamA}</span>
                     {fb.codeA && <img src={`https://flagcdn.com/w40/${fb.codeA}.png`} alt="" className="w-5 h-3.5 rounded-sm shadow" />}
                     <span className="text-lg font-black text-white tabular-nums bg-white/10 px-2 py-0.5 rounded">{fb.score}</span>
                     {fb.codeB && <img src={`https://flagcdn.com/w40/${fb.codeB}.png`} alt="" className="w-5 h-3.5 rounded-sm shadow" />}
-                    <span className="text-xs font-bold text-white truncate max-w-20">{fb.teamB}</span>
+                    <span className="text-xs font-bold text-gray-900 dark:text-white truncate max-w-20">{fb.teamB}</span>
                   </div>
                 );
               })()}
@@ -202,11 +202,11 @@ export default function ResultPage({
                 const fb = JSON.parse(gen.football!);
                 return (
                   <div className="absolute top-3 right-3 z-10 flex items-center gap-2 rounded-lg bg-black/80 backdrop-blur-sm border border-white/20 px-3 py-2 shadow-xl">
-                    <span className="text-xs font-bold text-white truncate max-w-20">{fb.teamA}</span>
+                    <span className="text-xs font-bold text-gray-900 dark:text-white truncate max-w-20">{fb.teamA}</span>
                     {fb.codeA && <img src={`https://flagcdn.com/w40/${fb.codeA}.png`} alt="" className="w-5 h-3.5 rounded-sm shadow" />}
                     <span className="text-lg font-black text-white tabular-nums bg-white/10 px-2 py-0.5 rounded">{fb.score}</span>
                     {fb.codeB && <img src={`https://flagcdn.com/w40/${fb.codeB}.png`} alt="" className="w-5 h-3.5 rounded-sm shadow" />}
-                    <span className="text-xs font-bold text-white truncate max-w-20">{fb.teamB}</span>
+                    <span className="text-xs font-bold text-gray-900 dark:text-white truncate max-w-20">{fb.teamB}</span>
                   </div>
                 );
               })()}
@@ -224,9 +224,9 @@ export default function ResultPage({
           {/* Event Info */}
           <div className="text-center">
             <p className="text-xs text-cyan-400 uppercase tracking-wide">
-              Step into historic sports moments
+              Step into historic moments
             </p>
-            <h2 className="text-lg font-bold text-white mt-1">{gen.eventTitle || "Historic Moment"}</h2>
+            <h2 className="text-lg font-bold text-gray-900 dark:text-white mt-1">{gen.eventTitle || "Historic Moment"}</h2>
           </div>
 
           {/* Captions */}
@@ -246,7 +246,7 @@ export default function ResultPage({
                 download={`ifiwasthere-${gen.eventId}.${gen.outputVideoUrl ? 'mp4' : 'png'}`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="block w-full text-center rounded-xl bg-white/10 border border-white/10 py-3 text-sm font-medium text-white hover:bg-white/20 transition-colors"
+                className="block w-full text-center rounded-xl bg-white/10 border border-white/10 py-3 text-sm font-medium text-gray-900 dark:text-white hover:bg-white/20 transition-colors"
               >
                 📥 Download {gen.outputVideoUrl ? 'Video' : 'Image'}
               </a>
@@ -258,7 +258,7 @@ export default function ResultPage({
                   const text = encodeURIComponent(selectedCaption);
                   window.open(`https://x.com/intent/tweet?text=${text}`, "_blank");
                 }}
-                className="block w-full text-center rounded-xl bg-black border border-white/20 py-3 text-sm font-medium text-white hover:bg-gray-900 transition-colors"
+                className="block w-full text-center rounded-xl bg-black border border-white/20 py-3 text-sm font-medium text-gray-900 dark:text-white hover:bg-gray-900 transition-colors"
               >
                 🐦 Share on X
               </button>

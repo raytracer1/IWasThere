@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "IfIWasThere — Step into historic sports moments",
+  title: "IfIWasThere — Step into historic moments",
   description:
     "Upload your selfie and see yourself at history's greatest sports moments. AI-powered sports imagination. Free.",
 };
@@ -30,10 +30,10 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased dark`}
     >
-      <body className="min-h-full bg-gray-950 text-white flex flex-col">
+      <body className="min-h-full bg-white dark:bg-gray-950 text-gray-900 dark:text-white flex flex-col">
         <SessionProviderWrapper>
           <Navbar />
-          <main className="flex-1">{children}</main>
+          <main className="flex-1 flex flex-col">{children}</main>
         </SessionProviderWrapper>
       </body>
     </html>

@@ -183,7 +183,7 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
 
   return (
     <div className="rounded-xl border border-white/10 bg-gray-900/60 p-5">
-      <h2 className="text-sm font-semibold text-white mb-4">
+      <h2 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">
         {isEdit ? "Edit Event" : "New Event"}
       </h2>
 
@@ -316,7 +316,7 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
         <button
           onClick={handleSave}
           disabled={saving || !form.title || !form.generationStr}
-          className="rounded-lg bg-cyan-600 px-4 py-2 text-sm font-medium text-white hover:bg-cyan-700 disabled:opacity-50"
+          className="rounded-lg bg-cyan-600 px-4 py-2 text-sm font-medium text-gray-900 dark:text-white hover:bg-cyan-700 disabled:opacity-50"
         >
           {saving ? "Saving..." : isEdit ? "Update" : "Create"}
         </button>

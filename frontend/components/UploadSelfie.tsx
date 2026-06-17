@@ -68,10 +68,10 @@ export function UploadSelfie({ onUpload, uploading, disabled }: UploadSelfieProp
         onDragLeave={() => setDragOver(false)}
         onDrop={handleDrop}
         className={`relative flex flex-col items-center justify-center rounded-xl border-2 border-dashed p-8 transition-colors ${
-          disabled ? "opacity-50 cursor-not-allowed border-white/10" :
+          disabled ? "opacity-50 cursor-not-allowed border-gray-300 dark:border-white/10" :
           dragOver
             ? "border-cyan-500 bg-cyan-500/10"
-            : "border-white/20 hover:border-white/40"
+            : "border-gray-300 dark:border-white/20 hover:border-white/40"
         }`}
       >
         {preview ? (

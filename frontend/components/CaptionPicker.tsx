@@ -19,7 +19,7 @@ export function CaptionPicker({ captions, onSelect, selected }: CaptionPickerPro
 
   return (
     <div className="space-y-2">
-      <h3 className="text-sm font-semibold text-white">📝 Pick your caption</h3>
+      <h3 className="text-sm font-semibold text-gray-900 dark:text-white">📝 Pick your caption</h3>
       {captions.map((caption, i) => (
         <div
           key={i}

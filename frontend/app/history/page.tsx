@@ -27,7 +27,7 @@ export default function HistoryPage() {
   if (!accessToken) {
     return (
       <div className="mx-auto max-w-lg px-4 py-16 text-center">
-        <h1 className="text-xl font-bold text-white mb-4">History</h1>
+        <h1 className="text-xl font-bold text-gray-900 dark:text-white mb-4">History</h1>
         <p className="text-gray-400 mb-4">Sign in to view your generation history.</p>
         <button
           onClick={() => signIn("google")}
@@ -41,7 +41,7 @@ export default function HistoryPage() {
 
   return (
     <div className="mx-auto max-w-lg px-4 py-6 pb-20">
-      <h1 className="text-xl font-bold text-white mb-6">📜 History</h1>
+      <h1 className="text-xl font-bold text-gray-900 dark:text-white mb-6">📜 History</h1>
 
       {loading && <p className="text-gray-400 text-sm">Loading...</p>}
       {error && <p className="text-red-400 text-sm">{error}</p>}
@@ -68,7 +68,7 @@ export default function HistoryPage() {
                 <div className="w-16 h-10 rounded bg-gray-800 shrink-0" />
               )}
               <div className="min-w-0">
-                <p className="text-sm font-medium text-white truncate">
+                <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
                   {gen.eventTitle || "Untitled"}
                 </p>
                 <p className="text-xs text-gray-500 mt-0.5">
