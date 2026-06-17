@@ -10,15 +10,20 @@ const eventsRouter = new Hono<{ Bindings: Bindings }>();
  * GET /events — List active events sorted by created_at DESC.
  * Query: ?category=, ?page=, ?pageSize=
  */
+const DISPLAY_TO_DB: Record<string, string[]> = {
+  sports: ['football', 'basketball', 'tennis', 'athletics', 'cricket', 'boxing', 'american_football', 'other'],
+};
+
 eventsRouter.get('/', async (c) => {
   const db = new D1Helper(c.env.DB);
-  const category = c.req.query('category') || undefined;
+  const raw = c.req.query('category') || undefined;
+  const categories = raw ? (DISPLAY_TO_DB[raw] || [raw]) : undefined;
   const page = parseInt(c.req.query('page') ?? '1', 10);
   const pageSize = parseInt(c.req.query('pageSize') ?? String(DEFAULT_PAGE_SIZE), 10);
   const secret = c.env.AUTH_SECRET ?? 'dev-secret';
   const workerUrl = new URL(c.req.url).origin;
 
-  const { events, total } = await db.getActiveEvents(category, page, pageSize);
+  const { events, total } = await db.getActiveEvents(categories, page, pageSize);
 
   // Sign R2 asset URLs
   const signed = await Promise.all(events.map((ev) => signEventAssetUrls(ev as unknown as Record<string, unknown>, secret, workerUrl, c.env.R2_PUBLIC_URL)));

@@ -96,17 +96,20 @@ export class D1Helper {
   // ─── Events ───────────────────────────────────────────
 
   async getActiveEvents(
-    category?: string,
+    categories?: string[],
     page = 1,
     pageSize = 20
   ): Promise<{ events: Event[]; total: number }> {
     const offset = (page - 1) * pageSize;
-    const catFilter = category ? 'AND category = ?' : '';
-    const params = category ? [category, pageSize, offset] : [pageSize, offset];
+    const catFilter = categories && categories.length > 0
+      ? `AND category IN (${categories.map(() => '?').join(',')})`
+      : '';
+    const catParams = categories ?? [];
+    const params = [...catParams, pageSize, offset];
 
     const countResult = await this.first<{ count: number }>(
       `SELECT COUNT(*) as count FROM events WHERE status = 'active' ${catFilter}`,
-      ...(category ? [category] : [])
+      ...catParams
     );
 
     const rows = await this.all<Record<string, unknown>>(
