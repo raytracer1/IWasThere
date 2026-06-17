@@ -7,19 +7,15 @@ CREATE TABLE events (
   category          TEXT NOT NULL,
   event_type        TEXT,
   scene             TEXT NOT NULL DEFAULT '{}',
-  emotion           TEXT NOT NULL DEFAULT '{}',
   camera            TEXT NOT NULL DEFAULT '{}',
-  user              TEXT NOT NULL DEFAULT '{}',
-  entities          TEXT NOT NULL DEFAULT '{}',
-  moment            TEXT NOT NULL DEFAULT '{}',
   generation        TEXT NOT NULL DEFAULT '{}',
   reference_video   TEXT,
   thumbnail_url     TEXT,
   status            TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'draft', 'archived')),
   created_at        INTEGER NOT NULL DEFAULT (unixepoch())
 );
-CREATE INDEX idx_events_category ON events(category);
-CREATE INDEX idx_events_status ON events(status);
+CREATE INDEX IF NOT EXISTS idx_events_category ON events(category);
+CREATE INDEX IF NOT EXISTS idx_events_status ON events(status);
 CREATE TABLE IF NOT EXISTS generations (
   id              TEXT PRIMARY KEY,
   user_id         TEXT NOT NULL,
@@ -34,6 +30,6 @@ CREATE TABLE IF NOT EXISTS generations (
   created_at      INTEGER NOT NULL DEFAULT (unixepoch()),
   completed_at    INTEGER
 );
-CREATE INDEX idx_generations_user ON generations(user_id);
-CREATE INDEX idx_generations_event ON generations(event_id);
+CREATE INDEX IF NOT EXISTS idx_generations_user ON generations(user_id);
+CREATE INDEX IF NOT EXISTS idx_generations_event ON generations(event_id);
 PRAGMA foreign_keys = ON;

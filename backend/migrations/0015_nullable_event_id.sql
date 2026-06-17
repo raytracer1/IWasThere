@@ -23,8 +23,8 @@ CREATE TABLE generations (
   completed_at    INTEGER
 );
 
-CREATE INDEX idx_generations_user ON generations(user_id);
-CREATE INDEX idx_generations_event ON generations(event_id);
+CREATE INDEX IF NOT EXISTS idx_generations_user ON generations(user_id);
+CREATE INDEX IF NOT EXISTS idx_generations_event ON generations(event_id);
 
 INSERT INTO generations SELECT * FROM generations_old;
 

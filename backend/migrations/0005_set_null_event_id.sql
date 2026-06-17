@@ -26,8 +26,8 @@ DROP TABLE jobs;
 ALTER TABLE jobs_new RENAME TO jobs;
 
 -- 5. Recreate indexes
-CREATE INDEX idx_jobs_user_id ON jobs(user_id);
-CREATE INDEX idx_jobs_status ON jobs(status);
-CREATE INDEX idx_jobs_created_at ON jobs(created_at);
-CREATE INDEX idx_jobs_fal_request_id ON jobs(fal_request_id);
-CREATE INDEX idx_jobs_event_id ON jobs(event_id);
+CREATE INDEX IF NOT EXISTS idx_jobs_user_id ON jobs(user_id);
+CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status);
+CREATE INDEX IF NOT EXISTS idx_jobs_created_at ON jobs(created_at);
+CREATE INDEX IF NOT EXISTS idx_jobs_fal_request_id ON jobs(fal_request_id);
+CREATE INDEX IF NOT EXISTS idx_jobs_event_id ON jobs(event_id);

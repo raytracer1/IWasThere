@@ -32,9 +32,9 @@ CREATE TABLE events (
   created_at        INTEGER NOT NULL DEFAULT (unixepoch())
 );
 
-CREATE INDEX idx_events_category ON events(category);
-CREATE INDEX idx_events_status ON events(status);
-CREATE INDEX idx_events_created_at ON events(created_at);
+CREATE INDEX IF NOT EXISTS idx_events_category ON events(category);
+CREATE INDEX IF NOT EXISTS idx_events_status ON events(status);
+CREATE INDEX IF NOT EXISTS idx_events_created_at ON events(created_at);
 
 INSERT INTO events (id, title, category, event_type, scene, emotion, camera, user, entities, moment, generation, thumbnail_url, status, created_at)
 SELECT object_id, title, category, event_type, scene, emotion, camera, user, entities, moment, generation, thumbnail_url, status, created_at

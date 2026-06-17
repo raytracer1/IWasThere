@@ -158,7 +158,7 @@ export default function CreatePage({
   const categoryIcon = CATEGORY_ICON[event.category] || "🏟️";
   const timePeriod = event.scene?.time_period || "";
   const location = event.scene?.location || "";
-  const momentDesc = event.moment?.description || event.moment?.key_action || "";
+  const momentDesc = event.scene?.description || "";
   const atmosphere = event.scene?.atmosphere || "";
   const isFootball = event.category === "football";
 

@@ -29,8 +29,8 @@ export function compileEventPrompts(event: Event, football?: GenerateRequest['fo
     event: event.title,
     category: event.category,
     location: event.scene?.location || '',
-    moment: event.moment?.description || event.moment?.key_action || event.title,
-    clothing: event.user?.clothing || 'casual wear',
+    moment: event.title,
+    clothing: 'casual wear',
     time_period: event.scene?.time_period || '',
     atmosphere: Array.isArray(event.scene?.atmosphere)
       ? event.scene.atmosphere.join(', ')

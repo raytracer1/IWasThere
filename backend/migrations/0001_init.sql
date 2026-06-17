@@ -12,8 +12,8 @@ CREATE TABLE IF NOT EXISTS users (
   created_at  INTEGER NOT NULL DEFAULT (unixepoch())
 );
 
-CREATE INDEX idx_users_email ON users(email);
-CREATE INDEX idx_users_role ON users(role);
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
 
 -- ─── Hot Events ─────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS events (
@@ -29,9 +29,9 @@ CREATE TABLE IF NOT EXISTS events (
   created_at    INTEGER NOT NULL DEFAULT (unixepoch())
 );
 
-CREATE INDEX idx_events_status ON events(status);
-CREATE INDEX idx_events_category ON events(category);
-CREATE INDEX idx_events_created_at ON events(created_at);
+CREATE INDEX IF NOT EXISTS idx_events_status ON events(status);
+CREATE INDEX IF NOT EXISTS idx_events_category ON events(category);
+CREATE INDEX IF NOT EXISTS idx_events_created_at ON events(created_at);
 
 -- ─── Swap Jobs ──────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS jobs (
@@ -48,10 +48,10 @@ CREATE TABLE IF NOT EXISTS jobs (
   completed_at   INTEGER
 );
 
-CREATE INDEX idx_jobs_user_id ON jobs(user_id);
-CREATE INDEX idx_jobs_status ON jobs(status);
-CREATE INDEX idx_jobs_created_at ON jobs(created_at);
-CREATE INDEX idx_jobs_fal_request_id ON jobs(fal_request_id);
+CREATE INDEX IF NOT EXISTS idx_jobs_user_id ON jobs(user_id);
+CREATE INDEX IF NOT EXISTS idx_jobs_status ON jobs(status);
+CREATE INDEX IF NOT EXISTS idx_jobs_created_at ON jobs(created_at);
+CREATE INDEX IF NOT EXISTS idx_jobs_fal_request_id ON jobs(fal_request_id);
 
 -- ─── Rate Limits ────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS rate_limits (

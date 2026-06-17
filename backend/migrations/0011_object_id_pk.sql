@@ -28,9 +28,9 @@ CREATE TABLE events (
 
 -- 3. Recreate indexes
 CREATE UNIQUE INDEX idx_events_id ON events(id);
-CREATE INDEX idx_events_category ON events(category);
-CREATE INDEX idx_events_status ON events(status);
-CREATE INDEX idx_events_created_at ON events(created_at);
+CREATE INDEX IF NOT EXISTS idx_events_category ON events(category);
+CREATE INDEX IF NOT EXISTS idx_events_status ON events(status);
+CREATE INDEX IF NOT EXISTS idx_events_created_at ON events(created_at);
 
 -- 4. Copy data
 INSERT INTO events (object_id, id, title, category, event_type, scene, emotion, camera, user, entities, moment, generation, thumbnail_url, status, created_at)

@@ -35,14 +35,6 @@ export interface EventScene {
   [key: string]: unknown;
 }
 
-export interface EventEmotion {
-  primary?: string;
-  secondary?: string;
-  intensity?: number | string;
-  description?: string;
-  [key: string]: unknown;
-}
-
 export interface EventCamera {
   angle?: string;
   distance?: string;
@@ -51,40 +43,6 @@ export interface EventCamera {
   style?: string;
   shot_type?: string;
   lens?: string;
-  [key: string]: unknown;
-}
-
-export interface EventUser {
-  clothing?: string;
-  action?: string;
-  position?: string;
-  role?: string;
-  pose?: string;
-  expression?: string;
-  visibility?: string;
-  [key: string]: unknown;
-}
-
-export interface EventEntities {
-  people?: string[];
-  objects?: string[];
-  brands?: string[];
-  sport?: string;
-  competition?: string;
-  team_a?: string;
-  team_b?: string;
-  player?: string;
-  [key: string]: unknown;
-}
-
-export interface EventMoment {
-  key_action?: string;
-  timing?: string;
-  significance?: string;
-  description?: string;
-  minute?: number;
-  score_before?: string;
-  score_after?: string;
   [key: string]: unknown;
 }
 
@@ -101,11 +59,7 @@ export interface Event {
   category: string;
   event_type?: string;
   scene: EventScene;
-  emotion: EventEmotion;
   camera: EventCamera;
-  user: EventUser;
-  entities: EventEntities;
-  moment: EventMoment;
   generation: EventGeneration;
   thumbnailUrl?: string;
   referenceVideo?: string;
@@ -168,13 +122,8 @@ export interface GenerateRequest {
 export interface CreateEventRequest {
   title: string;
   category: string;
-  event_type?: string;
   scene?: Partial<EventScene>;
-  emotion?: Partial<EventEmotion>;
   camera?: Partial<EventCamera>;
-  user?: Partial<EventUser>;
-  entities?: Partial<EventEntities>;
-  moment?: Partial<EventMoment>;
   generation: EventGeneration;
   thumbnailUrl?: string;
   status?: EventStatus;
@@ -183,13 +132,8 @@ export interface CreateEventRequest {
 export interface UpdateEventRequest {
   title?: string;
   category?: string;
-  event_type?: string;
   scene?: Partial<EventScene>;
-  emotion?: Partial<EventEmotion>;
   camera?: Partial<EventCamera>;
-  user?: Partial<EventUser>;
-  entities?: Partial<EventEntities>;
-  moment?: Partial<EventMoment>;
   generation?: Partial<EventGeneration>;
   thumbnailUrl?: string;
   status?: EventStatus;

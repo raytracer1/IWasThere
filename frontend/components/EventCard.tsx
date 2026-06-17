@@ -17,7 +17,7 @@ const CATEGORY_ICON: Record<string, string> = {
 export function EventCard({ event }: { event: Event }) {
   const categoryIcon = CATEGORY_ICON[event.category] || "🏟️";
   const timePeriod = event.scene?.time_period || "";
-  const momentDesc = event.moment?.description || event.moment?.key_action || "";
+  const momentDesc = event.scene?.description || "";
 
   return (
     <Link

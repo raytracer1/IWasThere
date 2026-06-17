@@ -5,11 +5,7 @@ import type {
   Generation,
   GenerationStatus,
   EventScene,
-  EventEmotion,
   EventCamera,
-  EventUser,
-  EventEntities,
-  EventMoment,
   EventGeneration,
 } from '../shared';
 
@@ -127,18 +123,14 @@ export class D1Helper {
 
   async createEvent(event: Omit<Event, 'createdAt'>): Promise<void> {
     await this.run(
-      `INSERT INTO events (id, title, category, event_type, scene, emotion, camera, user, entities, moment, generation, thumbnail_url, reference_video, status, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, unixepoch())`,
+      `INSERT INTO events (id, title, category, event_type, scene, camera, generation, thumbnail_url, reference_video, status, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, unixepoch())`,
       event.id,
       event.title,
       event.category,
       event.event_type ?? null,
       jsonStringify(event.scene),
-      jsonStringify(event.emotion),
       jsonStringify(event.camera),
-      jsonStringify(event.user),
-      jsonStringify(event.entities),
-      jsonStringify(event.moment),
       jsonStringify(event.generation),
       event.thumbnailUrl ?? null,
       event.referenceVideo ?? null,
@@ -151,7 +143,7 @@ export class D1Helper {
     const values: unknown[] = [];
 
     // JSON object columns that need stringification
-    const jsonColumns = new Set(['scene', 'emotion', 'camera', 'user', 'entities', 'moment', 'generation']);
+    const jsonColumns = new Set(['scene', 'camera', 'generation']);
 
     for (const [key, value] of Object.entries(updates)) {
       if (value !== undefined) {
@@ -288,11 +280,7 @@ export class D1Helper {
       category: row.category as string,
       event_type: (row.event_type as string) ?? undefined,
       scene: jsonParse<EventScene>(row.scene as string) ?? {} as EventScene,
-      emotion: jsonParse<EventEmotion>(row.emotion as string) ?? {} as EventEmotion,
       camera: jsonParse<EventCamera>(row.camera as string) ?? {} as EventCamera,
-      user: jsonParse<EventUser>(row.user as string) ?? {} as EventUser,
-      entities: jsonParse<EventEntities>(row.entities as string) ?? {} as EventEntities,
-      moment: jsonParse<EventMoment>(row.moment as string) ?? {} as EventMoment,
       generation: jsonParse<EventGeneration>(row.generation as string) ?? {} as EventGeneration,
       thumbnailUrl: (row.thumbnail_url as string) ?? undefined,
       referenceVideo: (row.reference_video as string) ?? undefined,

@@ -38,9 +38,9 @@ CREATE TABLE events (
 );
 
 -- 3. Create new indexes
-CREATE INDEX idx_events_category ON events(category);
-CREATE INDEX idx_events_status ON events(status);
-CREATE INDEX idx_events_created_at ON events(created_at);
+CREATE INDEX IF NOT EXISTS idx_events_category ON events(category);
+CREATE INDEX IF NOT EXISTS idx_events_status ON events(status);
+CREATE INDEX IF NOT EXISTS idx_events_created_at ON events(created_at);
 
 -- 4. Migrate data: convert old flat columns → new nested JSON structure
 INSERT INTO events (object_id, id, title, category, event_type, scene, emotion, camera, user, entities, moment, generation, thumbnail_url, status, created_at)
