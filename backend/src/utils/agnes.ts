@@ -23,11 +23,13 @@ export async function generateImage(
   imageBase64: string,
   apiKey: string,
   size = '576x1024',
+  negativePrompt?: string,
 ): Promise<string> {
   const body = {
     model: 'agnes-image-2.1-flash',
     prompt,
     size,
+    negative_prompt: negativePrompt || '',
     extra_body: {
       image: [imageBase64],
       response_format: 'url',
@@ -50,6 +52,7 @@ export async function submitVideo(
   frameRate = 24,
   width = 576,
   height = 1024,
+  negativePrompt?: string,
 ): Promise<string> {
   const json = await agnesPost('/videos', {
     model: 'agnes-video-v2.0',
@@ -59,6 +62,7 @@ export async function submitVideo(
     height,
     num_frames: numFrames,
     frame_rate: frameRate,
+    negative_prompt: negativePrompt || '',
   }, apiKey);
 
   const taskId = (json.task_id as string) || (json.id as string);

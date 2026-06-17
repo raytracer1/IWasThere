@@ -68,7 +68,7 @@ generateRouter.post('/', async (c) => {
   try {
     // Step 1: Generate image with Agnes (base64 → image URL on Agnes servers)
     const size = aspectToSize(event.aspectRatio);
-    const generatedImageUrl = await generateImage(imagePrompt, selfieBase64, apiKey, size);
+    const generatedImageUrl = await generateImage(imagePrompt, selfieBase64, apiKey, size, event.generation?.negative_prompt);
     console.log(`[generate] Image done: ${generatedImageUrl}`);
 
     // Store the image URL directly
@@ -77,7 +77,7 @@ generateRouter.post('/', async (c) => {
     // Step 2: Submit video with the Agnes-hosted image URL
     console.log(`[generate] Step 2: Video`);
     const [w, h] = size.split('x').map(Number);
-    const taskId = await submitVideo(imagePrompt, generatedImageUrl, apiKey, 121, 24, w, h);
+    const taskId = await submitVideo(imagePrompt, generatedImageUrl, apiKey, 121, 24, w, h, event.generation?.negative_prompt);
     console.log(`[generate] Video task: ${taskId}`);
 
     await db.updateGeneration(generationId, { agnesJobId: taskId });
