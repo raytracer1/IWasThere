@@ -156,6 +156,13 @@ export interface PaginatedResponse<T> {
 export interface GenerateRequest {
   eventId: string;
   imageBase64: string;
+  football?: {
+    teamA: string;
+    teamB: string;
+    score: string;
+    mood: string;
+    userTeam?: string;
+  };
 }
 
 // ─── Constants ──────────────────────────────────────────

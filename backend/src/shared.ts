@@ -156,6 +156,13 @@ export interface GenerationWithEvent extends Generation {
 export interface GenerateRequest {
   eventId: string;
   imageKey: string;
+  football?: {
+    teamA: string;
+    teamB: string;
+    score: string;     // "3-2"
+    mood: string;      // "euphoria"
+    userTeam?: string; // team whose jersey the user wears
+  };
 }
 
 export interface CreateEventRequest {

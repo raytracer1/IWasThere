@@ -14,8 +14,8 @@ generateRouter.post('/', async (c) => {
     return c.json({ success: false, error: 'Agnes AI not configured' }, 500);
   }
 
-  const body = await c.req.json<{ eventId: string; imageBase64: string }>();
-  const { eventId, imageBase64 } = body;
+  const body = await c.req.json<{ eventId: string; imageBase64: string; football?: { teamA: string; teamB: string; score: string; mood: string } }>();
+  const { eventId, imageBase64, football } = body;
 
   if (!eventId || !imageBase64) {
     return c.json({ success: false, error: 'eventId and imageBase64 are required' }, 400);
@@ -30,7 +30,7 @@ generateRouter.post('/', async (c) => {
     return c.json({ success: false, error: 'Event not found' }, 404);
   }
 
-  const { imagePrompt } = compileEventPrompts(event);
+  const { imagePrompt } = compileEventPrompts(event, football);
   const generationId = crypto.randomUUID();
 
   await db.createGeneration({
