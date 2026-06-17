@@ -1,10 +1,12 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useSession, signIn } from "next-auth/react";
 import { fetchGenerations } from "@/lib/api";
 import type { Generation } from "@/lib/types";
+
+const PAGE_SIZE = 10;
 
 export default function HistoryPage() {
   const router = useRouter();
@@ -13,16 +15,30 @@ export default function HistoryPage() {
   const [generations, setGenerations] = useState<Generation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+
+  const load = useCallback(async (p: number) => {
+    if (!accessToken) return;
+    setLoading(true);
+    try {
+      const res = await fetchGenerations(accessToken, p, PAGE_SIZE);
+      if (res.success) {
+        setGenerations(res.data);
+        setTotal((res as Record<string, unknown>).total as number);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load");
+    } finally {
+      setLoading(false);
+    }
+  }, [accessToken]);
 
   useEffect(() => {
-    if (!accessToken) { setLoading(false); return; }
-    fetchGenerations(accessToken)
-      .then((res) => {
-        if (res.success) setGenerations(res.data);
-      })
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
-  }, [accessToken]);
+    load(page);
+  }, [load, page]);
+
+  const totalPages = Math.ceil(total / PAGE_SIZE);
 
   if (!accessToken) {
     return (
@@ -43,8 +59,7 @@ export default function HistoryPage() {
     <div className="mx-auto max-w-lg px-4 py-6 pb-20">
       <h1 className="text-xl font-bold text-gray-900 dark:text-white mb-6">📜 History</h1>
 
-      {loading && <p className="text-gray-400 text-sm">Loading...</p>}
-      {error && <p className="text-red-400 text-sm">{error}</p>}
+      {error && <p className="text-red-400 text-sm mb-4">{error}</p>}
 
       {!loading && generations.length === 0 && (
         <p className="text-gray-500 text-sm">No generations yet.</p>
@@ -55,7 +70,7 @@ export default function HistoryPage() {
           <button
             key={gen.id}
             onClick={() => router.push(`/result/${gen.id}`)}
-            className="w-full text-left rounded-xl bg-gray-900/60 border border-white/10 p-4 hover:border-cyan-500/30 transition-colors"
+            className="w-full text-left rounded-xl bg-gray-900/60 border border-gray-300 dark:border-white/10 p-4 hover:border-cyan-500/30 transition-colors"
           >
             <div className="flex items-center gap-3">
               {gen.eventThumbnail ? (
@@ -82,6 +97,26 @@ export default function HistoryPage() {
           </button>
         ))}
       </div>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 mt-6">
+          <button
+            onClick={() => setPage((p) => Math.max(1, p - 1))}
+            disabled={page <= 1}
+            className="px-3 py-1.5 rounded-lg text-xs bg-gray-800 border border-gray-300 dark:border-white/10 text-gray-400 disabled:opacity-30 hover:text-white transition-colors"
+          >
+            ← Prev
+          </button>
+          <span className="text-xs text-gray-400">{page} / {totalPages}</span>
+          <button
+            onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+            disabled={page >= totalPages}
+            className="px-3 py-1.5 rounded-lg text-xs bg-gray-800 border border-gray-300 dark:border-white/10 text-gray-400 disabled:opacity-30 hover:text-white transition-colors"
+          >
+            Next →
+          </button>
+        </div>
+      )}
     </div>
   );
 }
