@@ -187,8 +187,8 @@ export default function ResultPage({
                 );
               })()}
 
-                <div className="absolute bottom-3 right-3 text-xs text-white/50 font-medium drop-shadow-lg">
-                  AI-Generated
+                <div className="absolute top-3 left-3 text-[10px] text-white/70 font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
+                  IfIWasThere.AI
                 </div>
               </>
             ) : gen.outputImageUrl ? (
@@ -210,8 +210,8 @@ export default function ResultPage({
                   </div>
                 );
               })()}
-                <div className="absolute bottom-3 right-3 text-xs text-white/50 font-medium drop-shadow-lg">
-                  AI-Generated
+                <div className="absolute top-3 left-3 text-[10px] text-white/70 font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
+                  IfIWasThere.AI
                 </div>
               </>
             ) : (
