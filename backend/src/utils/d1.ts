@@ -81,7 +81,14 @@ export class D1Helper {
 
   async deductCredits(userId: string, amount: number): Promise<void> {
     await this.run(
-      `UPDATE users SET credits = MAX(0, credits - ?) WHERE id = ?`,
+      `UPDATE users SET credits = ROUND(MAX(0, credits - ?), 2) WHERE id = ?`,
+      amount, userId
+    );
+  }
+
+  async refundCredits(userId: string, amount: number): Promise<void> {
+    await this.run(
+      `UPDATE users SET credits = ROUND(credits + ?, 2) WHERE id = ?`,
       amount, userId
     );
   }

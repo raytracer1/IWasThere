@@ -17,7 +17,7 @@ export const useUserStore = create<UserState>((set) => ({
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
-      if (data.success) set({ credits: data.data.credits });
+      if (data.success) set({ credits: Math.round(data.data.credits * 100) / 100 });
     } catch {}
   },
 }));

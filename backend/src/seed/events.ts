@@ -32,11 +32,11 @@ export const SEED_EVENTS: Omit<Event, 'createdAt'>[] = [
       lighting: 'stadium_floodlights',
     },
     generation: {
-      prompt_template: `Place this person naturally into the celebration crowd at MetLife Stadium after the 2026 World Cup Final. The person is wearing a {user_team} jersey, arms raised, face showing {mood}. Scoreboard visible showing "{team_a} {score} {team_b}".
+      prompt_template: `Place this person naturally into the crowd at MetLife Stadium during the 2026 World Cup Final. The scoreboard shows "{team_a} {score} {team_b}". The person is wearing a {user_team} jersey.
 
-The winning team's fans around them are in a state of pure ecstasy — hugging strangers, waving flags, phones out recording history. Golden confetti raining down, fireworks in the night sky, the World Cup trophy gleaming on the podium.
+The stadium is electric — flags waving, the iconic MetLife Stadium lights cutting through the night. The World Cup trophy visible in the distance.
 
-The person should look genuinely part of this historic celebration — same stadium floodlights, same warm golden lighting, same emotional intensity.
+The person should look genuinely part of this historic moment — same stadium floodlights, same dramatic lighting, same raw intensity as the crowd around them.
 
 Visual style: Ultra-realistic DSLR sports photography, World Cup broadcast aesthetic, shallow depth of field, cinematic framing, 8K, Canon 35mm. Keep facial features intact. No text or logos.`,
       negative_prompt: 'blurry face, duplicate person, extra fingers, cropped face, distorted body, low quality, cartoon, painting, illustration, watermark, text, logo, player on field',

@@ -60,7 +60,12 @@ export function compileEventPrompts(event: Event, football?: GenerateRequest['fo
       parts.push(`The person is a passionate ${jerseyTeam} supporter, wearing a ${jerseyTeam} ${jerseyType} jersey.`);
     }
     if (football.mood) {
-      const moodDesc: Record<string, string> = {
+      const positiveMoods = new Set(['euphoria', 'pride', 'awe']);
+      const isPositive = positiveMoods.has(football.mood);
+      const userTeam = football.userTeam || football.teamA;
+      const otherTeam = userTeam === football.teamA ? football.teamB : football.teamA;
+
+      const userMoodDesc: Record<string, string> = {
         euphoria: 'The person is in pure euphoria — face showing ecstatic joy, arms raised high, screaming in celebration, tears streaming.',
         shock: 'The person is in complete shock — face frozen in disbelief, hands on head, mouth wide open, stunned by what just happened.',
         tension: 'The person is tense and anxious — biting nails, hands clasped tight, intense focused expression, barely able to watch.',
@@ -68,10 +73,15 @@ export function compileEventPrompts(event: Event, football?: GenerateRequest['fo
         nervous: 'The person is extremely nervous — hands over face, peeking through fingers, tense hunched body language, heart racing.',
         awe: 'The person is in awe — eyes wide, mouth slightly open, taking in an impossible moment, speechless in wonder.',
       };
-      const desc = moodDesc[football.mood];
+      const desc = userMoodDesc[football.mood];
       if (desc) {
         parts.push(desc);
-        parts.push(`The entire crowd around them shares this emotion.`);
+        // Describe contrasting crowd reactions
+        if (isPositive) {
+          parts.push(`Around them, ${userTeam} fans are going absolutely wild with the same joy — hugging strangers, flags waving, pure ecstasy. Across the stadium, ${otherTeam} fans sit devastated — heads in hands, tears, stunned silence, heartbreak.`);
+        } else {
+          parts.push(`Around them, ${userTeam} fans share the same anguish — heads in hands, stunned silence, disbelief. Across the stadium, ${otherTeam} fans are celebrating wildly — arms raised, jumping, hugging, pure joy.`);
+        }
       }
     }
     if (parts.length > 0) {

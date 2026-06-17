@@ -92,6 +92,10 @@ generateRouter.post('/', async (c) => {
   } catch (err) {
     console.error(`[generate] Failed:`, err);
     await db.updateGenerationStatus(generationId, 'failed', undefined, err instanceof Error ? err.message : 'Unknown error');
+    // Refund credits
+    if (price > 0 && dbUser) {
+      await db.refundCredits(dbUser.id, price);
+    }
     return c.json({ success: false, error: err instanceof Error ? err.message : 'Generation failed' }, 500);
   }
 });
