@@ -163,7 +163,9 @@ export default function CreatePage({
   const categoryIcon = CATEGORY_ICON[event.category] || "🏟️";
   const timePeriod = event.scene?.time_period || "";
   const momentDesc = event.scene?.description || "";
-  const atmosphere = event.scene?.atmosphere || "";
+  const atmosphere = Array.isArray(event.scene?.atmosphere)
+    ? event.scene.atmosphere.join(', ')
+    : (event.scene?.atmosphere as string) || "";
   const isFootball = event.category === "football";
 
   return (

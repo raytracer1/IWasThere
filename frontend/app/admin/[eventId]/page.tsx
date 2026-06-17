@@ -86,7 +86,7 @@ export default function AdminEditPage({
 
   return (
     <AuthGuard>
-      <div className="mx-auto max-w-4xl px-4 py-6">
+      <div className="mx-auto w-full max-w-4xl px-4 py-6">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-xl font-bold text-gray-900 dark:text-white">⚙️ Edit Event</h1>
         </div>

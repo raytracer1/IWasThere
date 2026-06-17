@@ -298,17 +298,17 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
         <div className="col-span-2 sm:col-span-1">
           <label className="text-xs text-gray-400 mb-1 block">scene</label>
           <textarea value={form.sceneStr} onChange={(e) => setForm((prev) => ({ ...prev, sceneStr: e.target.value }))}
-            rows={4} className="w-full rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-xs text-white font-mono" />
+            rows={6} className="w-full rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-white font-mono" />
         </div>
         <div className="col-span-2 sm:col-span-1">
           <label className="text-xs text-gray-400 mb-1 block">camera</label>
           <textarea value={form.cameraStr} onChange={(e) => setForm((prev) => ({ ...prev, cameraStr: e.target.value }))}
-            rows={4} className="w-full rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-xs text-white font-mono" />
+            rows={6} className="w-full rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-white font-mono" />
         </div>
         <div className="col-span-2">
           <label className="text-xs text-gray-400 mb-1 block">generation</label>
           <textarea value={form.generationStr} onChange={(e) => setForm((prev) => ({ ...prev, generationStr: e.target.value }))}
-            rows={6} className="w-full rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-xs text-white font-mono" />
+            rows={10} className="w-full rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-white font-mono" />
         </div>
       </div>
 
