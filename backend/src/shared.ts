@@ -81,6 +81,7 @@ export interface Generation {
   errorMessage?: string;
   captions?: string;          // JSON string
   selectedCaption?: string;
+  football?: string;          // JSON string of football overlay data
   createdAt: number;
   completedAt?: number;
 }

@@ -169,7 +169,22 @@ export default function ResultPage({
                   playsInline
                   className="w-full max-h-[60vh] object-contain"
                 />
-                <div className="absolute bottom-3 right-3 text-xs text-white/80 font-medium drop-shadow-lg">
+
+                {/* TV Broadcast Scoreboard Overlay */}
+                {(gen.football && gen.eventCategory === 'football') && (() => {
+                const fb = JSON.parse(gen.football!);
+                return (
+                  <div className="absolute top-3 right-3 z-10 flex items-center gap-2 rounded-lg bg-black/80 backdrop-blur-sm border border-white/20 px-3 py-2 shadow-xl">
+                    <span className="text-xs font-bold text-white truncate max-w-20">{fb.teamA}</span>
+                    {fb.codeA && <img src={`https://flagcdn.com/w40/${fb.codeA}.png`} alt="" className="w-5 h-3.5 rounded-sm shadow" />}
+                    <span className="text-lg font-black text-white tabular-nums bg-white/10 px-2 py-0.5 rounded">{fb.score}</span>
+                    {fb.codeB && <img src={`https://flagcdn.com/w40/${fb.codeB}.png`} alt="" className="w-5 h-3.5 rounded-sm shadow" />}
+                    <span className="text-xs font-bold text-white truncate max-w-20">{fb.teamB}</span>
+                  </div>
+                );
+              })()}
+
+                <div className="absolute bottom-3 right-3 text-xs text-white/50 font-medium drop-shadow-lg">
                   AI-Generated
                 </div>
               </>
@@ -180,7 +195,19 @@ export default function ResultPage({
                   alt="Your AI-generated sports moment"
                   className="w-full max-h-[60vh] object-contain"
                 />
-                <div className="absolute bottom-3 right-3 text-xs text-white/80 font-medium drop-shadow-lg">
+                {(gen.football && gen.eventCategory === 'football') && (() => {
+                const fb = JSON.parse(gen.football!);
+                return (
+                  <div className="absolute top-3 right-3 z-10 flex items-center gap-2 rounded-lg bg-black/80 backdrop-blur-sm border border-white/20 px-3 py-2 shadow-xl">
+                    <span className="text-xs font-bold text-white truncate max-w-20">{fb.teamA}</span>
+                    {fb.codeA && <img src={`https://flagcdn.com/w40/${fb.codeA}.png`} alt="" className="w-5 h-3.5 rounded-sm shadow" />}
+                    <span className="text-lg font-black text-white tabular-nums bg-white/10 px-2 py-0.5 rounded">{fb.score}</span>
+                    {fb.codeB && <img src={`https://flagcdn.com/w40/${fb.codeB}.png`} alt="" className="w-5 h-3.5 rounded-sm shadow" />}
+                    <span className="text-xs font-bold text-white truncate max-w-20">{fb.teamB}</span>
+                  </div>
+                );
+              })()}
+                <div className="absolute bottom-3 right-3 text-xs text-white/50 font-medium drop-shadow-lg">
                   AI-Generated
                 </div>
               </>

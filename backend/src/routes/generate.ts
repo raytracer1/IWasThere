@@ -39,6 +39,7 @@ generateRouter.post('/', async (c) => {
     eventId,
     inputImage: 'base64-direct',
     status: 'processing',
+    football: football ? JSON.stringify(football) : undefined,
   });
 
   console.log(`[generate] Step 1: Image for ${generationId}`);

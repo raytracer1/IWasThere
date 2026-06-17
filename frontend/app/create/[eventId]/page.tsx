@@ -118,9 +118,11 @@ export default function CreatePage({
     setGenerating(true);
     setGenError(null);
     try {
+      const teamAInfo = WORLD_CUP_TEAMS.find(t => t.name === teamA);
+      const teamBInfo = WORLD_CUP_TEAMS.find(t => t.name === teamB);
       const football =
         event?.category === "football" && teamA && teamB && scoreA !== null && scoreB !== null
-          ? { teamA, teamB, score: `${scoreA}-${scoreB}`, mood, userTeam: userTeam || teamA }
+          ? { teamA, teamB, score: `${scoreA}-${scoreB}`, mood, userTeam: userTeam || teamA, codeA: teamAInfo?.code || '', codeB: teamBInfo?.code || '' }
           : undefined;
 
       const res = await triggerGenerate({ eventId, imageBase64, football });

@@ -89,6 +89,7 @@ export interface Generation {
   eventTitle?: string;
   eventCategory?: string;
   eventThumbnail?: string;
+  football?: string;  // JSON: { teamA, teamB, score, mood, userTeam }
 }
 
 // ─── API Response Wrappers ──────────────────────────────

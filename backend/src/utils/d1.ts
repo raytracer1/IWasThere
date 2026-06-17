@@ -186,8 +186,8 @@ export class D1Helper {
 
   async createGeneration(gen: Omit<Generation, 'createdAt' | 'completedAt'>): Promise<void> {
     await this.run(
-      `INSERT INTO generations (id, user_id, event_id, input_image, output_image, agnes_job_id, status, error_message, captions, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, unixepoch())`,
+      `INSERT INTO generations (id, user_id, event_id, input_image, output_image, agnes_job_id, status, error_message, captions, football, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, unixepoch())`,
       gen.id,
       gen.userId,
       gen.eventId,
@@ -196,13 +196,16 @@ export class D1Helper {
       gen.agnesJobId ?? null,
       gen.status,
       gen.errorMessage ?? null,
-      gen.captions ?? null
+      gen.captions ?? null,
+      gen.football ?? null
     );
   }
 
   async getGenerationById(id: string): Promise<Generation | null> {
     const row = await this.first<Record<string, unknown>>(
-      'SELECT * FROM generations WHERE id = ?',
+      `SELECT g.*, e.title as event_title, e.category as event_category, e.thumbnail_url as event_thumbnail
+       FROM generations g LEFT JOIN events e ON g.event_id = e.id
+       WHERE g.id = ?`,
       id
     );
     return row ? this.mapGeneration(row) : null;
@@ -313,6 +316,7 @@ export class D1Helper {
       errorMessage: (row.error_message as string) ?? undefined,
       captions: (row.captions as string) ?? undefined,
       selectedCaption: (row.selected_caption as string) ?? undefined,
+      football: (row.football as string) ?? undefined,
       createdAt: row.created_at as number,
       completedAt: (row.completed_at as number) ?? undefined,
       // Joined fields
