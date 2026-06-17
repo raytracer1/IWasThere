@@ -53,6 +53,53 @@ function flagUrl(code: string) {
   return `https://flagcdn.com/w80/${code}.png`;
 }
 
+function TeamPicker({ value, onChange, teams, placeholder }: {
+  value: string;
+  onChange: (v: string) => void;
+  teams: { name: string; code: string }[];
+  placeholder: string;
+}) {
+  const [open, setOpen] = useState(false);
+  const selected = teams.find(t => t.name === value);
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen(!open)}
+        className="w-full rounded-lg bg-gray-800 border border-gray-300 dark:border-white/10 px-4 py-2.5 text-sm text-white flex items-center gap-2"
+      >
+        {selected ? (
+          <>
+            <img src={flagUrl(selected.code)} alt="" className="w-5 h-3.5 rounded-sm shrink-0" />
+            <span className="truncate">{selected.name}</span>
+          </>
+        ) : (
+          <span className="text-gray-500">{placeholder}</span>
+        )}
+      </button>
+      {open && (
+        <>
+          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
+          <div className="absolute bottom-full left-0 right-0 mb-1 z-20 max-h-48 overflow-y-auto rounded-lg bg-gray-800 border border-gray-300 dark:border-white/10 shadow-xl">
+            {teams.map(t => (
+              <button
+                key={t.name}
+                type="button"
+                onClick={() => { onChange(t.name); setOpen(false); }}
+                className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white hover:bg-gray-700 transition-colors"
+              >
+                <img src={flagUrl(t.code)} alt="" className="w-5 h-3.5 rounded-sm shrink-0" />
+                <span className="truncate">{t.name}</span>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 const MOODS: { value: string; label: string; emoji: string }[] = [
   { value: "euphoria", label: "Euphoria", emoji: "😄" },
   { value: "shock", label: "Shock", emoji: "😱" },
@@ -207,42 +254,30 @@ export default function CreatePage({
             ⚽ Customize Your Match
           </h2>
 
-          {/* Live Scoreboard */}
+          {/* Live Scoreboard Display */}
           <div className="rounded-xl bg-gradient-to-b from-gray-800 to-gray-900 border border-gray-300 dark:border-white/10 overflow-hidden mb-4">
-            {/* Top bar — league label */}
             <div className="bg-gray-800/50 border-b border-gray-200 dark:border-white/5 px-4 py-1.5 flex items-center justify-center gap-2">
               <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
               <span className="text-xs text-gray-400 uppercase tracking-widest">Live</span>
             </div>
-
-            {/* Score Row */}
             <div className="flex items-center justify-center px-4 py-5 gap-3">
-              {/* Team A */}
               <div className="flex-1 flex flex-col items-center gap-2 min-w-0">
                 {teamA ? (() => { const t = WORLD_CUP_TEAMS.find(t => t.name === teamA); return (<>
                   <img src={flagUrl(t!.code)} alt={teamA} className="w-10 h-7 rounded shadow-md object-cover" />
-                  <span className="text-sm font-bold text-gray-900 dark:text-white text-center leading-tight truncate max-w-full">{teamA}</span>
+                  <span className="text-sm font-bold text-white text-center leading-tight truncate max-w-full">{teamA}</span>
                 </>); })() : (
                   <span className="text-xs text-gray-600">Team A</span>
                 )}
               </div>
-
-              {/* Score — big numbers */}
               <div className="shrink-0 flex items-center gap-1.5">
-                <span className="text-4xl font-black text-white tabular-nums w-12 text-center">
-                  {scoreA ?? "-"}
-                </span>
+                <span className="text-4xl font-black text-white tabular-nums w-12 text-center">{scoreA ?? "-"}</span>
                 <span className="text-2xl text-gray-500 font-light">:</span>
-                <span className="text-4xl font-black text-white tabular-nums w-12 text-center">
-                  {scoreB ?? "-"}
-                </span>
+                <span className="text-4xl font-black text-white tabular-nums w-12 text-center">{scoreB ?? "-"}</span>
               </div>
-
-              {/* Team B */}
               <div className="flex-1 flex flex-col items-center gap-2 min-w-0">
                 {teamB ? (() => { const t = WORLD_CUP_TEAMS.find(t => t.name === teamB); return (<>
                   <img src={flagUrl(t!.code)} alt={teamB} className="w-10 h-7 rounded shadow-md object-cover" />
-                  <span className="text-sm font-bold text-gray-900 dark:text-white text-center leading-tight truncate max-w-full">{teamB}</span>
+                  <span className="text-sm font-bold text-white text-center leading-tight truncate max-w-full">{teamB}</span>
                 </>); })() : (
                   <span className="text-xs text-gray-600">Team B</span>
                 )}
@@ -254,49 +289,19 @@ export default function CreatePage({
           <div className="flex items-end justify-center gap-3 mb-4">
             <div className="flex-1">
               <label className="text-xs text-gray-400 mb-1 block">Team A</label>
-              <select
-                value={teamA}
-                onChange={(e) => setTeamA(e.target.value)}
-                className="w-full rounded-lg bg-gray-800 border border-gray-300 dark:border-white/10 px-2 py-2 text-sm text-white"
-              >
-                <option value="">Select team...</option>
-                {WORLD_CUP_TEAMS.map((t) => (
-                  <option key={t.name} value={t.name}>{t.name}</option>
-                ))}
-              </select>
+              <TeamPicker value={teamA} onChange={setTeamA} teams={WORLD_CUP_TEAMS} placeholder="Select team..." />
             </div>
-
             <div className="shrink-0 text-center">
               <label className="text-xs text-gray-400 mb-1 block">Score</label>
               <div className="flex items-center gap-1">
-                <input type="number" min={0} max={99}
-                  value={scoreA ?? ""}
-                  onChange={(e) => setScoreA(e.target.value === "" ? null : parseInt(e.target.value))}
-                  placeholder="0"
-                  className="w-11 rounded-lg bg-gray-800 border border-gray-300 dark:border-white/10 px-0 py-2 text-center text-sm text-white"
-                />
+                <input type="number" min={0} max={99} value={scoreA ?? ""} onChange={(e) => setScoreA(e.target.value === "" ? null : parseInt(e.target.value))} placeholder="0" className="w-11 rounded-lg bg-gray-800 border border-gray-300 dark:border-white/10 px-0 py-2 text-center text-sm text-white" />
                 <span className="text-gray-500">:</span>
-                <input type="number" min={0} max={99}
-                  value={scoreB ?? ""}
-                  onChange={(e) => setScoreB(e.target.value === "" ? null : parseInt(e.target.value))}
-                  placeholder="0"
-                  className="w-11 rounded-lg bg-gray-800 border border-gray-300 dark:border-white/10 px-0 py-2 text-center text-sm text-white"
-                />
+                <input type="number" min={0} max={99} value={scoreB ?? ""} onChange={(e) => setScoreB(e.target.value === "" ? null : parseInt(e.target.value))} placeholder="0" className="w-11 rounded-lg bg-gray-800 border border-gray-300 dark:border-white/10 px-0 py-2 text-center text-sm text-white" />
               </div>
             </div>
-
             <div className="flex-1">
               <label className="text-xs text-gray-400 mb-1 block">Team B</label>
-              <select
-                value={teamB}
-                onChange={(e) => setTeamB(e.target.value)}
-                className="w-full rounded-lg bg-gray-800 border border-gray-300 dark:border-white/10 px-2 py-2 text-sm text-white"
-              >
-                <option value="">Select team...</option>
-                {WORLD_CUP_TEAMS.map((t) => (
-                  <option key={t.name} value={t.name}>{t.name}</option>
-                ))}
-              </select>
+              <TeamPicker value={teamB} onChange={setTeamB} teams={WORLD_CUP_TEAMS} placeholder="Select team..." />
             </div>
           </div>
 
