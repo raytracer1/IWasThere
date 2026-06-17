@@ -205,8 +205,8 @@ export class D1Helper {
 
   async createGeneration(gen: Omit<Generation, 'createdAt' | 'completedAt'>): Promise<void> {
     await this.run(
-      `INSERT INTO generations (id, user_id, event_id, input_image, output_image, output_video, agnes_job_id, status, error_message, captions, football, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, unixepoch())`,
+      `INSERT INTO generations (id, user_id, event_id, input_image, output_image, output_video, agnes_job_id, status, error_message, captions, football, retry_image, retry_video, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, unixepoch())`,
       gen.id,
       gen.userId,
       gen.eventId,
@@ -217,7 +217,9 @@ export class D1Helper {
       gen.status,
       gen.errorMessage ?? null,
       gen.captions ?? null,
-      gen.football ?? null
+      gen.football ?? null,
+      gen.retryImage ?? 0,
+      gen.retryVideo ?? 0
     );
   }
 
@@ -347,6 +349,8 @@ export class D1Helper {
       captions: (row.captions as string) ?? undefined,
       selectedCaption: (row.selected_caption as string) ?? undefined,
       football: (row.football as string) ?? undefined,
+      retryImage: (row.retry_image as number) ?? 0,
+      retryVideo: (row.retry_video as number) ?? 0,
       createdAt: row.created_at as number,
       completedAt: (row.completed_at as number) ?? undefined,
       // Joined fields

@@ -64,33 +64,51 @@ generateRouter.post('/', async (c) => {
     football: football ? JSON.stringify(football) : undefined,
   });
 
-  console.log(`[generate] Step 1: Image for ${generationId}`);
+  const MAX_RETRIES = 3;
+  const size = aspectToSize(event.aspectRatio);
+  const [w, h] = size.split('x').map(Number);
+  let generatedImageUrl: string | null = null;
+  let retries = 0;
 
-  try {
-    // Step 1: Generate image with Agnes (base64 → image URL on Agnes servers)
-    const size = aspectToSize(event.aspectRatio);
-    const generatedImageUrl = await generateImage(imagePrompt, selfieBase64, apiKey, size, event.generation?.negative_prompt);
-    console.log(`[generate] Image done: ${generatedImageUrl}`);
+  // ─── Step 1: Generate image (with retry) ────────────────
+  while (retries < MAX_RETRIES) {
+    try {
+      console.log(`[generate] Step 1: Image attempt ${retries + 1}/${MAX_RETRIES} for ${generationId}`);
+      generatedImageUrl = await generateImage(imagePrompt, selfieBase64, apiKey, size, event.generation?.negative_prompt);
+      console.log(`[generate] Image done: ${generatedImageUrl}`);
+      await db.updateGeneration(generationId, { outputImage: generatedImageUrl });
+      break;
+    } catch (err) {
+      retries++;
+      console.error(`[generate] Image attempt ${retries} failed:`, String(err));
+      if (retries >= MAX_RETRIES) {
+        await db.updateGeneration(generationId, { status: 'failed', retryImage: retries, errorMessage: String(err) });
+        return c.json({ success: false, error: 'Image generation failed after 3 attempts' }, 500);
+      }
+      await db.updateGeneration(generationId, { retryImage: retries });
+      await new Promise(r => setTimeout(r, 2000)); // wait 2s before retry
+    }
+  }
 
-    // Store the image URL directly
-    await db.updateGeneration(generationId, { outputImage: generatedImageUrl });
-
-    // Step 2: Submit video with the Agnes-hosted image URL
-    console.log(`[generate] Step 2: Video`);
-    const [w, h] = size.split('x').map(Number);
-    const taskId = await submitVideo(imagePrompt, generatedImageUrl, apiKey, 121, 24, w, h, event.generation?.negative_prompt);
-    console.log(`[generate] Video task: ${taskId}`);
-
-    await db.updateGeneration(generationId, { agnesJobId: taskId });
-
-    return c.json({
-      success: true,
-      data: { generationId, status: 'processing' },
-    });
-  } catch (err) {
-    console.error(`[generate] Failed:`, err);
-    try { await db.updateGenerationStatus(generationId, 'failed', undefined, err instanceof Error ? err.message : 'Unknown error'); } catch {}
-    return c.json({ success: false, error: err instanceof Error ? err.message : 'Generation failed' }, 500);
+  // ─── Step 2: Submit video (with retry) ──────────────────
+  retries = 0;
+  while (retries < MAX_RETRIES) {
+    try {
+      console.log(`[generate] Step 2: Video attempt ${retries + 1}/${MAX_RETRIES}`);
+      const taskId = await submitVideo(imagePrompt, generatedImageUrl!, apiKey, 121, 24, w, h, event.generation?.negative_prompt);
+      console.log(`[generate] Video task: ${taskId}`);
+      await db.updateGeneration(generationId, { agnesJobId: taskId });
+      return c.json({ success: true, data: { generationId, status: 'processing' } });
+    } catch (err) {
+      retries++;
+      console.error(`[generate] Video attempt ${retries} failed:`, String(err));
+      if (retries >= MAX_RETRIES) {
+        await db.updateGeneration(generationId, { status: 'failed', retryVideo: retries, errorMessage: String(err) });
+        return c.json({ success: false, error: 'Video generation failed after 3 attempts' }, 500);
+      }
+      await db.updateGeneration(generationId, { retryVideo: retries });
+      await new Promise(r => setTimeout(r, 2000));
+    }
   }
 });
 

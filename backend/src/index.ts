@@ -137,7 +137,9 @@ app.notFound((c) => {
 
 import { D1Helper } from './utils/d1';
 import { deleteFromR2 } from './utils/r2';
-import { pollVideo } from './utils/agnes';
+import { pollVideo, submitVideo } from './utils/agnes';
+import { compileEventPrompts } from './utils/promptBuilder';
+import type { GenerateRequest } from './shared';
 
 async function pollGenerations(env: Bindings) {
   const db = new D1Helper(env.DB);
@@ -164,8 +166,35 @@ async function pollGenerations(env: Bindings) {
         } catch {}
       }
     } catch (err) {
-      console.error(`[cron] Failed: ${gen.id}`, String(err));
-      await db.updateGenerationStatus(gen.id, 'failed', undefined, String(err));
+      const msg = String(err);
+      console.error(`[cron] Poll error: ${gen.id}`, msg);
+      const retries = (gen.retryVideo ?? 0) + 1;
+
+      if (msg.includes('Agnes video failed')) {
+        // Re‑submit the video with a new Agnes task
+        if (retries < 3 && gen.outputImage) {
+          try {
+            const event = await db.getEventById(gen.eventId);
+            const football: GenerateRequest['football'] = gen.football ? JSON.parse(gen.football) : undefined;
+            const { imagePrompt } = compileEventPrompts(event!, football);
+            const ratio = event?.aspectRatio || '9:16';
+            const sizeMap: Record<string, string> = { '9:16': '720x1280', '16:9': '1280x720', '1:1': '720x720' };
+            const [w, h] = (sizeMap[ratio] || '720x1280').split('x').map(Number);
+            const newTaskId = await submitVideo(imagePrompt, gen.outputImage, apiKey, 121, 24, w, h);
+            await db.updateGeneration(gen.id, { agnesJobId: newTaskId, retryVideo: retries });
+            console.log(`[cron] Resubmitted: ${gen.id} → ${newTaskId}`);
+          } catch (resubErr) {
+            console.error(`[cron] Resubmit failed: ${gen.id}`, String(resubErr));
+            await db.updateGeneration(gen.id, { retryVideo: retries });
+          }
+        } else {
+          await db.updateGenerationStatus(gen.id, 'failed', undefined, msg);
+        }
+      } else if (retries >= 3) {
+        await db.updateGenerationStatus(gen.id, 'failed', undefined, msg);
+      } else {
+        await db.updateGeneration(gen.id, { retryVideo: retries });
+      }
     }
   }
 }

@@ -85,6 +85,8 @@ export interface Generation {
   captions?: string;          // JSON string
   selectedCaption?: string;
   football?: string;          // JSON string of football overlay data
+  retryImage?: number;        // image gen retry count
+  retryVideo?: number;        // video gen/poll retry count
   eventTitle?: string;        // joined from events
   eventCategory?: string;     // joined from events
   eventThumbnail?: string;    // joined from events
