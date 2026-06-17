@@ -6,15 +6,39 @@ import type { Bindings } from '../types';
 
 const generationRouter = new Hono<{ Bindings: Bindings }>();
 
+/** GET / — List user's generations */
+generationRouter.get('/', async (c) => {
+  const db = new D1Helper(c.env.DB);
+  const user = c.get('user');
+  const page = parseInt(c.req.query('page') ?? '1', 10);
+  const pageSize = parseInt(c.req.query('pageSize') ?? '20', 10);
+  const { generations, total } = await db.getUserGenerations(user.id, page, pageSize);
+
+  // Build full thumbnail URL from public bucket
+  const publicBase = c.env.R2_PUBLIC_URL || `${new URL(c.req.url).origin}/public`;
+  const data = generations.map((g) => ({
+    ...g,
+    eventThumbnail: g.eventThumbnail ? `${publicBase}/${g.eventThumbnail}` : undefined,
+  }));
+
+  return c.json({ success: true, data, total, page, pageSize });
+});
+
 generationRouter.get('/:id', async (c) => {
   const db = new D1Helper(c.env.DB);
   const secret = c.env.AUTH_SECRET ?? 'dev-secret';
   const workerUrl = new URL(c.req.url).origin;
   const apiKey = c.env.AGNES_API_KEY;
+  const user = c.get('user');
 
   const gen = await db.getGenerationById(c.req.param('id'));
   if (!gen) {
     return c.json({ success: false, error: 'Generation not found' }, 404);
+  }
+
+  // Only the creator can view
+  if (gen.userId !== user.id) {
+    return c.json({ success: false, error: 'Not authorized' }, 403);
   }
 
   // Poll video status if still processing

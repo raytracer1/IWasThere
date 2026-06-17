@@ -2,6 +2,7 @@
 
 import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { fetchGeneration } from "@/lib/api";
 import type { Generation } from "@/lib/types";
 import { CaptionPicker } from "@/components/CaptionPicker";
@@ -60,6 +61,8 @@ export default function ResultPage({
 }) {
   const { generationId } = use(params);
   const router = useRouter();
+  const { data: session } = useSession();
+  const accessToken = (session as { accessToken?: string } | null)?.accessToken;
   const [gen, setGen] = useState<Generation | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selectedCaption, setSelectedCaption] = useState<string | undefined>();
@@ -70,7 +73,7 @@ export default function ResultPage({
 
     async function poll() {
       try {
-        const res = await fetchGeneration(generationId);
+        const res = await fetchGeneration(generationId, accessToken);
         if (stopped) return;
         if (res.data) {
           setGen(res.data);
@@ -93,7 +96,7 @@ export default function ResultPage({
       stopped = true;
       clearInterval(timer);
     };
-  }, [generationId]);
+  }, [generationId, accessToken]);
 
   if (error && !gen) {
     return (

@@ -62,7 +62,20 @@ export async function triggerGenerate(
 }
 
 export async function fetchGeneration(
-  generationId: string
+  generationId: string,
+  token?: string
 ): Promise<ApiResponse<Generation>> {
-  return apiFetch(`/generation/${generationId}`);
+  return apiFetch(`/generation/${generationId}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  });
+}
+
+export async function fetchGenerations(
+  token: string,
+  page = 1,
+  pageSize = 20
+): Promise<{ success: boolean; data: Generation[]; total: number; page: number; pageSize: number }> {
+  return apiFetch(`/generation?page=${page}&pageSize=${pageSize}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
 }

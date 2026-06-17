@@ -41,8 +41,9 @@ export function Navbar() {
         </Link>
 
         {/* Navigation — centered */}
-        <div className="absolute left-1/2 -translate-x-1/2">
+        <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-4">
           <NavLink href="/" active={pathname === "/"} label="Home" />
+          <NavLink href="/history" active={pathname === "/history"} label="History" />
         </div>
 
         <div className="flex-1 flex justify-end items-center gap-3">
