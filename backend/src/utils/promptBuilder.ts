@@ -60,7 +60,19 @@ export function compileEventPrompts(event: Event, football?: GenerateRequest['fo
       parts.push(`The person is a passionate ${jerseyTeam} supporter, wearing a ${jerseyTeam} ${jerseyType} jersey.`);
     }
     if (football.mood) {
-      parts.push(`The person's emotion is ${football.mood}.`);
+      const moodDesc: Record<string, string> = {
+        euphoria: 'The person is in pure euphoria — face showing ecstatic joy, arms raised high, screaming in celebration, tears streaming.',
+        shock: 'The person is in complete shock — face frozen in disbelief, hands on head, mouth wide open, stunned by what just happened.',
+        tension: 'The person is tense and anxious — biting nails, hands clasped tight, intense focused expression, barely able to watch.',
+        pride: 'The person is overwhelmed with pride — tears of joy rolling down, hand on heart, standing tall with quiet dignity, a single tear falling.',
+        nervous: 'The person is extremely nervous — hands over face, peeking through fingers, tense hunched body language, heart racing.',
+        awe: 'The person is in awe — eyes wide, mouth slightly open, taking in an impossible moment, speechless in wonder.',
+      };
+      const desc = moodDesc[football.mood];
+      if (desc) {
+        parts.push(desc);
+        parts.push(`The entire crowd around them shares this emotion.`);
+      }
     }
     if (parts.length > 0) {
       imagePrompt += '\n\n' + parts.join(' ');
