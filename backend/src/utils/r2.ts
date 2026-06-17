@@ -124,22 +124,28 @@ export async function deleteFromR2(
 export async function signEventAssetUrls(
   event: Record<string, unknown>,
   secret: string,
-  workerUrl: string
+  workerUrl: string,
+  r2PublicUrl?: string
 ): Promise<Record<string, unknown>> {
   const sign = async (key: string | undefined) => {
     if (!key || key.startsWith('http')) return key;
     return generateSignedUrl(key, secret, workerUrl);
+  };
+  const publicUrl = (key: string | undefined) => {
+    if (!key || key.startsWith('http')) return key;
+    if (r2PublicUrl) return `${r2PublicUrl}/${key}`;
+    return `${workerUrl}/public/${key}`; // fallback
   };
 
   const generation = (event.generation as Record<string, unknown>) || {};
 
   return {
     ...event,
-    thumbnailUrl: await sign(event.thumbnailUrl as string | undefined),
+    thumbnailUrl: publicUrl(event.thumbnailUrl as string | undefined),
     referenceVideo: await sign(event.referenceVideo as string | undefined),
     generation: {
       ...generation,
-      background_image: await sign(generation.background_image as string | undefined),
+      background_image: publicUrl(generation.background_image as string | undefined),
     },
   };
 }

@@ -21,7 +21,7 @@ eventsRouter.get('/', async (c) => {
   const { events, total } = await db.getActiveEvents(category, page, pageSize);
 
   // Sign R2 asset URLs
-  const signed = await Promise.all(events.map((ev) => signEventAssetUrls(ev as unknown as Record<string, unknown>, secret, workerUrl)));
+  const signed = await Promise.all(events.map((ev) => signEventAssetUrls(ev as unknown as Record<string, unknown>, secret, workerUrl, c.env.R2_PUBLIC_URL)));
 
   return c.json({
     success: true,

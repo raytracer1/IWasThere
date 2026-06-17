@@ -9,10 +9,14 @@ binding = "DB"
 database_name = "hotinsert-db"
 database_id = "34e0ca98-b64e-4c50-a66a-d8b61e784cb2"
 
-# R2 Bucket
+# R2 Buckets
 [[r2_buckets]]
 binding = "ASSETS"
 bucket_name = "ifiwasthere-assets"
+
+[[r2_buckets]]
+binding = "PUBLIC"
+bucket_name = "ifiwasthere-public"
 
 # Secrets (set via wrangler secret put):
 #   AGNES_API_KEY          — Agnes AI API key
@@ -21,6 +25,7 @@ bucket_name = "ifiwasthere-assets"
 [vars]
 ENVIRONMENT = "development"
 ADMIN_EMAILS = "zhengbijun123@gmail.com"
+R2_PUBLIC_URL = "https://pub-2d6d62f7657c4205af7ea68953170fc4.r2.dev"
 
 [dev]
 port = 8787

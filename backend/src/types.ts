@@ -4,6 +4,7 @@ import type { D1Database, R2Bucket } from '@cloudflare/workers-types';
 export type Bindings = {
   DB: D1Database;
   ASSETS: R2Bucket;
+  PUBLIC: R2Bucket;
   AGNES_API_KEY: string;
   AUTH_SECRET: string;
   R2_ACCESS_KEY_ID?: string;
@@ -13,5 +14,6 @@ export type Bindings = {
   ADMIN_EMAILS: string;
   ENVIRONMENT: string;
   CORS_ORIGIN?: string;
+  R2_PUBLIC_URL?: string;  // Public R2 bucket base URL
   SKIP_AUTH?: string;      // "true" to bypass auth in local dev
 };

@@ -33,11 +33,16 @@ adminRouter.post('/upload', async (c) => {
   const ext = uploadFile.name.split('.').pop() || 'bin';
   const key = `events/${eventId}/${name}.${ext}`;
 
-  await uploadToR2(c.env.ASSETS, key, await uploadFile.arrayBuffer(), uploadFile.type);
+  // Thumbnails & backgrounds go to public bucket, videos to private
+  const isPublic = name === 'thumbnail' || name === 'background';
+  const bucket = isPublic ? c.env.PUBLIC : c.env.ASSETS;
+  await uploadToR2(bucket, key, await uploadFile.arrayBuffer(), uploadFile.type);
 
   const secret = c.env.AUTH_SECRET ?? 'dev-secret';
   const workerUrl = new URL(c.req.url).origin;
-  const url = await generateSignedUrl(key, secret, workerUrl);
+  const url = isPublic
+    ? `${c.env.R2_PUBLIC_URL || workerUrl + '/public'}/${key}`
+    : await generateSignedUrl(key, secret, workerUrl);
 
   return c.json({ success: true, data: { key, url } });
 });
@@ -55,7 +60,7 @@ adminRouter.get('/events', async (c) => {
   const { events, total } = await db.getAllEvents(page, pageSize);
 
   // Sign R2 asset URLs
-  const signed = await Promise.all(events.map((ev) => signEventAssetUrls(ev as unknown as Record<string, unknown>, secret, workerUrl)));
+  const signed = await Promise.all(events.map((ev) => signEventAssetUrls(ev as unknown as Record<string, unknown>, secret, workerUrl, c.env.R2_PUBLIC_URL)));
 
   return c.json({ success: true, data: signed, total, page, pageSize });
 });

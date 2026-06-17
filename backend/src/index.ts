@@ -28,6 +28,19 @@ app.use('*', cors({
   maxAge: 86400,
 }));
 
+// ─── Public Assets (thumbnails, no auth) ─────────────────
+app.get('/public/:key{.*}', async (c) => {
+  const key = c.req.param('key');
+  const object = await c.env.PUBLIC.get(key);
+  if (!object) return c.json({ success: false, error: 'File not found' }, 404);
+
+  const headers = new Headers();
+  object.writeHttpMetadata(headers);
+  headers.set('Cache-Control', 'public, max-age=31536000, immutable');
+  headers.set('etag', object.httpEtag);
+  return new Response(object.body, { headers });
+});
+
 // ─── Asset Serving (signed URL verification) ────────────
 app.get('/assets/:key{.*}', async (c) => {
   const key = c.req.param('key');
