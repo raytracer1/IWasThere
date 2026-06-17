@@ -8,41 +8,115 @@ import type { Generation } from "@/lib/types";
 import { CaptionPicker } from "@/components/CaptionPicker";
 import { POLL_INTERVAL_MS } from "@/lib/types";
 
-async function downloadWithWatermark(imageUrl: string, filename: string) {
-  const img = new Image();
-  img.crossOrigin = "anonymous";
-  img.src = imageUrl;
-  await new Promise<void>((resolve, reject) => {
-    img.onload = () => resolve();
-    img.onerror = () => reject(new Error("Failed to load image"));
-  });
+const WATERMARK = "IfIWasThere.AI";
+
+const flagCache = new Map<string, HTMLImageElement>();
+
+async function loadFlag(code: string): Promise<HTMLImageElement | null> {
+  if (!code) return null;
+  if (flagCache.has(code)) return flagCache.get(code)!;
+  try {
+    const img = new Image();
+    img.crossOrigin = "anonymous";
+    img.src = `https://flagcdn.com/w80/${code}.png`;
+    await new Promise<void>((resolve, reject) => { img.onload = () => resolve(); img.onerror = () => reject(); });
+    flagCache.set(code, img);
+    return img;
+  } catch { return null; }
+}
+
+function drawWatermarks(
+  ctx: CanvasRenderingContext2D,
+  width: number,
+  height: number,
+  football: { teamA: string; teamB: string; score: string; codeA?: string; codeB?: string } | null,
+  flagA?: HTMLImageElement | null,
+  flagB?: HTMLImageElement | null
+) {
+  const fontSize = Math.max(10, width / 60);
+
+  // Top‑left: channel logo
+  ctx.font = `bold ${fontSize}px system-ui, sans-serif`;
+  ctx.fillStyle = "rgba(255, 255, 255, 0.8)";
+  ctx.strokeStyle = "rgba(0, 0, 0, 0.6)";
+  ctx.lineWidth = 1;
+  ctx.strokeText(WATERMARK, 8, fontSize + 6);
+  ctx.fillText(WATERMARK, 8, fontSize + 6);
+
+  // Top‑right: scoreboard with flags
+  if (football) {
+    const scoreFontSize = Math.max(11, Math.round(width / 55));
+    const teamFontSize = Math.max(9, Math.round(scoreFontSize * 0.85));
+    const flgH = Math.round(scoreFontSize * 0.8);
+    const flgW = Math.round(flgH * 1.6);
+    const gap = Math.round(scoreFontSize * 0.3);
+    const midY = 6 + scoreFontSize / 2;
+
+    ctx.textBaseline = "middle";
+
+    // Measure widths
+    ctx.font = `bold ${teamFontSize}px system-ui, sans-serif`;
+    const taW = ctx.measureText(football.teamA).width;
+    ctx.font = `bold ${scoreFontSize}px system-ui, sans-serif`;
+    const scW = ctx.measureText(football.score).width;
+    ctx.font = `bold ${teamFontSize}px system-ui, sans-serif`;
+    const tbW = ctx.measureText(football.teamB).width;
+
+    const flagAW = flagA ? flgW + gap : 0;
+    const flagBW = flagB ? flgW + gap : 0;
+    const totalW = taW + gap + flagAW + scW + gap + flagBW + tbW;
+    let sx = width - totalW - 8;
+
+    const drawText = (text: string, fontSize: number, x: number) => {
+      ctx.font = `bold ${fontSize}px system-ui, sans-serif`;
+      ctx.fillStyle = "white";
+      ctx.strokeStyle = "rgba(0,0,0,0.7)";
+      ctx.lineWidth = 1;
+      ctx.strokeText(text, x, midY);
+      ctx.fillText(text, x, midY);
+    };
+
+    // Team A
+    drawText(football.teamA, teamFontSize, sx);
+    sx += taW + gap;
+
+    // Flag A
+    if (flagA) { ctx.drawImage(flagA, sx, midY - flgH / 2, flgW, flgH); sx += flgW + gap; }
+
+    // Score
+    drawText(football.score, scoreFontSize, sx);
+    sx += scW + gap;
+
+    // Flag B
+    if (flagB) { ctx.drawImage(flagB, sx, midY - flgH / 2, flgW, flgH); sx += flgW + gap; }
+
+    // Team B
+    drawText(football.teamB, teamFontSize, sx);
+
+    ctx.textBaseline = "alphabetic";
+  }
+}
+
+async function downloadImageWithWatermark(
+  imageUrl: string, filename: string,
+  football: { teamA: string; teamB: string; score: string; codeA?: string; codeB?: string } | null
+) {
+  const [img, flagA, flagB] = await Promise.all([
+    new Promise<HTMLImageElement>((resolve, reject) => {
+      const i = new Image(); i.crossOrigin = "anonymous"; i.src = imageUrl;
+      i.onload = () => resolve(i); i.onerror = () => reject(new Error("load failed"));
+    }),
+    loadFlag(football?.codeA || ''),
+    loadFlag(football?.codeB || ''),
+  ]);
 
   const canvas = document.createElement("canvas");
   canvas.width = img.naturalWidth;
   canvas.height = img.naturalHeight;
   const ctx = canvas.getContext("2d")!;
-
-  // Draw image
   ctx.drawImage(img, 0, 0);
+  drawWatermarks(ctx, canvas.width, canvas.height, football, flagA, flagB);
 
-  // Draw watermark
-  const fontSize = Math.max(14, img.naturalWidth / 40);
-  ctx.font = `${fontSize}px system-ui, sans-serif`;
-  ctx.fillStyle = "rgba(255, 255, 255, 0.7)";
-  ctx.strokeStyle = "rgba(0, 0, 0, 0.5)";
-  ctx.lineWidth = 3;
-  const text = "AI-Generated";
-  const metrics = ctx.measureText(text);
-  const padding = fontSize;
-  const x = canvas.width - metrics.width - padding;
-  const y = canvas.height - padding;
-
-  // Text
-  ctx.fillStyle = "rgba(255, 255, 255, 0.85)";
-  ctx.strokeText(text, x, y);
-  ctx.fillText(text, x, y);
-
-  // Download
   canvas.toBlob((blob) => {
     if (!blob) return;
     const url = URL.createObjectURL(blob);
@@ -52,6 +126,62 @@ async function downloadWithWatermark(imageUrl: string, filename: string) {
     a.click();
     URL.revokeObjectURL(url);
   }, "image/png");
+}
+
+async function downloadVideoWithWatermark(
+  videoUrl: string, filename: string,
+  football: { teamA: string; teamB: string; score: string; codeA?: string; codeB?: string } | null
+) {
+  const [flagA, flagB] = await Promise.all([
+    loadFlag(football?.codeA || ''),
+    loadFlag(football?.codeB || ''),
+  ]);
+
+  const proxyUrl = `/api/proxy?url=${encodeURIComponent(videoUrl)}`;
+  const resp = await fetch(proxyUrl);
+  const blob = await resp.blob();
+
+  const video = document.createElement("video");
+  video.src = URL.createObjectURL(blob);
+  await new Promise<void>((resolve) => { video.onloadedmetadata = () => resolve(); });
+  const { videoWidth, videoHeight } = video;
+
+  const canvas = document.createElement("canvas");
+  canvas.width = videoWidth;
+  canvas.height = videoHeight;
+  const ctx = canvas.getContext("2d")!;
+  const stream = canvas.captureStream(30);
+  const recorder = new MediaRecorder(stream, { mimeType: "video/webm" });
+  const chunks: Blob[] = [];
+  recorder.ondataavailable = (e) => chunks.push(e.data);
+
+  const done = new Promise<void>((resolve) => {
+    recorder.onstop = () => {
+      const out = new Blob(chunks, { type: "video/webm" });
+      const url = URL.createObjectURL(out);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${filename}.webm`;
+      a.click();
+      URL.revokeObjectURL(url);
+      URL.revokeObjectURL(video.src);
+      resolve();
+    };
+  });
+
+  recorder.start();
+  video.currentTime = 0;
+  await video.play();
+
+  const drawFrame = () => {
+    if (video.ended || video.paused) { recorder.stop(); return; }
+    ctx.drawImage(video, 0, 0);
+    drawWatermarks(ctx, videoWidth, videoHeight, football, flagA, flagB);
+    requestAnimationFrame(drawFrame);
+  };
+  drawFrame();
+
+  await done;
 }
 
 export default function ResultPage({
@@ -242,16 +372,27 @@ export default function ResultPage({
 
           {/* Share / Download */}
           <div className="space-y-3">
-            {(gen.outputVideoUrl || gen.outputImageUrl) && (
-              <a
-                href={gen.outputVideoUrl || gen.outputImageUrl}
-                download={`ifiwasthere-${gen.eventId}.${gen.outputVideoUrl ? 'mp4' : 'png'}`}
-                target="_blank"
-                rel="noopener noreferrer"
+            {gen.outputVideoUrl && (
+              <button
+                onClick={() => {
+                  const fb = gen.football ? JSON.parse(gen.football) : null;
+                  downloadVideoWithWatermark(gen.outputVideoUrl!, `ifiwasthere-${gen.eventId}`, fb);
+                }}
                 className="block w-full text-center rounded-xl bg-white/10 border border-white/10 py-3 text-sm font-medium text-gray-900 dark:text-white hover:bg-white/20 transition-colors"
               >
-                📥 Download {gen.outputVideoUrl ? 'Video' : 'Image'}
-              </a>
+                📥 Download Video
+              </button>
+            )}
+            {gen.outputImageUrl && !gen.outputVideoUrl && (
+              <button
+                onClick={() => {
+                  const fb = gen.football ? JSON.parse(gen.football) : null;
+                  downloadImageWithWatermark(gen.outputImageUrl!, `ifiwasthere-${gen.eventId}`, fb);
+                }}
+                className="block w-full text-center rounded-xl bg-white/10 border border-white/10 py-3 text-sm font-medium text-gray-900 dark:text-white hover:bg-white/20 transition-colors"
+              >
+                📥 Download Image
+              </button>
             )}
 
             {selectedCaption && (
