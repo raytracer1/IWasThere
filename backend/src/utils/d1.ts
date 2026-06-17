@@ -186,13 +186,14 @@ export class D1Helper {
 
   async createGeneration(gen: Omit<Generation, 'createdAt' | 'completedAt'>): Promise<void> {
     await this.run(
-      `INSERT INTO generations (id, user_id, event_id, input_image, output_image, agnes_job_id, status, error_message, captions, football, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, unixepoch())`,
+      `INSERT INTO generations (id, user_id, event_id, input_image, output_image, output_video, agnes_job_id, status, error_message, captions, football, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, unixepoch())`,
       gen.id,
       gen.userId,
       gen.eventId,
       gen.inputImage,
       gen.outputImage ?? null,
+      gen.outputVideo ?? null,
       gen.agnesJobId ?? null,
       gen.status,
       gen.errorMessage ?? null,
@@ -311,6 +312,7 @@ export class D1Helper {
       eventId: row.event_id as string,
       inputImage: row.input_image as string,
       outputImage: (row.output_image as string) ?? undefined,
+      outputVideo: (row.output_video as string) ?? undefined,
       agnesJobId: (row.agnes_job_id as string) ?? undefined,
       status: row.status as GenerationStatus,
       errorMessage: (row.error_message as string) ?? undefined,

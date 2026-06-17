@@ -74,8 +74,9 @@ export interface Generation {
   id: string;
   userId: string;
   eventId: string;
-  inputImage: string;         // R2 key
-  outputImage?: string;       // R2 key
+  inputImage: string;         // R2 key or 'base64-direct'
+  outputImage?: string;       // Agnes image URL
+  outputVideo?: string;       // Agnes video URL
   agnesJobId?: string;
   status: GenerationStatus;
   errorMessage?: string;

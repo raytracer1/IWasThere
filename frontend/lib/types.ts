@@ -75,6 +75,7 @@ export interface Generation {
   eventId: string;
   inputImage: string;
   outputImage?: string;
+  outputVideo?: string;
   agnesJobId?: string;
   status: GenerationStatus;
   errorMessage?: string;

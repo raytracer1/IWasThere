@@ -49,6 +49,9 @@ generateRouter.post('/', async (c) => {
     const generatedImageUrl = await generateImage(imagePrompt, selfieBase64, apiKey, '576x1024');
     console.log(`[generate] Image done: ${generatedImageUrl}`);
 
+    // Store the image URL directly
+    await db.updateGeneration(generationId, { outputImage: generatedImageUrl });
+
     // Step 2: Submit video with the Agnes-hosted image URL
     console.log(`[generate] Step 2: Video`);
     const taskId = await submitVideo(imagePrompt, generatedImageUrl, apiKey, 121, 24);

@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { D1Helper } from '../utils/d1';
-import { generateSignedUrl, uploadToR2 } from '../utils/r2';
+import { generateSignedUrl } from '../utils/r2';
 import { pollVideo } from '../utils/agnes';
 import type { Bindings } from '../types';
 
@@ -24,19 +24,9 @@ generationRouter.get('/:id', async (c) => {
       const videoUrl = await pollVideo(gen.agnesJobId, apiKey);
       console.log(`[gen] Poll result: ${videoUrl ? 'DONE' : 'still processing'}`);
       if (videoUrl) {
-        try {
-          const videoResp = await fetch(videoUrl);
-          if (videoResp.ok) {
-            const buffer = await videoResp.arrayBuffer();
-            const outputKey = `outputs/${gen.id}.mp4`;
-            await uploadToR2(c.env.ASSETS, outputKey, buffer, 'video/mp4');
-            await db.updateGenerationStatus(gen.id, 'completed', outputKey, undefined, undefined);
-            gen.status = 'completed';
-            gen.outputImage = outputKey;
-          }
-        } catch (err) {
-          console.error('[gen] Download error:', err);
-        }
+        await db.updateGeneration(gen.id, { outputVideo: videoUrl, status: 'completed' });
+        gen.status = 'completed';
+        gen.outputVideo = videoUrl;
       }
     } catch (err) {
       console.error('[gen] Agnes failed:', err);
@@ -46,10 +36,15 @@ generationRouter.get('/:id', async (c) => {
     }
   }
 
-  const inputImageUrl = await generateSignedUrl(gen.inputImage, secret, workerUrl);
-  const outputUrl = gen.outputImage
-    ? await generateSignedUrl(gen.outputImage, secret, workerUrl)
-    : undefined;
+  // If URL starts with http, return directly (Agnes-hosted); otherwise sign (R2 key)
+  const resolveUrl = (value?: string) =>
+    value ? (value.startsWith('http') ? value : generateSignedUrl(value, secret, workerUrl)) : undefined;
+
+  const [inputImageUrl, imageUrl, videoUrl] = await Promise.all([
+    gen.inputImage && gen.inputImage !== 'base64-direct' ? resolveUrl(gen.inputImage) : undefined,
+    resolveUrl(gen.outputImage),
+    resolveUrl(gen.outputVideo),
+  ]);
 
   let parsedCaptions: string[] = [];
   try { parsedCaptions = gen.captions ? JSON.parse(gen.captions) : []; } catch {}
@@ -59,8 +54,8 @@ generationRouter.get('/:id', async (c) => {
     data: {
       ...gen,
       inputImageUrl,
-      outputImageUrl: outputUrl,
-      outputVideoUrl: gen.status === 'completed' ? outputUrl : undefined,
+      outputImageUrl: imageUrl,
+      outputVideoUrl: videoUrl,
       captions: parsedCaptions,
     },
   });
