@@ -59,6 +59,7 @@ export interface Event {
   category: string;
   event_type?: string;
   aspectRatio?: string;     // "9:16" | "16:9" | "1:1"
+  price?: number;           // credits required to generate
   scene: EventScene;
   camera: EventCamera;
   generation: EventGeneration;

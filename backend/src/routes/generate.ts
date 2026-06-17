@@ -40,12 +40,40 @@ generateRouter.post('/', async (c) => {
     return c.json({ success: false, error: 'Event not found' }, 404);
   }
 
+  // ─── Credit check ──────────────────────────────────────
+  let userId = 'anonymous';
+  const authHeader = c.req.header('Authorization');
+  if (authHeader?.startsWith('Bearer ')) {
+    try {
+      const { jwtVerify } = await import('jose');
+      const secret = c.env.AUTH_SECRET;
+      if (secret) {
+        const token = authHeader.slice(7);
+        const { payload } = await jwtVerify(token, new TextEncoder().encode(secret), { algorithms: ['HS256'] });
+        const email = (payload.email as string) ?? '';
+        const user = await db.getUserByEmail(email);
+        if (user) {
+          const price = event.price ?? 0;
+          if (price > 0 && user.credits < price) {
+            return c.json({ success: false, error: `Insufficient credits. Need ${price}, have ${user.credits}.` }, 402);
+          }
+          if (price > 0) {
+            await db.deductCredits(user.id, price);
+          }
+          userId = user.id;
+        }
+      }
+    } catch {
+      // Invalid token — proceed as anonymous
+    }
+  }
+
   const { imagePrompt } = compileEventPrompts(event, football);
   const generationId = crypto.randomUUID();
 
   await db.createGeneration({
     id: generationId,
-    userId: 'anonymous',
+    userId,
     eventId,
     inputImage: 'base64-direct',
     status: 'processing',

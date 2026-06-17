@@ -56,6 +56,7 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
     title: "",
     category: "football" as string,
     aspectRatio: "9:16" as string,
+    price: 0,
     sceneStr: stringify(DEFAULT_SCENE),
     cameraStr: stringify(DEFAULT_CAMERA),
     generationStr: stringify(DEFAULT_GENERATION),
@@ -80,6 +81,7 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
         title: ev.title,
         category: ev.category,
         aspectRatio: ev.aspectRatio || '9:16',
+        price: ev.price ?? 0,
         sceneStr: stringify(ev.scene || (DEFAULT_SCENE as Record<string, unknown>)),
         cameraStr: stringify(ev.camera || (DEFAULT_CAMERA as Record<string, unknown>)),
         generationStr: stringify({
@@ -95,6 +97,7 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
         title: "",
         category: "sports",
         aspectRatio: "9:16",
+        price: 0,
         sceneStr: stringify(DEFAULT_SCENE),
         cameraStr: stringify(DEFAULT_CAMERA),
         generationStr: stringify(DEFAULT_GENERATION),
@@ -157,6 +160,7 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
         title: form.title,
         category: form.category,
         aspectRatio: form.aspectRatio,
+        price: form.price,
         scene: parseJson(form.sceneStr, "scene"),
         camera: parseJson(form.cameraStr, "camera"),
         generation: parseJson(form.generationStr, "generation"),
@@ -259,6 +263,15 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
           <option value="16:9">16:9 (Landscape)</option>
           <option value="1:1">1:1 (Square)</option>
         </select>
+        <input
+          type="number"
+          min={0}
+          max={999}
+          value={form.price}
+          onChange={(e) => setForm((prev) => ({ ...prev, price: parseInt(e.target.value) || 0 }))}
+          placeholder="Price (credits)"
+          className="rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-white w-20"
+        />
         <select
           value={form.status}
           onChange={(e) => setForm((prev) => ({ ...prev, status: e.target.value as "active" | "draft" }))}

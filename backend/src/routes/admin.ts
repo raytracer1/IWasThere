@@ -108,6 +108,7 @@ adminRouter.post('/events', async (c) => {
     category: body.category as string,
     event_type: body.event_type as string | undefined,
     aspectRatio: body.aspectRatio as string | undefined,
+    price: (body.price as number) ?? 0,
     scene: (body.scene as Record<string, unknown>) || {},
     camera: (body.camera as Record<string, unknown>) || {},
     generation: gen as unknown as Event['generation'],

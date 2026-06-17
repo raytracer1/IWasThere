@@ -79,6 +79,13 @@ export class D1Helper {
     );
   }
 
+  async deductCredits(userId: string, amount: number): Promise<void> {
+    await this.run(
+      `UPDATE users SET credits = MAX(0, credits - ?) WHERE id = ?`,
+      amount, userId
+    );
+  }
+
   // ─── Events ───────────────────────────────────────────
 
   async getActiveEvents(
@@ -135,13 +142,14 @@ export class D1Helper {
 
   async createEvent(event: Omit<Event, 'createdAt'>): Promise<void> {
     await this.run(
-      `INSERT INTO events (id, title, category, event_type, aspect_ratio, scene, camera, generation, thumbnail_url, reference_video, status, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, unixepoch())`,
+      `INSERT INTO events (id, title, category, event_type, aspect_ratio, price, scene, camera, generation, thumbnail_url, reference_video, status, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, unixepoch())`,
       event.id,
       event.title,
       event.category,
       event.event_type ?? null,
       event.aspectRatio ?? null,
+      event.price ?? 0,
       jsonStringify(event.scene),
       jsonStringify(event.camera),
       jsonStringify(event.generation),
@@ -297,6 +305,7 @@ export class D1Helper {
       category: row.category as string,
       event_type: (row.event_type as string) ?? undefined,
       aspectRatio: (row.aspect_ratio as string) ?? undefined,
+      price: (row.price as number) ?? 0,
       scene: jsonParse<EventScene>(row.scene as string) ?? {} as EventScene,
       camera: jsonParse<EventCamera>(row.camera as string) ?? {} as EventCamera,
       generation: jsonParse<EventGeneration>(row.generation as string) ?? {} as EventGeneration,
