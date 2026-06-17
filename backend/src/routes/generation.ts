@@ -53,6 +53,15 @@ generationRouter.get('/:id', async (c) => {
         await db.updateGeneration(gen.id, { outputVideo: videoUrl, status: 'completed' });
         gen.status = 'completed';
         gen.outputVideo = videoUrl;
+        // Deduct credits on first completion
+        try {
+          const event = await db.getEventById(gen.eventId);
+          const price = event?.price ?? 0;
+          if (price > 0) {
+            const dbUser = await db.getUserByEmail(user.email);
+            if (dbUser) await db.deductCredits(dbUser.id, price);
+          }
+        } catch {}
       }
     } catch (err) {
       console.error('[gen] Agnes failed:', err);

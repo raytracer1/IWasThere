@@ -52,11 +52,6 @@ generateRouter.post('/', async (c) => {
   const { imagePrompt } = compileEventPrompts(event, football);
   const generationId = crypto.randomUUID();
 
-  // Deduct credits
-  if (price > 0 && dbUser) {
-    await db.deductCredits(dbUser.id, price);
-  }
-
   await db.createGeneration({
     id: generationId,
     userId: user.id,
@@ -91,11 +86,7 @@ generateRouter.post('/', async (c) => {
     });
   } catch (err) {
     console.error(`[generate] Failed:`, err);
-    await db.updateGenerationStatus(generationId, 'failed', undefined, err instanceof Error ? err.message : 'Unknown error');
-    // Refund credits
-    if (price > 0 && dbUser) {
-      await db.refundCredits(dbUser.id, price);
-    }
+    try { await db.updateGenerationStatus(generationId, 'failed', undefined, err instanceof Error ? err.message : 'Unknown error'); } catch {}
     return c.json({ success: false, error: err instanceof Error ? err.message : 'Generation failed' }, 500);
   }
 });
