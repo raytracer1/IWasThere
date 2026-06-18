@@ -36,10 +36,10 @@ export const SEED_EVENTS: Omit<Event, 'createdAt'>[] = [
 
 The stadium is electric — flags waving, the iconic MetLife Stadium lights cutting through the night. The World Cup trophy visible in the distance.
 
-The person is a front-facing spectator, face clearly visible, looking out at the field. The person should look genuinely part of this historic moment — same stadium floodlights, same dramatic lighting, same raw intensity as the crowd around them.
+The person is a front-facing spectator, face clearly visible, directly facing the camera, looking out at the field. THE PERSON MUST FACE THE CAMERA with their face fully visible. The person should look genuinely part of this historic moment — same stadium floodlights, same dramatic lighting, same raw intensity as the crowd around them.
 
 Visual style: Ultra-realistic DSLR sports photography, World Cup broadcast aesthetic, shallow depth of field, cinematic framing, 8K, Canon 35mm. Keep facial features intact. No text or logos.`,
-      negative_prompt: 'blurry face, duplicate person, extra fingers, cropped face, distorted body, low quality, cartoon, painting, illustration, watermark, text, logo, player on field, back turned, facing away from camera',
+      negative_prompt: 'blurry face, duplicate person, extra fingers, cropped face, distorted body, low quality, cartoon, painting, illustration, watermark, text, logo, player on field, back turned, facing away from camera, person facing backwards, back of head visible, person turned away, profile view, side view, looking backwards',
       insert_zone: '',
     },
     status: 'active',
@@ -75,7 +75,7 @@ The arena is electric — playoff intensity, championship on the line. The Larry
 The person is a front-facing spectator, face clearly visible, looking out at the court. The person should look genuinely part of this historic moment — same arena lighting, same dramatic intensity, same championship atmosphere.
 
 Visual style: Ultra-realistic DSLR sports photography, NBA broadcast aesthetic, shallow depth of field, cinematic framing, 8K, Canon 35mm. Keep facial features intact. No text or logos.`,
-      negative_prompt: 'blurry face, duplicate person, extra fingers, cropped face, distorted body, low quality, cartoon, painting, illustration, watermark, text, logo, player on court, back turned, facing away from camera',
+      negative_prompt: 'blurry face, duplicate person, extra fingers, cropped face, distorted body, low quality, cartoon, painting, illustration, watermark, text, logo, player on court, back turned, facing away from camera, person facing backwards, back of head visible, person turned away, profile view, side view, looking backwards',
       insert_zone: '',
     },
     status: 'active',
@@ -111,7 +111,7 @@ The crowd around them is electric — hands up, singing along, phone lights wavi
 The person is a front-facing spectator, face clearly visible, immersed in the music. The person should look genuinely part of this incredible night — same stage lighting, same euphoric atmosphere, same raw emotion.
 
 Visual style: Ultra-realistic concert photography, shallow depth of field, cinematic framing, 8K, Canon 35mm. Keep facial features intact. No text or logos.`,
-      negative_prompt: 'blurry face, duplicate person, extra fingers, cropped face, distorted body, low quality, cartoon, painting, illustration, watermark, text, logo, back turned, facing away from camera',
+      negative_prompt: 'blurry face, duplicate person, extra fingers, cropped face, distorted body, low quality, cartoon, painting, illustration, watermark, text, logo, back turned, facing away from camera, person facing backwards, back of head visible, person turned away, profile view, side view, looking backwards',
       insert_zone: '',
     },
     status: 'active',
