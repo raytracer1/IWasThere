@@ -93,7 +93,8 @@ export interface Generation {
   eventTitle?: string;
   eventCategory?: string;
   eventThumbnail?: string;
-  football?: string;  // JSON: { teamA, teamB, score, mood, userTeam }
+  football?: string;  // JSON game config
+  basketball?: string; // JSON game config
 }
 
 // ─── API Response Wrappers ──────────────────────────────
@@ -116,13 +117,8 @@ export interface GenerateRequest {
   eventId: string;
   imageBase64: string;
   aspectRatio?: string;
-  football?: {
-    teamA: string;
-    teamB: string;
-    score: string;
-    mood: string;
-    userTeam?: string;
-  };
+  football?: Record<string, unknown>;
+  basketball?: Record<string, unknown>;
 }
 
 // ─── Constants ──────────────────────────────────────────

@@ -18,7 +18,8 @@ async function loadFlag(url: string): Promise<HTMLImageElement | null> {
   try {
     const img = new Image();
     img.crossOrigin = "anonymous";
-    img.src = url;
+    // Proxy through Next.js to bypass CORS
+    img.src = `/api/proxy?url=${encodeURIComponent(url)}`;
     await new Promise<void>((resolve, reject) => { img.onload = () => resolve(); img.onerror = () => reject(); });
     flagCache.set(url, img);
     return img;
@@ -29,7 +30,7 @@ function drawWatermarks(
   ctx: CanvasRenderingContext2D,
   width: number,
   height: number,
-  football: { teamA: string; teamB: string; score: string; flagA?: string; flagB?: string } | null,
+  game: { teamA: string; teamB: string; score: string; flagA?: string; flagB?: string; codeA?: string; codeB?: string;  } | null,
   flagA?: HTMLImageElement | null,
   flagB?: HTMLImageElement | null,
   matchSeconds = 0
@@ -44,37 +45,70 @@ function drawWatermarks(
   ctx.strokeText(WATERMARK, 8, fontSize + 6);
   ctx.fillText(WATERMARK, 8, fontSize + 6);
 
-  // Top‑right: scoreboard with flags
-  if (football) {
-    const scoreFontSize = Math.max(11, Math.round(width / 55));
+  // Scoreboard
+  if (game) {
+    const isBasket = (game as Record<string,unknown>).sport === 'basketball';
+    const teamADisplay = isBasket ? (game.codeA || '').toUpperCase() : game.teamA;
+    const teamBDisplay = isBasket ? (game.codeB || '').toUpperCase() : game.teamB;
+
+    const scoreFontSize = isBasket ? Math.max(16, Math.round(width / 40)) : Math.max(11, Math.round(width / 55));
     const teamFontSize = Math.max(9, Math.round(scoreFontSize * 0.85));
-    const flgH = Math.round(scoreFontSize * 0.8);
+    const flgH = Math.round(scoreFontSize * (isBasket ? 1.1 : 0.8));
     const flgW = Math.round(flgH * 1.6);
     const gap = Math.round(scoreFontSize * 0.3);
-    const midY = 6 + scoreFontSize / 2;
+
+    const clockFontSize = Math.max(9, Math.round(scoreFontSize * 0.85));
+    ctx.font = `bold ${clockFontSize}px system-ui, monospace`;
+    const maxSec = isBasket ? 12 * 60 : 90 * 60;
+    const t = matchSeconds % maxSec;
+    const mins = Math.floor(t / 60);
+    const secs = t % 60;
+    const clock = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
 
     ctx.textBaseline = "middle";
 
     // Measure widths
     ctx.font = `bold ${teamFontSize}px system-ui, sans-serif`;
-    const taW = ctx.measureText(football.teamA).width;
+    const taW = ctx.measureText(teamADisplay).width;
     ctx.font = `bold ${scoreFontSize}px system-ui, sans-serif`;
-    const scW = ctx.measureText(football.score).width;
+    const scoreSpacing = Math.round(scoreFontSize * 0.35);
+    let scW = 0;
+    for (const ch of game.score) { scW += ctx.measureText(ch).width + scoreSpacing; }
+    scW -= scoreSpacing;
     ctx.font = `bold ${teamFontSize}px system-ui, sans-serif`;
-    const tbW = ctx.measureText(football.teamB).width;
-
-    // Clock width
-    const clockFontSize = Math.max(9, Math.round(scoreFontSize * 0.85));
+    const tbW = ctx.measureText(teamBDisplay).width;
     ctx.font = `bold ${clockFontSize}px system-ui, monospace`;
-    const mins = Math.floor(matchSeconds / 60);
-    const secs = matchSeconds % 60;
-    const clock = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
     const clkW = ctx.measureText(clock).width;
 
     const flagAW = flagA ? flgW + gap : 0;
     const flagBW = flagB ? flgW + gap : 0;
     const totalW = taW + gap + flagAW + scW + gap + flagBW + tbW + gap * 2 + clkW;
-    let sx = width - totalW - 8;
+
+    // Position: top-right for football, bottom-center for basketball
+    let sx: number;
+    let midY: number;
+    if (isBasket) {
+      sx = (width - totalW) / 2;
+      midY = height - 20 - scoreFontSize / 2;
+    } else {
+      sx = width - totalW - 8;
+      midY = 6 + scoreFontSize / 2;
+    }
+
+    // Background bar for basketball (broadcast bug style)
+    if (isBasket) {
+      const barH = scoreFontSize + 14;
+      const barW = totalW + 16;
+      ctx.fillStyle = "rgba(0,0,0,0.75)";
+      ctx.strokeStyle = "rgba(255,255,255,0.15)";
+      ctx.lineWidth = 1;
+      const barX = (width - barW) / 2;
+      const barY = height - 20 - barH / 2;
+      ctx.beginPath();
+      ctx.roundRect(barX, barY, barW, barH, 6);
+      ctx.fill();
+      ctx.stroke();
+    }
 
     const drawText = (text: string, fontSize: number, x: number) => {
       ctx.font = `bold ${fontSize}px system-ui, sans-serif`;
@@ -86,24 +120,33 @@ function drawWatermarks(
     };
 
     // Team A
-    drawText(football.teamA, teamFontSize, sx);
+    drawText(teamADisplay, teamFontSize, sx);
     sx += taW + gap;
 
     // Flag A
     if (flagA) { ctx.drawImage(flagA, sx, midY - flgH / 2, flgW, flgH); sx += flgW + gap; }
 
-    // Score
-    drawText(football.score, scoreFontSize, sx);
-    sx += scW + gap;
+    // Score (with character spacing)
+    ctx.font = `bold ${scoreFontSize}px system-ui, sans-serif`;
+    ctx.fillStyle = "white";
+    ctx.strokeStyle = "rgba(0,0,0,0.7)";
+    ctx.lineWidth = 1;
+    for (const ch of game.score) {
+      ctx.strokeText(ch, sx, midY);
+      ctx.fillText(ch, sx, midY);
+      sx += ctx.measureText(ch).width + scoreSpacing;
+    }
+    sx -= scoreSpacing; // remove trailing spacing
+    sx += gap;
 
     // Flag B
     if (flagB) { ctx.drawImage(flagB, sx, midY - flgH / 2, flgW, flgH); sx += flgW + gap; }
 
     // Team B
-    drawText(football.teamB, teamFontSize, sx);
+    drawText(teamBDisplay, teamFontSize, sx);
     sx += tbW + gap * 2;
 
-    // Match clock (pre-computed above)
+    // Clock
     ctx.font = `bold ${clockFontSize}px system-ui, monospace`;
     ctx.fillStyle = "white";
     ctx.strokeStyle = "rgba(0,0,0,0.7)";
@@ -117,15 +160,15 @@ function drawWatermarks(
 
 async function downloadImageWithWatermark(
   imageUrl: string, filename: string,
-  football: { teamA: string; teamB: string; score: string; flagA?: string; flagB?: string } | null
+  game: { teamA: string; teamB: string; score: string; flagA?: string; flagB?: string; codeA?: string; codeB?: string;  } | null
 ) {
   const [img, flagA, flagB] = await Promise.all([
     new Promise<HTMLImageElement>((resolve, reject) => {
       const i = new Image(); i.crossOrigin = "anonymous"; i.src = imageUrl;
       i.onload = () => resolve(i); i.onerror = () => reject(new Error("load failed"));
     }),
-    loadFlag(football?.flagA || ''),
-    loadFlag(football?.flagB || ''),
+    loadFlag(game?.flagA || ''),
+    loadFlag(game?.flagB || ''),
   ]);
 
   const canvas = document.createElement("canvas");
@@ -134,7 +177,7 @@ async function downloadImageWithWatermark(
   const ctx = canvas.getContext("2d")!;
   ctx.drawImage(img, 0, 0);
   const matchTime = Math.floor(Math.random() * 90 * 60);
-  drawWatermarks(ctx, canvas.width, canvas.height, football, flagA, flagB, matchTime);
+  drawWatermarks(ctx, canvas.width, canvas.height, game, flagA, flagB, matchTime);
 
   canvas.toBlob((blob) => {
     if (!blob) return;
@@ -149,11 +192,11 @@ async function downloadImageWithWatermark(
 
 async function downloadVideoWithWatermark(
   videoUrl: string, filename: string,
-  football: { teamA: string; teamB: string; score: string; flagA?: string; flagB?: string } | null
+  game: { teamA: string; teamB: string; score: string; flagA?: string; flagB?: string; codeA?: string; codeB?: string;  } | null
 ) {
   const [flagA, flagB] = await Promise.all([
-    loadFlag(football?.flagA || ''),
-    loadFlag(football?.flagB || ''),
+    loadFlag(game?.flagA || ''),
+    loadFlag(game?.flagB || ''),
   ]);
 
   const proxyUrl = `/api/proxy?url=${encodeURIComponent(videoUrl)}`;
@@ -203,7 +246,7 @@ async function downloadVideoWithWatermark(
   const drawFrame = () => {
     if (video.ended || video.paused) { recorder.stop(); return; }
     ctx.drawImage(video, 0, 0);
-    drawWatermarks(ctx, videoWidth, videoHeight, football, flagA, flagB, startTime + Math.floor(video.currentTime));
+    drawWatermarks(ctx, videoWidth, videoHeight, game, flagA, flagB, startTime + Math.floor(video.currentTime));
     requestAnimationFrame(drawFrame);
   };
   drawFrame();
@@ -346,16 +389,29 @@ export default function ResultPage({
                 />
 
                 {/* TV Broadcast Scoreboard Overlay */}
-                {(gen.football && (gen.eventCategory === 'football' || gen.eventCategory === 'basketball')) && (() => {
-                const fb = JSON.parse(gen.football!);
+                {((gen.football || gen.basketball) && (gen.eventCategory === 'football' || gen.eventCategory === 'basketball')) && (() => {
+                const gameJson = gen.basketball || gen.football;
+                if (!gameJson) return null;
+                const fb = JSON.parse(gameJson);
+                const isBasket = !!gen.basketball;
+                const aName = isBasket ? (fb.codeA || '').toUpperCase() : fb.teamA;
+                const bName = isBasket ? (fb.codeB || '').toUpperCase() : fb.teamB;
+                const maxSec = isBasket ? 12 * 60 : 90 * 60;
+                const ct = (matchStart + elapsed) % maxSec;
+                const cm = Math.floor(ct / 60);
+                const cs = ct % 60;
+                const clock = `${String(cm).padStart(2, '0')}:${String(cs).padStart(2, '0')}`;
+                const posClass = isBasket
+                  ? "absolute bottom-3 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 rounded-lg bg-black/80 px-3 py-1.5"
+                  : "absolute top-3 right-3 z-10 flex items-center gap-1 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]";
                 return (
-                  <div className="absolute top-3 right-3 z-10 flex items-center gap-1 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
-                    <span className="text-[10px] font-bold text-white truncate max-w-16">{fb.teamA}</span>
-                    {fb.codeA && <img src={`https://flagcdn.com/w40/${fb.codeA}.png`} alt="" className="w-3.5 h-2.5 rounded-sm" />}
-                    <span className="text-[10px] font-black text-white tabular-nums">{fb.score}</span>
-                    {fb.codeB && <img src={`https://flagcdn.com/w40/${fb.codeB}.png`} alt="" className="w-3.5 h-2.5 rounded-sm" />}
-                    <span className="text-[10px] font-bold text-white truncate max-w-16">{fb.teamB}</span>
-                    <span className="text-[9px] text-white/60 tabular-nums ml-1">{(() => { const t = matchStart + elapsed; const m = Math.floor(t/60); const s = t%60; return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; })()}</span>
+                  <div className={posClass}>
+                    <span className={`font-bold text-white truncate ${isBasket ? 'text-xs max-w-16' : 'text-[10px] max-w-12'}`}>{aName}</span>
+                    {fb.flagA && <img src={fb.flagA} alt="" className={`rounded-sm ${isBasket ? 'w-4 h-3' : 'w-3.5 h-2.5'}`} />}
+                    <span className={`font-black text-white tabular-nums tracking-[0.15em] ${isBasket ? 'text-sm' : 'text-[10px]'}`}>{fb.score}</span>
+                    {fb.flagB && <img src={fb.flagB} alt="" className={`rounded-sm ${isBasket ? 'w-4 h-3' : 'w-3.5 h-2.5'}`} />}
+                    <span className={`font-bold text-white truncate ${isBasket ? 'text-xs max-w-16' : 'text-[10px] max-w-12'}`}>{bName}</span>
+                    <span className={`tabular-nums ml-1 ${isBasket ? 'text-xs text-white/80' : 'text-[9px] text-white/60'}`}>{clock}</span>
                   </div>
                 );
               })()}
@@ -373,16 +429,29 @@ export default function ResultPage({
                   onPause={playingRef ? () => { playingRef.current = false; } : undefined}
                   className="w-full max-h-[60vh] object-contain"
                 />
-                {(gen.football && (gen.eventCategory === 'football' || gen.eventCategory === 'basketball')) && (() => {
-                const fb = JSON.parse(gen.football!);
+                {((gen.football || gen.basketball) && (gen.eventCategory === 'football' || gen.eventCategory === 'basketball')) && (() => {
+                const gameJson = gen.basketball || gen.football;
+                if (!gameJson) return null;
+                const fb = JSON.parse(gameJson);
+                const isBasket = !!gen.basketball;
+                const aName = isBasket ? (fb.codeA || '').toUpperCase() : fb.teamA;
+                const bName = isBasket ? (fb.codeB || '').toUpperCase() : fb.teamB;
+                const maxSec = isBasket ? 12 * 60 : 90 * 60;
+                const ct = (matchStart + elapsed) % maxSec;
+                const cm = Math.floor(ct / 60);
+                const cs = ct % 60;
+                const clock = `${String(cm).padStart(2, '0')}:${String(cs).padStart(2, '0')}`;
+                const posClass = isBasket
+                  ? "absolute bottom-3 left-1/2 -translate-x-1/2 z-10 flex items-center gap-2 rounded-lg bg-black/80 px-3 py-1.5"
+                  : "absolute top-3 right-3 z-10 flex items-center gap-1 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]";
                 return (
-                  <div className="absolute top-3 right-3 z-10 flex items-center gap-1 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
-                    <span className="text-[10px] font-bold text-white truncate max-w-16">{fb.teamA}</span>
-                    {fb.codeA && <img src={`https://flagcdn.com/w40/${fb.codeA}.png`} alt="" className="w-3.5 h-2.5 rounded-sm" />}
-                    <span className="text-[10px] font-black text-white tabular-nums">{fb.score}</span>
-                    {fb.codeB && <img src={`https://flagcdn.com/w40/${fb.codeB}.png`} alt="" className="w-3.5 h-2.5 rounded-sm" />}
-                    <span className="text-[10px] font-bold text-white truncate max-w-16">{fb.teamB}</span>
-                    <span className="text-[9px] text-white/60 tabular-nums ml-1">{(() => { const t = matchStart + elapsed; const m = Math.floor(t/60); const s = t%60; return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; })()}</span>
+                  <div className={posClass}>
+                    <span className={`font-bold text-white truncate ${isBasket ? 'text-xs max-w-16' : 'text-[10px] max-w-12'}`}>{aName}</span>
+                    {fb.flagA && <img src={fb.flagA} alt="" className={`rounded-sm ${isBasket ? 'w-4 h-3' : 'w-3.5 h-2.5'}`} />}
+                    <span className={`font-black text-white tabular-nums tracking-[0.15em] ${isBasket ? 'text-sm' : 'text-[10px]'}`}>{fb.score}</span>
+                    {fb.flagB && <img src={fb.flagB} alt="" className={`rounded-sm ${isBasket ? 'w-4 h-3' : 'w-3.5 h-2.5'}`} />}
+                    <span className={`font-bold text-white truncate ${isBasket ? 'text-xs max-w-16' : 'text-[10px] max-w-12'}`}>{bName}</span>
+                    <span className={`tabular-nums ml-1 ${isBasket ? 'text-xs text-white/80' : 'text-[9px] text-white/60'}`}>{clock}</span>
                   </div>
                 );
               })()}
@@ -419,7 +488,7 @@ export default function ResultPage({
             {gen.outputVideoUrl && (
               <button
                 onClick={() => {
-                  const fb = gen.football ? JSON.parse(gen.football) : null;
+                  const fb = (gen.basketball || (gen.football || gen.basketball)) ? JSON.parse((gen.basketball || (gen.football || gen.basketball))!) : null;
                   downloadVideoWithWatermark(gen.outputVideoUrl!, `ifiwasthere-${gen.eventId}`, fb);
                 }}
                 className="block w-full text-center rounded-xl bg-white/10 border border-white/10 py-3 text-sm font-medium text-gray-900 dark:text-white hover:bg-white/20 transition-colors"
@@ -430,7 +499,7 @@ export default function ResultPage({
             {gen.outputImageUrl && !gen.outputVideoUrl && (
               <button
                 onClick={() => {
-                  const fb = gen.football ? JSON.parse(gen.football) : null;
+                  const fb = (gen.basketball || (gen.football || gen.basketball)) ? JSON.parse((gen.basketball || (gen.football || gen.basketball))!) : null;
                   downloadImageWithWatermark(gen.outputImageUrl!, `ifiwasthere-${gen.eventId}`, fb);
                 }}
                 className="block w-full text-center rounded-xl bg-white/10 border border-white/10 py-3 text-sm font-medium text-gray-900 dark:text-white hover:bg-white/20 transition-colors"

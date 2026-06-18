@@ -26,8 +26,8 @@ generateRouter.post('/', async (c) => {
     return c.json({ success: false, error: 'Agnes AI not configured' }, 500);
   }
 
-  const body = await c.req.json<{ eventId: string; imageBase64: string; aspectRatio?: string; football?: { teamA: string; teamB: string; score: string; mood: string } }>();
-  const { eventId, imageBase64, football } = body;
+  const body = await c.req.json<{ eventId: string; imageBase64: string; aspectRatio?: string; football?: Record<string, unknown>; basketball?: Record<string, unknown> }>();
+  const { eventId, imageBase64, football, basketball } = body;
 
   if (!eventId || !imageBase64) {
     return c.json({ success: false, error: 'eventId and imageBase64 are required' }, 400);
@@ -52,7 +52,7 @@ generateRouter.post('/', async (c) => {
 
   const userId = dbUser?.id || user.id;
 
-  const { imagePrompt } = compileEventPrompts(event, football);
+  const { imagePrompt } = compileEventPrompts(event, (football || basketball) as Record<string, unknown> | undefined);
   const generationId = crypto.randomUUID();
 
   await db.createGeneration({
@@ -62,6 +62,7 @@ generateRouter.post('/', async (c) => {
     inputImage: 'base64-direct',
     status: 'processing',
     football: football ? JSON.stringify(football) : undefined,
+    basketball: basketball ? JSON.stringify(basketball) : undefined,
   });
 
   const MAX_RETRIES = 3;

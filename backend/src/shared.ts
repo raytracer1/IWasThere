@@ -82,7 +82,8 @@ export interface Generation {
   errorMessage?: string;
   captions?: string;          // JSON string
   selectedCaption?: string;
-  football?: string;          // JSON string of football overlay data
+  football?: string;          // JSON string of game config
+  basketball?: string;        // JSON string of game config
   retryImage?: number;        // image gen retry count
   retryVideo?: number;        // video gen/poll retry count
   eventTitle?: string;        // joined from events
@@ -114,17 +115,24 @@ export interface GenerationWithEvent extends Generation {
 }
 
 // ─── Request Bodies ─────────────────────────────────────
+export interface GameConfig {
+  teamA: string;
+  teamB: string;
+  score: string;
+  mood: string;
+  userTeam?: string;
+  flagA?: string;
+  flagB?: string;
+  codeA?: string;
+  codeB?: string;
+}
+
 export interface GenerateRequest {
   eventId: string;
   imageKey: string;
-  aspectRatio?: string;     // "16:9" | "9:16" | "1:1"
-  football?: {
-    teamA: string;
-    teamB: string;
-    score: string;     // "3-2"
-    mood: string;      // "euphoria"
-    userTeam?: string; // team whose jersey the user wears
-  };
+  aspectRatio?: string;
+  football?: GameConfig;
+  basketball?: GameConfig;
 }
 
 export interface CreateEventRequest {

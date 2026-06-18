@@ -20,7 +20,7 @@ interface PromptVariables {
  * by replacing placeholders with event data from the nested objects.
  * Optionally accepts user customization (teams, score, mood) for football events.
  */
-export function compileEventPrompts(event: Event, football?: GenerateRequest['football']): {
+export function compileEventPrompts(event: Event, game?: GenerateRequest['football']): {
   imagePrompt: string;
   captions: string[];
   hashtags: string;
@@ -35,11 +35,11 @@ export function compileEventPrompts(event: Event, football?: GenerateRequest['fo
     atmosphere: Array.isArray(event.scene?.atmosphere)
       ? event.scene.atmosphere.join(', ')
       : event.scene?.atmosphere || '',
-    team_a: football?.teamA || '',
-    team_b: football?.teamB || '',
-    score: football?.score || '',
-    mood: football?.mood || '',
-    user_team: football?.userTeam || football?.teamA || '',
+    team_a: game?.teamA || '',
+    team_b: game?.teamB || '',
+    score: game?.score || '',
+    mood: game?.mood || '',
+    user_team: game?.userTeam || game?.teamA || '',
   };
 
   const promptTemplate = event.generation?.prompt_template || '';
@@ -48,22 +48,22 @@ export function compileEventPrompts(event: Event, football?: GenerateRequest['fo
 
   // If user provided football customization, append it explicitly so it
   // always affects generation even if the template lacks the placeholders.
-  if (football) {
+  if (game) {
     const parts: string[] = [];
-    if (football.teamA && football.teamB) {
-      parts.push(`This is a football match: ${football.teamA} (home) vs ${football.teamB} (away), current score ${football.score || '0-0'}.`);
-      parts.push(`${football.teamA} players wear their home jersey, ${football.teamB} players wear their away jersey. The stadium is filled mostly with ${football.teamA} home fans.`);
+    if (game.teamA && game.teamB) {
+      parts.push(`This is a match: ${game.teamA} (home) vs ${game.teamB} (away), current score ${game.score || '0-0'}.`);
+      parts.push(`${game.teamA} players wear their home jersey, ${game.teamB} players wear their away jersey. The stadium is filled mostly with ${game.teamA} home fans.`);
     }
-    if (football.userTeam || football.teamA) {
-      const jerseyTeam = football.userTeam || football.teamA;
-      const jerseyType = jerseyTeam === football.teamA ? 'home' : 'away';
+    if (game.userTeam || game.teamA) {
+      const jerseyTeam = game.userTeam || game.teamA;
+      const jerseyType = jerseyTeam === game.teamA ? 'home' : 'away';
       parts.push(`The person is a passionate ${jerseyTeam} supporter, wearing a ${jerseyTeam} ${jerseyType} jersey.`);
     }
-    if (football.mood) {
+    if (game.mood) {
       const positiveMoods = new Set(['euphoria', 'pride', 'awe']);
-      const isPositive = positiveMoods.has(football.mood);
-      const userTeam = football.userTeam || football.teamA;
-      const otherTeam = userTeam === football.teamA ? football.teamB : football.teamA;
+      const isPositive = positiveMoods.has(game.mood);
+      const userTeam = game.userTeam || game.teamA;
+      const otherTeam = userTeam === game.teamA ? game.teamB : game.teamA;
 
       const userMoodDesc: Record<string, string> = {
         euphoria: 'The person is in pure euphoria — face showing ecstatic joy, arms raised high, screaming in celebration, tears streaming.',
@@ -73,7 +73,7 @@ export function compileEventPrompts(event: Event, football?: GenerateRequest['fo
         nervous: 'The person is extremely nervous — hands over face, peeking through fingers, tense hunched body language, heart racing.',
         awe: 'The person is in awe — eyes wide, mouth slightly open, taking in an impossible moment, speechless in wonder.',
       };
-      const desc = userMoodDesc[football.mood];
+      const desc = userMoodDesc[game.mood];
       if (desc) {
         parts.push(desc);
         // Describe contrasting crowd reactions

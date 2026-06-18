@@ -4,7 +4,7 @@ import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import { useSession, signIn } from "next-auth/react";
 import { fetchEvent, triggerGenerate } from "@/lib/api";
-import type { Event } from "@/lib/types";
+import type { Event, GenerateRequest } from "@/lib/types";
 
 import { useUserStore } from "@/store/user";
 import { UploadSelfie } from "@/components/UploadSelfie";
@@ -132,12 +132,16 @@ export default function CreatePage({
     try {
       const teamAInfo = teamList.find(t => t.name === teamA);
       const teamBInfo = teamList.find(t => t.name === teamB);
-      const football =
+      const gameData =
         isTeamSport && teamA && teamB && scoreA !== null && scoreB !== null
-          ? { teamA, teamB, score: `${scoreA}-${scoreB}`, mood, userTeam: userTeam || teamA, flagA: teamAInfo?.flag || '', flagB: teamBInfo?.flag || '' }
+          ? { teamA, teamB, score: `${scoreA}:${scoreB}`, scoreA, scoreB, mood, userTeam: userTeam || teamA, flagA: teamAInfo?.flag || '', flagB: teamBInfo?.flag || '', codeA: teamAInfo?.code || '', codeB: teamBInfo?.code || '', sport: event?.category || '' }
           : undefined;
 
-      const res = await triggerGenerate({ eventId, imageBase64, football }, accessToken);
+      const reqBody: GenerateRequest = { eventId, imageBase64 };
+      if (event?.category === 'basketball') reqBody.basketball = gameData;
+      else if (event?.category === 'football') reqBody.football = gameData;
+
+      const res = await triggerGenerate(reqBody, accessToken);
       if (res.data?.generationId) {
         useUserStore.getState().refreshCredits(accessToken!);
         router.push(`/result/${res.data.generationId}`);

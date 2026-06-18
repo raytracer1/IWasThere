@@ -202,8 +202,9 @@ async function pollGenerations(env: Bindings) {
         if (retries < 3 && gen.outputImage) {
           try {
             const event = await db.getEventById(gen.eventId);
-            const football: GenerateRequest['football'] = gen.football ? JSON.parse(gen.football) : undefined;
-            const { imagePrompt } = compileEventPrompts(event!, football);
+            const gameData = gen.basketball || gen.football;
+            const game: GenerateRequest['football'] = gameData ? JSON.parse(gameData) : undefined;
+            const { imagePrompt } = compileEventPrompts(event!, game);
             const ratio = event?.aspectRatio || '9:16';
             const sizeMap: Record<string, string> = { '9:16': '720x1280', '16:9': '1280x720', '1:1': '720x720' };
             const [w, h] = (sizeMap[ratio] || '720x1280').split('x').map(Number);
