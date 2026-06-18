@@ -96,7 +96,8 @@ generateRouter.post('/', async (c) => {
   while (retries < MAX_RETRIES) {
     try {
       console.log(`[generate] Step 2: Video attempt ${retries + 1}/${MAX_RETRIES}`);
-      const taskId = await submitVideo(imagePrompt, generatedImageUrl!, apiKey, 121, 24, w, h, event.generation?.negative_prompt);
+      const duration = event.duration || 5;
+      const taskId = await submitVideo(imagePrompt, generatedImageUrl!, apiKey, duration * 24, 24, w, h, event.generation?.negative_prompt);
       console.log(`[generate] Video task: ${taskId}`);
       await db.updateGeneration(generationId, { agnesJobId: taskId });
       return c.json({ success: true, data: { generationId, status: 'processing' } });

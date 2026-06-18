@@ -59,6 +59,7 @@ export interface Event {
   event_type?: string;
   aspectRatio?: string;     // "9:16" | "16:9" | "1:1"
   price?: number;           // credits required to generate
+  duration?: number;        // video duration in seconds (default 5)
   scene: EventScene;
   camera: EventCamera;
   generation: EventGeneration;

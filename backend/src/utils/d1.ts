@@ -152,14 +152,15 @@ export class D1Helper {
 
   async createEvent(event: Omit<Event, 'createdAt'>): Promise<void> {
     await this.run(
-      `INSERT INTO events (id, title, category, event_type, aspect_ratio, price, scene, camera, generation, status, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, unixepoch())`,
+      `INSERT INTO events (id, title, category, event_type, aspect_ratio, price, duration, scene, camera, generation, status, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, unixepoch())`,
       event.id,
       event.title,
       event.category,
       event.event_type ?? null,
       event.aspectRatio ?? null,
       event.price ?? 0,
+      event.duration ?? 5,
       jsonStringify(event.scene),
       jsonStringify(event.camera),
       jsonStringify(event.generation),
@@ -331,6 +332,7 @@ export class D1Helper {
       event_type: (row.event_type as string) ?? undefined,
       aspectRatio: (row.aspect_ratio as string) ?? undefined,
       price: (row.price as number) ?? 0,
+      duration: (row.duration as number) ?? 5,
       scene: jsonParse<EventScene>(row.scene as string) ?? {} as EventScene,
       camera: jsonParse<EventCamera>(row.camera as string) ?? {} as EventCamera,
       generation: jsonParse<EventGeneration>(row.generation as string) ?? {} as EventGeneration,

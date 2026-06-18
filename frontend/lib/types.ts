@@ -58,6 +58,7 @@ export interface Event {
   event_type?: string;
   aspectRatio?: string;
   price?: number;
+  duration?: number;
   scene: EventScene;
   camera: EventCamera;
   generation: EventGeneration;

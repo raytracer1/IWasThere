@@ -50,6 +50,7 @@ export default function EventForm({ event, onSave, onCancel, onGenerateAssets }:
     category: "football" as string,
     aspectRatio: "9:16" as string,
     price: 0,
+    duration: 5,
     sceneStr: stringify(DEFAULT_SCENE),
     cameraStr: stringify(DEFAULT_CAMERA),
     generationStr: stringify(DEFAULT_GENERATION),
@@ -75,6 +76,7 @@ export default function EventForm({ event, onSave, onCancel, onGenerateAssets }:
         category: ev.category,
         aspectRatio: ev.aspectRatio || '9:16',
         price: ev.price ?? 0,
+        duration: ev.duration ?? 5,
         sceneStr: stringify(ev.scene || (DEFAULT_SCENE as Record<string, unknown>)),
         cameraStr: stringify(ev.camera || (DEFAULT_CAMERA as Record<string, unknown>)),
         generationStr: stringify({
@@ -89,6 +91,7 @@ export default function EventForm({ event, onSave, onCancel, onGenerateAssets }:
         category: "sports",
         aspectRatio: "9:16",
         price: 0,
+        duration: 5,
         sceneStr: stringify(DEFAULT_SCENE),
         cameraStr: stringify(DEFAULT_CAMERA),
         generationStr: stringify(DEFAULT_GENERATION),
@@ -151,6 +154,7 @@ export default function EventForm({ event, onSave, onCancel, onGenerateAssets }:
         category: form.category,
         aspectRatio: form.aspectRatio,
         price: parseFloat(priceStr) || 0,
+        duration: form.duration,
         scene: parseJson(form.sceneStr, "scene"),
         camera: parseJson(form.cameraStr, "camera"),
         generation: parseJson(form.generationStr, "generation"),
@@ -264,6 +268,15 @@ export default function EventForm({ event, onSave, onCancel, onGenerateAssets }:
           }}
           placeholder="0"
           className="rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-white w-16"
+        />
+        <input
+          type="number"
+          min={1}
+          max={30}
+          value={form.duration}
+          onChange={(e) => setForm((prev) => ({ ...prev, duration: parseInt(e.target.value) || 5 }))}
+          placeholder="Duration (s)"
+          className="rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-white w-20"
         />
         <select
           value={form.status}
