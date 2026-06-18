@@ -150,7 +150,7 @@ export default function CreatePage({
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-lg px-4 py-12 animate-pulse space-y-4">
+      <div className="mx-auto max-w-4xl px-4 py-12 animate-pulse space-y-4">
         <div className="h-8 bg-gray-800 rounded w-3/4" />
         <div className="aspect-video bg-gray-800 rounded-xl" />
         <div className="h-4 bg-gray-800 rounded w-full" />
@@ -160,7 +160,7 @@ export default function CreatePage({
 
   if (error || !event) {
     return (
-      <div className="mx-auto max-w-lg px-4 py-16 text-center">
+      <div className="mx-auto max-w-4xl px-4 py-16 text-center">
         <span className="text-5xl">😔</span>
         <p className="mt-4 text-gray-400">{error || "Event not found"}</p>
         <button onClick={() => router.push("/")} className="mt-3 text-sm text-cyan-400 hover:underline">
@@ -182,7 +182,7 @@ export default function CreatePage({
   const teamList = event.teams || [];
 
   return (
-    <div className="mx-auto max-w-lg px-4 py-6 pb-20">
+    <div className="mx-auto max-w-4xl px-4 py-6 pb-20">
       {/* Event Header */}
       <div className="text-center mb-6">
         <div className="inline-flex items-center gap-2 rounded-full bg-cyan-500/10 border border-cyan-500/20 px-3 py-1 text-xs text-cyan-300 mb-3">
