@@ -48,7 +48,6 @@ export interface EventCamera {
 export interface EventGeneration {
   prompt_template: string;
   negative_prompt?: string;
-  background_image?: string;
   insert_zone?: string | InsertZone;
 }
 
@@ -62,8 +61,9 @@ export interface Event {
   scene: EventScene;
   camera: EventCamera;
   generation: EventGeneration;
-  thumbnailUrl?: string;
-  referenceVideo?: string;
+  thumbnailUrl?: string;     // computed by backend
+  backgroundUrl?: string;    // computed by backend
+  referenceVideo?: string;   // computed by backend
   status: EventStatus;
   createdAt: number;
 }

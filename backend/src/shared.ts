@@ -49,7 +49,6 @@ export interface EventCamera {
 export interface EventGeneration {
   prompt_template: string;
   negative_prompt?: string;
-  background_image?: string;
   insert_zone?: string | InsertZone;
 }
 
@@ -63,8 +62,7 @@ export interface Event {
   scene: EventScene;
   camera: EventCamera;
   generation: EventGeneration;
-  thumbnailUrl?: string;
-  referenceVideo?: string;
+  pendingVideoTask?: string;  // Agnes taskId for auto-generated reference video
   status: EventStatus;
   createdAt: number;
 }
@@ -134,7 +132,6 @@ export interface CreateEventRequest {
   scene?: Partial<EventScene>;
   camera?: Partial<EventCamera>;
   generation: EventGeneration;
-  thumbnailUrl?: string;
   status?: EventStatus;
 }
 
@@ -144,7 +141,6 @@ export interface UpdateEventRequest {
   scene?: Partial<EventScene>;
   camera?: Partial<EventCamera>;
   generation?: Partial<EventGeneration>;
-  thumbnailUrl?: string;
   status?: EventStatus;
 }
 

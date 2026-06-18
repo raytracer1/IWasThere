@@ -18,6 +18,27 @@ async function agnesPost(path: string, body: Record<string, unknown>, apiKey: st
 }
 
 /** Generate image from base64 (reliable, no URL download needed). */
+/** Generate image from text-only prompt (no input image). */
+export async function generateImageFromText(
+  prompt: string,
+  apiKey: string,
+  size = '1280x720',
+  negativePrompt?: string,
+): Promise<string> {
+  const body = {
+    model: 'agnes-image-2.1-flash',
+    prompt,
+    size,
+    negative_prompt: negativePrompt || '',
+    extra_body: { response_format: 'url' },
+  };
+  const json = await agnesPost('/images/generations', body, apiKey);
+  const url = (json.data as Array<{ url: string }>)?.[0]?.url;
+  if (!url) throw new Error('Agnes AI returned no image URL');
+  return url;
+}
+
+/** Generate image from base64 input (img2img mode). */
 export async function generateImage(
   prompt: string,
   imageBase64: string,

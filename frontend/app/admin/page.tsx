@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import type { Event } from "@/lib/types";
+
 import { adminFetch } from "@/lib/admin-api";
 import AuthGuard from "@/components/admin/AuthGuard";
 
@@ -72,17 +73,15 @@ export default function AdminListPage() {
               >
                 {/* Thumbnail */}
                 <div className="aspect-[4/3] bg-gradient-to-br from-gray-800 to-gray-900 relative overflow-hidden">
-                  {ev.thumbnailUrl ? (
-                    <img
-                      src={ev.thumbnailUrl}
-                      alt={ev.title}
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center text-3xl opacity-30">
-                      🏟️
-                    </div>
-                  )}
+                  <img
+                    src={ev.thumbnailUrl}
+                    alt={ev.title}
+                    className="w-full h-full object-cover"
+                    onError={(e) => { e.currentTarget.style.display = "none"; e.currentTarget.nextElementSibling?.classList.remove("hidden"); }}
+                  />
+                  <div className="hidden w-full h-full absolute inset-0 flex items-center justify-center text-3xl opacity-30">
+                    🏟️
+                  </div>
                   <div className="absolute top-2 left-2 rounded-md bg-black/70 px-2 py-0.5 text-xs text-white capitalize">
                     {ev.category.replace("_", " ")}
                   </div>

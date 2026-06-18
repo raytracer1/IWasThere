@@ -1,6 +1,8 @@
 import { Hono } from 'hono';
 import { D1Helper } from '../utils/d1';
-import { uploadToR2, deleteFromR2, generateSignedUrl, signEventAssetUrls } from '../utils/r2';
+import { uploadToR2, deleteFromR2, generateSignedUrl, buildEventAssetUrls } from '../utils/r2';
+import { generateImageFromText, submitVideo } from '../utils/agnes';
+import { compileEventPrompts } from '../utils/promptBuilder';
 import { MAX_THUMBNAIL_SIZE, DEFAULT_PAGE_SIZE } from '../shared';
 import type { Event } from '../shared';
 import type { Bindings } from '../types';
@@ -60,7 +62,7 @@ adminRouter.get('/events', async (c) => {
   const { events, total } = await db.getAllEvents(page, pageSize);
 
   // Sign R2 asset URLs
-  const signed = await Promise.all(events.map((ev) => signEventAssetUrls(ev as unknown as Record<string, unknown>, secret, workerUrl, c.env.R2_PUBLIC_URL)));
+  const signed = await Promise.all(events.map((ev) => buildEventAssetUrls(ev as unknown as Record<string, unknown>, c.env.R2_PUBLIC_URL || `${new URL(c.req.url).origin}/public`)));
 
   return c.json({ success: true, data: signed, total, page, pageSize });
 });
@@ -78,7 +80,7 @@ adminRouter.get('/events/:id', async (c) => {
     return c.json({ success: false, error: 'Event not found' }, 404);
   }
 
-  const data = await signEventAssetUrls(event as unknown as Record<string, unknown>, secret, workerUrl);
+  const data = await buildEventAssetUrls(event as unknown as Record<string, unknown>, c.env.R2_PUBLIC_URL || `${new URL(c.req.url).origin}/public`);
   return c.json({ success: true, data });
 });
 
@@ -117,7 +119,6 @@ adminRouter.post('/events', async (c) => {
     scene: (body.scene as Record<string, unknown>) || {},
     camera: (body.camera as Record<string, unknown>) || {},
     generation: gen as unknown as Event['generation'],
-    thumbnailUrl: body.thumbnailUrl as string | undefined,
     status: (body.status as 'active' | 'draft' | 'archived') || 'active',
   });
 
@@ -157,12 +158,15 @@ adminRouter.delete('/events/:id', async (c) => {
   // Detach generations (set event_id to null) so FK doesn't block delete
   await db.nullifyGenerationsEvent(event.id);
 
-  // Delete all R2 assets
+  // Delete all R2 assets (pattern: events/{id}/{type}.{ext})
   const r2Keys = [
-    event.thumbnailUrl,
-    event.referenceVideo,
-    (event.generation as unknown as Record<string, unknown>)?.background_image as string | undefined,
-  ].filter(Boolean) as string[];
+    `events/${event.id}/thumbnail.webp`,
+    `events/${event.id}/background.webp`,
+    `events/${event.id}/reference.mp4`,
+  ];
+  // Also delete any stored URLs (old format)
+  if (event.referenceVideo && (event.referenceVideo as string).startsWith('http'))
+    r2Keys.push(event.referenceVideo as string);
 
   for (const key of r2Keys) {
     try {
@@ -172,6 +176,56 @@ adminRouter.delete('/events/:id', async (c) => {
 
   await db.deleteEvent(id);
   return c.json({ success: true });
+});
+
+// POST /admin/events/:id/generate-assets — Generate background image + reference video via AI
+adminRouter.post('/events/:id/generate-assets', async (c) => {
+  const db = new D1Helper(c.env.DB);
+  const apiKey = c.env.AGNES_API_KEY;
+  if (!apiKey) return c.json({ success: false, error: 'Agnes AI not configured' }, 500);
+
+  const event = await db.getEventById(c.req.param('id'));
+  if (!event) return c.json({ success: false, error: 'Event not found' }, 404);
+
+  const { imagePrompt } = compileEventPrompts(event);
+
+  try {
+    // 1. Generate background image from text
+    const bgPrompt = `Ultra-realistic stadium scene: ${event.scene?.venue || 'stadium'}, ${event.scene?.time_period || ''}, ${event.scene?.lighting || 'night'} lighting, packed crowd. ${imagePrompt.slice(0, 200)}`;
+    const ratio = event.aspectRatio || '16:9';
+    const sizeMap: Record<string, string> = { '9:16': '720x1280', '16:9': '1280x720', '1:1': '720x720', '4:3': '960x720', '3:4': '720x960' };
+    const size = sizeMap[ratio] || '1280x720';
+    const [w, h] = size.split('x').map(Number);
+
+    const bgImageUrl = await generateImageFromText(bgPrompt, apiKey, size);
+    console.log(`[admin] Background image: ${bgImageUrl}`);
+
+    // Download and store in R2 (public bucket)
+    let bgKey: string | undefined;
+    try {
+      const bgResp = await fetch(bgImageUrl);
+      if (bgResp.ok) {
+        bgKey = `events/${event.id}/background.webp`;
+        await uploadToR2(c.env.PUBLIC, bgKey, await bgResp.arrayBuffer(), 'image/webp');
+      }
+    } catch {}
+
+    const publicBase = c.env.R2_PUBLIC_URL || `${new URL(c.req.url).origin}/public`;
+    const bgStoredUrl = bgKey ? `${publicBase}/${bgKey}` : bgImageUrl;
+
+    // 2. Generate reference video from the background image
+    const videoTaskId = await submitVideo(imagePrompt.slice(0, 500), bgImageUrl, apiKey, 121, 24, w, h);
+    console.log(`[admin] Video task: ${videoTaskId}`);
+
+    // Update the event (cron will poll for video completion)
+    await db.updateEvent(event.id, {
+      pendingVideoTask: videoTaskId,
+    });
+
+    return c.json({ success: true, data: { bgImageUrl, videoTaskId } });
+  } catch (err) {
+    return c.json({ success: false, error: err instanceof Error ? err.message : 'Generation failed' }, 500);
+  }
 });
 
 export default adminRouter;

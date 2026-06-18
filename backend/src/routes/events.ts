@@ -1,6 +1,6 @@
 import { Hono } from 'hono';
 import { D1Helper } from '../utils/d1';
-import { signEventAssetUrls } from '../utils/r2';
+import { buildEventAssetUrls } from '../utils/r2';
 import { DEFAULT_PAGE_SIZE } from '../shared';
 import type { Bindings } from '../types';
 
@@ -26,7 +26,7 @@ eventsRouter.get('/', async (c) => {
   const { events, total } = await db.getActiveEvents(categories, page, pageSize);
 
   // Sign R2 asset URLs
-  const signed = await Promise.all(events.map((ev) => signEventAssetUrls(ev as unknown as Record<string, unknown>, secret, workerUrl, c.env.R2_PUBLIC_URL)));
+  const signed = await Promise.all(events.map((ev) => buildEventAssetUrls(ev as unknown as Record<string, unknown>, c.env.R2_PUBLIC_URL || `${new URL(c.req.url).origin}/public`)));
 
   return c.json({
     success: true,
@@ -50,7 +50,7 @@ eventsRouter.get('/:id', async (c) => {
     return c.json({ success: false, error: 'Event not found' }, 404);
   }
 
-  const data = await signEventAssetUrls(event as unknown as Record<string, unknown>, secret, workerUrl);
+  const data = await buildEventAssetUrls(event as unknown as Record<string, unknown>, c.env.R2_PUBLIC_URL || `${new URL(c.req.url).origin}/public`);
   return c.json({ success: true, data });
 });
 

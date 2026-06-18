@@ -152,8 +152,8 @@ export class D1Helper {
 
   async createEvent(event: Omit<Event, 'createdAt'>): Promise<void> {
     await this.run(
-      `INSERT INTO events (id, title, category, event_type, aspect_ratio, price, scene, camera, generation, thumbnail_url, reference_video, status, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, unixepoch())`,
+      `INSERT INTO events (id, title, category, event_type, aspect_ratio, price, scene, camera, generation, status, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, unixepoch())`,
       event.id,
       event.title,
       event.category,
@@ -163,8 +163,6 @@ export class D1Helper {
       jsonStringify(event.scene),
       jsonStringify(event.camera),
       jsonStringify(event.generation),
-      event.thumbnailUrl ?? null,
-      event.referenceVideo ?? null,
       event.status
     );
   }
@@ -197,6 +195,13 @@ export class D1Helper {
     await this.run('UPDATE generations SET event_id = NULL WHERE event_id = ?', eventId);
   }
 
+  async getEventsWithPendingVideo(): Promise<Event[]> {
+    const rows = await this.all<Record<string, unknown>>(
+      "SELECT * FROM events WHERE pending_video_task IS NOT NULL"
+    );
+    return rows.results.map(r => this.mapEvent(r));
+  }
+
   async deleteEvent(id: string): Promise<void> {
     await this.run('DELETE FROM events WHERE id = ?', id);
   }
@@ -225,7 +230,7 @@ export class D1Helper {
 
   async getGenerationById(id: string): Promise<GenerationWithEvent | null> {
     const row = await this.first<Record<string, unknown>>(
-      `SELECT g.*, e.title as event_title, e.category as event_category, e.thumbnail_url as event_thumbnail
+      `SELECT g.*, e.title as event_title, e.category as event_category, NULL as event_thumbnail
        FROM generations g LEFT JOIN events e ON g.event_id = e.id
        WHERE g.id = ?`,
       id
@@ -284,7 +289,7 @@ export class D1Helper {
       userId
     );
     const rows = await this.all<Record<string, unknown>>(
-      `SELECT g.*, e.title as event_title, e.category as event_category, e.thumbnail_url as event_thumbnail FROM generations g LEFT JOIN events e ON g.event_id = e.id WHERE g.user_id = ? ORDER BY g.created_at DESC LIMIT ? OFFSET ?`,
+      `SELECT g.*, e.title as event_title, e.category as event_category, NULL as event_thumbnail FROM generations g LEFT JOIN events e ON g.event_id = e.id WHERE g.user_id = ? ORDER BY g.created_at DESC LIMIT ? OFFSET ?`,
       userId,
       pageSize,
       offset
@@ -328,8 +333,7 @@ export class D1Helper {
       scene: jsonParse<EventScene>(row.scene as string) ?? {} as EventScene,
       camera: jsonParse<EventCamera>(row.camera as string) ?? {} as EventCamera,
       generation: jsonParse<EventGeneration>(row.generation as string) ?? {} as EventGeneration,
-      thumbnailUrl: (row.thumbnail_url as string) ?? undefined,
-      referenceVideo: (row.reference_video as string) ?? undefined,
+      pendingVideoTask: (row.pending_video_task as string) ?? undefined,
       status: row.status as Event['status'],
       createdAt: row.created_at as number,
     };

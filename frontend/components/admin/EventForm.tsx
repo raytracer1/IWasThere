@@ -10,7 +10,7 @@ const CATEGORIES = [
 
 const DEFAULT_SCENE = { location: "", time_period: "", atmosphere: "", description: "" };
 const DEFAULT_CAMERA = { angle: "", distance: "", lighting: "", style: "" };
-const DEFAULT_GENERATION = { prompt_template: "", negative_prompt: "", background_image: "", insert_zone: "" };
+const DEFAULT_GENERATION = { prompt_template: "", negative_prompt: "", insert_zone: "" };
 
 function stringify(obj: Record<string, unknown>): string {
   return JSON.stringify(obj, null, 2);
@@ -24,14 +24,6 @@ function parseJson(str: string, fieldName: string): Record<string, unknown> {
   }
 }
 
-/** Get key from signed URL: "https://.../assets/events/uuid/name.jpg?token=..." → "events/uuid/name.jpg" */
-function toKey(url: string): string {
-  const idx = url.indexOf('/assets/');
-  if (idx === -1) return url;
-  const q = url.indexOf('?', idx);
-  return q === -1 ? url.slice(idx + 8) : url.slice(idx + 8, q);
-}
-
 export interface EventFormSaveData {
   body: Record<string, unknown>;
   thumbnailFile: File | null;
@@ -43,9 +35,10 @@ interface EventFormProps {
   event?: Event | null;
   onSave: (data: EventFormSaveData) => Promise<void>;
   onCancel?: () => void;
+  onGenerateAssets?: () => Promise<void>;
 }
 
-export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
+export default function EventForm({ event, onSave, onCancel, onGenerateAssets }: EventFormProps) {
   const isEdit = !!event;
   const initializedRef = useRef<string | null>(null);
   const thumbPreviewRef = useRef<string | null>(null);
@@ -60,8 +53,6 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
     sceneStr: stringify(DEFAULT_SCENE),
     cameraStr: stringify(DEFAULT_CAMERA),
     generationStr: stringify(DEFAULT_GENERATION),
-    thumbnailUrl: "",
-    videoKey: "",
     status: "active" as "active" | "draft",
   });
 
@@ -75,6 +66,7 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [priceStr, setPriceStr] = useState("0");
+  const [generatingAssets, setGeneratingAssets] = useState(false);
 
   const initForm = useCallback((ev: Event | null | undefined) => {
     if (ev) {
@@ -87,10 +79,7 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
         cameraStr: stringify(ev.camera || (DEFAULT_CAMERA as Record<string, unknown>)),
         generationStr: stringify({
           ...((ev.generation as unknown as Record<string, unknown>) || DEFAULT_GENERATION),
-          background_image: toKey(((ev.generation as unknown as Record<string, unknown>)?.background_image as string) || ""),
         }),
-        thumbnailUrl: toKey(ev.thumbnailUrl || ""),
-        videoKey: toKey(ev.referenceVideo || ""),
         status: ev.status as "active" | "draft",
       });
       setPriceStr(String(ev.price ?? 0));
@@ -103,8 +92,6 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
         sceneStr: stringify(DEFAULT_SCENE),
         cameraStr: stringify(DEFAULT_CAMERA),
         generationStr: stringify(DEFAULT_GENERATION),
-        thumbnailUrl: "",
-        videoKey: "",
         status: "active",
       });
       setPriceStr("0");
@@ -167,8 +154,6 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
         scene: parseJson(form.sceneStr, "scene"),
         camera: parseJson(form.cameraStr, "camera"),
         generation: parseJson(form.generationStr, "generation"),
-        thumbnailUrl: form.thumbnailUrl || undefined,
-        referenceVideo: form.videoKey || undefined,
         status: form.status,
       };
       await onSave({ body, thumbnailFile, backgroundFile, videoFile });
@@ -206,25 +191,7 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
           ) : null}
         </div>
 
-        {/* 2. Thumbnail */}
-        <div className="col-span-2 flex flex-col gap-2">
-          <label className="flex items-center gap-2 rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-gray-400 cursor-pointer hover:text-white hover:border-cyan-500/30 transition-colors">
-            📁 Upload thumbnail
-            <input type="file" accept="image/*" className="hidden"
-              onChange={(e) => handleFileSelect(e.target.files?.[0], "thumbnail")} />
-          </label>
-          {thumbnailPreview ? (
-            <div className="rounded-lg overflow-hidden border border-white/10">
-              <img src={thumbnailPreview} alt="Thumbnail preview" className="w-full max-h-64 object-contain" />
-            </div>
-          ) : event?.thumbnailUrl && event.thumbnailUrl.startsWith('http') ? (
-            <div className="rounded-lg overflow-hidden border border-white/10">
-              <img src={event.thumbnailUrl} alt="Current thumbnail" className="w-full max-h-64 object-contain" />
-            </div>
-          ) : null}
-        </div>
-
-        {/* 3. Background Image */}
+        {/* 2. Background Image */}
         <div className="col-span-2 flex flex-col gap-2">
           <label className="flex items-center gap-2 rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-gray-400 cursor-pointer hover:text-white hover:border-cyan-500/30 transition-colors">
             🖼️ Upload background image
@@ -235,10 +202,27 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
             <div className="rounded-lg overflow-hidden border border-white/10">
               <img src={backgroundPreview} alt="Background preview" className="w-full max-h-64 object-contain" />
             </div>
-          ) : (event?.generation as unknown as Record<string, unknown>)?.background_image ? (
+          ) : event?.backgroundUrl ? (
             <div className="rounded-lg overflow-hidden border border-white/10">
-              <img src={(event?.generation as unknown as Record<string, unknown>).background_image as string}
-                alt="Current background" className="w-full max-h-64 object-contain" />
+              <img src={event.backgroundUrl} alt="Current background" className="w-full max-h-64 object-contain" />
+            </div>
+          ) : null}
+        </div>
+
+        {/* 3. Thumbnail */}
+        <div className="col-span-2 flex flex-col gap-2">
+          <label className="flex items-center gap-2 rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-gray-400 cursor-pointer hover:text-white hover:border-cyan-500/30 transition-colors">
+            📁 Upload thumbnail
+            <input type="file" accept="image/*" className="hidden"
+              onChange={(e) => handleFileSelect(e.target.files?.[0], "thumbnail")} />
+          </label>
+          {thumbnailPreview ? (
+            <div className="rounded-lg overflow-hidden border border-white/10">
+              <img src={thumbnailPreview} alt="Thumbnail preview" className="w-full max-h-64 object-contain" />
+            </div>
+          ) : event?.thumbnailUrl ? (
+            <div className="rounded-lg overflow-hidden border border-white/10">
+              <img src={event.thumbnailUrl} alt="Current thumbnail" className="w-full max-h-64 object-contain" />
             </div>
           ) : null}
         </div>
@@ -322,6 +306,15 @@ export default function EventForm({ event, onSave, onCancel }: EventFormProps) {
         >
           {saving ? "Saving..." : isEdit ? "Update" : "Create"}
         </button>
+        {onGenerateAssets && isEdit && (
+          <button
+            onClick={async () => { setGeneratingAssets(true); try { await onGenerateAssets(); } catch {} setGeneratingAssets(false); }}
+            disabled={generatingAssets}
+            className="rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-700 disabled:opacity-50"
+          >
+            {generatingAssets ? "Generating..." : "🎬 Generate BG & Video"}
+          </button>
+        )}
         {onCancel && (
           <button onClick={onCancel} className="rounded-lg bg-gray-700 px-4 py-2 text-sm text-gray-300">Cancel</button>
         )}

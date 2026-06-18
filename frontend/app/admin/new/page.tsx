@@ -8,14 +8,9 @@ import EventForm, { type EventFormSaveData } from "@/components/admin/EventForm"
 import { adminFetch } from "@/lib/admin-api";
 import { compressToWebP } from "@/lib/image-utils";
 
-function buildKey(ext: string, eventId: string, name: string): string {
-  return `events/${eventId}/${name}.${ext}`;
-}
-
 async function uploadFile(file: File, eventId: string, name: string, token?: string): Promise<void> {
-  // Compress images to WebP before upload
   let uploadFile = file;
-  if (file.type.startsWith('image/') && file.type !== 'image/webp') {
+  if (file.type.startsWith('image/')) {
     uploadFile = await compressToWebP(file);
   }
   const fd = new FormData();
@@ -30,25 +25,12 @@ export default function AdminNewPage() {
   const eventId = useMemo(() => crypto.randomUUID(), []);
 
   const handleSave = async (data: EventFormSaveData) => {
-    // Step 1: Upload files (parallel), key is deterministic
     const uploads: Promise<void>[] = [];
-    if (data.thumbnailFile) {
-      data.body.thumbnailUrl = buildKey('webp', eventId, 'thumbnail');
-      uploads.push(uploadFile(data.thumbnailFile, eventId, 'thumbnail', accessToken));
-    }
-    if (data.backgroundFile) {
-      const gen = (data.body.generation as Record<string, unknown>) || {};
-      gen.background_image = buildKey('webp', eventId, 'background');
-      data.body.generation = gen;
-      uploads.push(uploadFile(data.backgroundFile, eventId, 'background', accessToken));
-    }
-    if (data.videoFile) {
-      data.body.referenceVideo = buildKey(data.videoFile.name.split('.').pop() || 'mp4', eventId, 'reference');
-      uploads.push(uploadFile(data.videoFile, eventId, 'reference', accessToken));
-    }
+    if (data.thumbnailFile) uploads.push(uploadFile(data.thumbnailFile, eventId, 'thumbnail', accessToken));
+    if (data.backgroundFile) uploads.push(uploadFile(data.backgroundFile, eventId, 'background', accessToken));
+    if (data.videoFile) uploads.push(uploadFile(data.videoFile, eventId, 'reference', accessToken));
     await Promise.all(uploads);
 
-    // Step 2: POST event JSON
     await adminFetch("/admin/events", accessToken, {
       method: "POST",
       body: JSON.stringify({ ...data.body, id: eventId }),

@@ -119,34 +119,21 @@ export async function deleteFromR2(
  * Generate a unique filename for uploads.
  */
 /**
- * Sign all R2 asset URLs in an event (thumbnail, background_image, reference_video).
+ * Build public asset URLs from event ID pattern.
  */
-export async function signEventAssetUrls(
+export function buildEventAssetUrls(
   event: Record<string, unknown>,
-  secret: string,
-  workerUrl: string,
-  r2PublicUrl?: string
-): Promise<Record<string, unknown>> {
-  const sign = async (key: string | undefined) => {
-    if (!key || key.startsWith('http')) return key;
-    return generateSignedUrl(key, secret, workerUrl);
-  };
-  const publicUrl = (key: string | undefined) => {
-    if (!key || key.startsWith('http')) return key;
-    if (r2PublicUrl) return `${r2PublicUrl}/${key}`;
-    return `${workerUrl}/public/${key}`; // fallback
-  };
-
-  const generation = (event.generation as Record<string, unknown>) || {};
-
+  r2PublicUrl: string
+): Record<string, unknown> {
+  const id = event.id as string;
+  const t = Date.now(); // cache buster
   return {
     ...event,
-    thumbnailUrl: publicUrl(event.thumbnailUrl as string | undefined),
-    referenceVideo: await sign(event.referenceVideo as string | undefined),
-    generation: {
-      ...generation,
-      background_image: publicUrl(generation.background_image as string | undefined),
-    },
+    thumbnailUrl: `${r2PublicUrl}/events/${id}/thumbnail.webp?t=${t}`,
+    backgroundUrl: `${r2PublicUrl}/events/${id}/background.webp?t=${t}`,
+    referenceVideo: (event.referenceVideo as string)?.startsWith('http')
+      ? event.referenceVideo
+      : `${r2PublicUrl}/events/${id}/reference.mp4`,
   };
 }
 

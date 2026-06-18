@@ -136,10 +136,37 @@ app.notFound((c) => {
 // ─── Cron: poll generations + cleanup ─────────────────────
 
 import { D1Helper } from './utils/d1';
-import { deleteFromR2 } from './utils/r2';
+import { deleteFromR2, uploadToR2 } from './utils/r2';
 import { pollVideo, submitVideo } from './utils/agnes';
 import { compileEventPrompts } from './utils/promptBuilder';
 import type { GenerateRequest } from './shared';
+
+async function pollEventVideos(env: Bindings) {
+  const db = new D1Helper(env.DB);
+  const apiKey = env.AGNES_API_KEY;
+  if (!apiKey) return;
+  const events = await db.getEventsWithPendingVideo();
+  for (const ev of events) {
+    try {
+      const videoUrl = await pollVideo(ev.pendingVideoTask!, apiKey);
+      if (videoUrl) {
+        // Download and store in R2
+        let storedUrl = videoUrl;
+        try {
+          const videoResp = await fetch(videoUrl);
+          if (videoResp.ok && env.PUBLIC) {
+            const key = `events/${ev.id}/reference.mp4`;
+            await uploadToR2(env.PUBLIC, key, await videoResp.arrayBuffer(), 'video/mp4');
+            const publicBase = env.R2_PUBLIC_URL || '';
+            storedUrl = publicBase ? `${publicBase}/${key}` : videoUrl;
+          }
+        } catch {}
+        await db.updateEvent(ev.id, { pendingVideoTask: null });
+        console.log(`[cron] Event video stored: ${ev.id}`);
+      }
+    } catch { /* retry next cron */ }
+  }
+}
 
 async function pollGenerations(env: Bindings) {
   const db = new D1Helper(env.DB);
@@ -215,6 +242,7 @@ async function cleanupGenerations(env: Bindings) {
 
 async function scheduled(_event: ScheduledEvent, env: Bindings) {
   await pollGenerations(env);
+  await pollEventVideos(env);
   await cleanupGenerations(env);
 }
 

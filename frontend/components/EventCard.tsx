@@ -26,18 +26,19 @@ export function EventCard({ event }: { event: Event }) {
     >
       {/* Thumbnail */}
       <div className="aspect-[4/3] bg-gradient-to-br from-gray-800 to-gray-900 relative overflow-hidden">
-        {event.thumbnailUrl ? (
-          <img
-            src={event.thumbnailUrl}
-            alt={event.title}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-            loading="lazy"
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-5xl bg-gradient-to-br from-cyan-900/50 to-blue-900/50">
-            {categoryIcon}
-          </div>
-        )}
+        <img
+          src={event.thumbnailUrl}
+          alt={event.title}
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          loading="lazy"
+          onError={(e) => {
+            e.currentTarget.style.display = "none";
+            e.currentTarget.nextElementSibling?.classList.remove("hidden");
+          }}
+        />
+        <div className="hidden w-full h-full absolute inset-0 flex items-center justify-center text-5xl bg-gradient-to-br from-cyan-900/50 to-blue-900/50">
+          {categoryIcon}
+        </div>
         {/* Year Badge */}
         {timePeriod && (
           <div className="absolute top-3 left-3 rounded-lg bg-black/70 backdrop-blur-sm px-2.5 py-1 text-xs font-bold text-gray-900 dark:text-white">

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useSession, signIn } from "next-auth/react";
 import { fetchEvent, triggerGenerate } from "@/lib/api";
 import type { Event } from "@/lib/types";
+
 import { useUserStore } from "@/store/user";
 import { UploadSelfie } from "@/components/UploadSelfie";
 
@@ -227,15 +228,13 @@ export default function CreatePage({
         <h1 className="text-xl font-bold text-gray-900 dark:text-white">{event.title}</h1>
         {momentDesc && (
           <div className="mt-4 rounded-xl bg-gray-900/60 border border-gray-300 dark:border-white/10 overflow-hidden text-left">
-            {event.thumbnailUrl && (
-              <div className="aspect-video w-full overflow-hidden">
-                <img
-                  src={event.thumbnailUrl}
-                  alt={event.title}
-                  className="w-full h-full object-cover"
-                />
-              </div>
-            )}
+            <div className="aspect-video w-full overflow-hidden">
+              <img
+                src={event.thumbnailUrl}
+                alt={event.title}
+                className="w-full h-full object-cover"
+              />
+            </div>
             <div className="p-4">
               <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">The Moment</p>
               <p className="text-sm text-gray-200 leading-relaxed">{momentDesc}</p>

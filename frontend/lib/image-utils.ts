@@ -4,24 +4,31 @@
  */
 export async function compressToWebP(
   file: File,
-  options: { quality?: number } = {}
+  options: { quality?: number; maxWidth?: number } = {}
 ): Promise<File> {
-  const { quality = 0.85 } = options;
+  const { quality = 0.6, maxWidth = 640 } = options;
 
-  // Skip if already a small WebP
-  if (file.type === 'image/webp' && file.size < 512 * 1024) {
-    return file;
+  // Use Image element for reliable full-image loading
+  const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+    const i = new Image();
+    i.onload = () => resolve(i);
+    i.onerror = () => reject(new Error('Failed to load image'));
+    i.src = URL.createObjectURL(file);
+  });
+
+  let { naturalWidth: width, naturalHeight: height } = img;
+
+  if (width > maxWidth) {
+    height = Math.round(height * (maxWidth / width));
+    width = maxWidth;
   }
-
-  const bitmap = await createImageBitmap(file);
-  const { width, height } = bitmap;
 
   const canvas = document.createElement('canvas');
   canvas.width = width;
   canvas.height = height;
   const ctx = canvas.getContext('2d')!;
-  ctx.drawImage(bitmap, 0, 0);
-  bitmap.close();
+  ctx.drawImage(img, 0, 0, width, height);
+  URL.revokeObjectURL(img.src);
 
   const blob = await new Promise<Blob>((resolve, reject) => {
     canvas.toBlob((b) => {
