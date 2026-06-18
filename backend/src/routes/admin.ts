@@ -2,7 +2,6 @@ import { Hono } from 'hono';
 import { D1Helper } from '../utils/d1';
 import { uploadToR2, deleteFromR2, generateSignedUrl, buildEventAssetUrls } from '../utils/r2';
 import { generateImageFromText, submitVideo } from '../utils/agnes';
-import { compileEventPrompts } from '../utils/promptBuilder';
 import { MAX_THUMBNAIL_SIZE, DEFAULT_PAGE_SIZE } from '../shared';
 import type { Event } from '../shared';
 import type { Bindings } from '../types';
@@ -80,7 +79,7 @@ adminRouter.get('/events/:id', async (c) => {
     return c.json({ success: false, error: 'Event not found' }, 404);
   }
 
-  const data = await buildEventAssetUrls(event as unknown as Record<string, unknown>, c.env.R2_PUBLIC_URL || `${new URL(c.req.url).origin}/public`);
+  const data = buildEventAssetUrls(event as unknown as Record<string, unknown>, c.env.R2_PUBLIC_URL || `${new URL(c.req.url).origin}/public`);
   return c.json({ success: true, data });
 });
 
@@ -164,9 +163,6 @@ adminRouter.delete('/events/:id', async (c) => {
     `events/${event.id}/background.webp`,
     `events/${event.id}/reference.mp4`,
   ];
-  // Also delete any stored URLs (old format)
-  if (event.referenceVideo && (event.referenceVideo as string).startsWith('http'))
-    r2Keys.push(event.referenceVideo as string);
 
   for (const key of r2Keys) {
     try {
@@ -187,17 +183,30 @@ adminRouter.post('/events/:id/generate-assets', async (c) => {
   const event = await db.getEventById(c.req.param('id'));
   if (!event) return c.json({ success: false, error: 'Event not found' }, 404);
 
-  const { imagePrompt } = compileEventPrompts(event);
+  const formData = await c.req.json() as Record<string, unknown> || {};
+  const ratio = (formData.aspectRatio as string) || event.aspectRatio || '16:9';
+  const promptTemplate = (formData.promptTemplate as string) || event.generation?.prompt_template || '';
+  const negativePrompt = (formData.negativePrompt as string) || event.generation?.negative_prompt || '';
+  const scene = (formData.scene as Record<string, unknown>) || event.scene || {};
+  // Replace placeholders with neutral values for generic background
+  const genericPrompt = promptTemplate
+    .replace(/\{team_a\}/g, 'Team A')
+    .replace(/\{team_b\}/g, 'Team B')
+    .replace(/\{score\}/g, '0-0')
+    .replace(/\{user_team\}/g, 'Team A')
+    .replace(/\{mood\}/g, 'excited')
+    .replace(/\{event\}/g, (formData.title as string) || event.title)
+    .replace(/\{location\}/g, (scene.location as string) || (event.scene?.location as string) || '')
+    .replace(/\{time_period\}/g, (scene.time_period as string) || (event.scene?.time_period as string) || '');
 
   try {
     // 1. Generate background image from text
-    const bgPrompt = `Ultra-realistic stadium scene: ${event.scene?.venue || 'stadium'}, ${event.scene?.time_period || ''}, ${event.scene?.lighting || 'night'} lighting, packed crowd. ${imagePrompt.slice(0, 200)}`;
-    const ratio = event.aspectRatio || '16:9';
+    const bgPrompt = `Ultra-realistic stadium scene: ${scene.venue || 'stadium'}, ${scene.time_period || ''}, ${scene.lighting || 'night'} lighting, packed crowd. ${genericPrompt.slice(0, 200)}`;
     const sizeMap: Record<string, string> = { '9:16': '720x1280', '16:9': '1280x720', '1:1': '720x720', '4:3': '960x720', '3:4': '720x960' };
     const size = sizeMap[ratio] || '1280x720';
     const [w, h] = size.split('x').map(Number);
 
-    const bgImageUrl = await generateImageFromText(bgPrompt, apiKey, size);
+    const bgImageUrl = await generateImageFromText(bgPrompt, apiKey, size, negativePrompt);
     console.log(`[admin] Background image: ${bgImageUrl}`);
 
     // Download and store in R2 (public bucket)
@@ -214,7 +223,7 @@ adminRouter.post('/events/:id/generate-assets', async (c) => {
     const bgStoredUrl = bgKey ? `${publicBase}/${bgKey}` : bgImageUrl;
 
     // 2. Generate reference video from the background image
-    const videoTaskId = await submitVideo(imagePrompt.slice(0, 500), bgImageUrl, apiKey, 121, 24, w, h);
+    const videoTaskId = await submitVideo(genericPrompt.slice(0, 500), bgImageUrl, apiKey, 121, 24, w, h, negativePrompt);
     console.log(`[admin] Video task: ${videoTaskId}`);
 
     // Update the event (cron will poll for video completion)

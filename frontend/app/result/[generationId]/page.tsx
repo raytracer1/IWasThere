@@ -346,7 +346,7 @@ export default function ResultPage({
                 />
 
                 {/* TV Broadcast Scoreboard Overlay */}
-                {(gen.football && gen.eventCategory === 'football') && (() => {
+                {(gen.football && (gen.eventCategory === 'football' || gen.eventCategory === 'basketball')) && (() => {
                 const fb = JSON.parse(gen.football!);
                 return (
                   <div className="absolute top-3 right-3 z-10 flex items-center gap-1 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
@@ -373,7 +373,7 @@ export default function ResultPage({
                   onPause={playingRef ? () => { playingRef.current = false; } : undefined}
                   className="w-full max-h-[60vh] object-contain"
                 />
-                {(gen.football && gen.eventCategory === 'football') && (() => {
+                {(gen.football && (gen.eventCategory === 'football' || gen.eventCategory === 'basketball')) && (() => {
                 const fb = JSON.parse(gen.football!);
                 return (
                   <div className="absolute top-3 right-3 z-10 flex items-center gap-1 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">

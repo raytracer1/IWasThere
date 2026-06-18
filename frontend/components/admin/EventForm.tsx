@@ -35,7 +35,7 @@ interface EventFormProps {
   event?: Event | null;
   onSave: (data: EventFormSaveData) => Promise<void>;
   onCancel?: () => void;
-  onGenerateAssets?: () => Promise<void>;
+  onGenerateAssets?: (data: { title: string; aspectRatio: string; promptTemplate: string; negativePrompt: string; scene: Record<string, unknown> }) => Promise<void>;
 }
 
 export default function EventForm({ event, onSave, onCancel, onGenerateAssets }: EventFormProps) {
@@ -308,7 +308,15 @@ export default function EventForm({ event, onSave, onCancel, onGenerateAssets }:
         </button>
         {onGenerateAssets && isEdit && (
           <button
-            onClick={async () => { setGeneratingAssets(true); try { await onGenerateAssets(); } catch {} setGeneratingAssets(false); }}
+            onClick={async () => {
+  setGeneratingAssets(true);
+  try {
+    const gen = JSON.parse(form.generationStr);
+    const scene = JSON.parse(form.sceneStr);
+    await onGenerateAssets({ title: form.title, aspectRatio: form.aspectRatio, promptTemplate: gen.prompt_template, negativePrompt: gen.negative_prompt || '', scene });
+  } catch {}
+  setGeneratingAssets(false);
+}}
             disabled={generatingAssets}
             className="rounded-lg bg-purple-600 px-4 py-2 text-sm font-medium text-white hover:bg-purple-700 disabled:opacity-50"
           >

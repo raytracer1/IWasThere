@@ -228,7 +228,7 @@ export class D1Helper {
     );
   }
 
-  async getGenerationById(id: string): Promise<GenerationWithEvent | null> {
+  async getGenerationById(id: string): Promise<Generation | null> {
     const row = await this.first<Record<string, unknown>>(
       `SELECT g.*, e.title as event_title, e.category as event_category, NULL as event_thumbnail
        FROM generations g LEFT JOIN events e ON g.event_id = e.id
@@ -282,7 +282,7 @@ export class D1Helper {
     userId: string,
     page = 1,
     pageSize = 20
-  ): Promise<{ generations: GenerationWithEvent[]; total: number }> {
+  ): Promise<{ generations: Generation[]; total: number }> {
     const offset = (page - 1) * pageSize;
     const countResult = await this.first<{ count: number }>(
       'SELECT COUNT(*) as count FROM generations WHERE user_id = ?',
@@ -361,7 +361,7 @@ export class D1Helper {
       eventTitle: (row as Record<string, unknown>).event_title as string | undefined,
       eventCategory: (row as Record<string, unknown>).event_category as string | undefined,
       eventThumbnail: (row as Record<string, unknown>).event_thumbnail as string | undefined,
-    } as GenerationWithEvent;
+    } as Generation;
   }
 }
 

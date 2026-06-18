@@ -14,41 +14,6 @@ const CATEGORY_ICON: Record<string, string> = {
   cricket: "🏏", boxing: "🥊", american_football: "🏈", other: "🏟️",
 };
 
-// ─── 2026 FIFA World Cup teams with country codes ─────────
-const WORLD_CUP_TEAMS: { name: string; code: string }[] = [
-  // AFC — Asia
-  { name: "Australia", code: "au" }, { name: "Iran", code: "ir" },
-  { name: "Iraq", code: "iq" }, { name: "Japan", code: "jp" },
-  { name: "Jordan", code: "jo" }, { name: "Qatar", code: "qa" },
-  { name: "Saudi Arabia", code: "sa" }, { name: "South Korea", code: "kr" },
-  { name: "Uzbekistan", code: "uz" },
-  // CAF — Africa
-  { name: "Algeria", code: "dz" }, { name: "Cape Verde", code: "cv" },
-  { name: "DR Congo", code: "cd" }, { name: "Egypt", code: "eg" },
-  { name: "Ghana", code: "gh" }, { name: "Ivory Coast", code: "ci" },
-  { name: "Morocco", code: "ma" }, { name: "Senegal", code: "sn" },
-  { name: "South Africa", code: "za" }, { name: "Tunisia", code: "tn" },
-  // CONCACAF
-  { name: "Canada", code: "ca" }, { name: "Mexico", code: "mx" },
-  { name: "United States", code: "us" }, { name: "Curaçao", code: "cw" },
-  { name: "Haiti", code: "ht" }, { name: "Panama", code: "pa" },
-  // CONMEBOL — South America
-  { name: "Argentina", code: "ar" }, { name: "Brazil", code: "br" },
-  { name: "Colombia", code: "co" }, { name: "Ecuador", code: "ec" },
-  { name: "Paraguay", code: "py" }, { name: "Uruguay", code: "uy" },
-  // OFC — Oceania
-  { name: "New Zealand", code: "nz" },
-  // UEFA — Europe
-  { name: "Austria", code: "at" }, { name: "Belgium", code: "be" },
-  { name: "Bosnia and Herzegovina", code: "ba" }, { name: "Croatia", code: "hr" },
-  { name: "Czechia", code: "cz" }, { name: "England", code: "gb-eng" },
-  { name: "France", code: "fr" }, { name: "Germany", code: "de" },
-  { name: "Netherlands", code: "nl" }, { name: "Norway", code: "no" },
-  { name: "Portugal", code: "pt" }, { name: "Scotland", code: "gb-sct" },
-  { name: "Spain", code: "es" }, { name: "Sweden", code: "se" },
-  { name: "Switzerland", code: "ch" }, { name: "Türkiye", code: "tr" },
-];
-
 /** Render a flag <img> for a country code */
 function flagUrl(code: string) {
   return `https://flagcdn.com/w80/${code}.png`;
@@ -170,10 +135,10 @@ export default function CreatePage({
     setGenerating(true);
     setGenError(null);
     try {
-      const teamAInfo = WORLD_CUP_TEAMS.find(t => t.name === teamA);
-      const teamBInfo = WORLD_CUP_TEAMS.find(t => t.name === teamB);
+      const teamAInfo = teamList.find(t => t.name === teamA);
+      const teamBInfo = teamList.find(t => t.name === teamB);
       const football =
-        event?.category === "football" && teamA && teamB && scoreA !== null && scoreB !== null
+        isTeamSport && teamA && teamB && scoreA !== null && scoreB !== null
           ? { teamA, teamB, score: `${scoreA}-${scoreB}`, mood, userTeam: userTeam || teamA, codeA: teamAInfo?.code || '', codeB: teamBInfo?.code || '' }
           : undefined;
 
@@ -217,6 +182,9 @@ export default function CreatePage({
     ? event.scene.atmosphere.join(', ')
     : (event.scene?.atmosphere as string) || "";
   const isFootball = event.category === "football";
+  const isBasketball = event.category === "basketball";
+  const isTeamSport = isFootball || isBasketball;
+  const teamList = event.teams || [];
 
   return (
     <div className="mx-auto max-w-lg px-4 py-6 pb-20">
@@ -247,7 +215,7 @@ export default function CreatePage({
       </div>
 
       {/* 🆕 Football Scoreboard — TV broadcast style */}
-      {isFootball && (
+      {isTeamSport && (
         <div className="mb-6 rounded-xl bg-gray-900/60 border border-gray-300 dark:border-white/10 p-5">
           <h2 className="text-sm font-semibold text-gray-900 dark:text-white mb-4">
             ⚽ Customize Your Match
@@ -261,7 +229,7 @@ export default function CreatePage({
             </div>
             <div className="flex items-center justify-center px-4 py-5 gap-3">
               <div className="flex-1 flex flex-col items-center gap-2 min-w-0">
-                {teamA ? (() => { const t = WORLD_CUP_TEAMS.find(t => t.name === teamA); return (<>
+                {teamA ? (() => { const t = teamList.find(t => t.name === teamA); return (<>
                   <img src={flagUrl(t!.code)} alt={teamA} className="w-10 h-7 rounded shadow-md object-cover" />
                   <span className="text-sm font-bold text-white text-center leading-tight truncate max-w-full">{teamA}</span>
                 </>); })() : (
@@ -274,7 +242,7 @@ export default function CreatePage({
                 <span className="text-4xl font-black text-white tabular-nums w-12 text-center">{scoreB ?? "-"}</span>
               </div>
               <div className="flex-1 flex flex-col items-center gap-2 min-w-0">
-                {teamB ? (() => { const t = WORLD_CUP_TEAMS.find(t => t.name === teamB); return (<>
+                {teamB ? (() => { const t = teamList.find(t => t.name === teamB); return (<>
                   <img src={flagUrl(t!.code)} alt={teamB} className="w-10 h-7 rounded shadow-md object-cover" />
                   <span className="text-sm font-bold text-white text-center leading-tight truncate max-w-full">{teamB}</span>
                 </>); })() : (
@@ -288,7 +256,7 @@ export default function CreatePage({
           <div className="flex items-end justify-center gap-3 mb-4">
             <div className="flex-1">
               <label className="text-xs text-gray-400 mb-1 block">Team A</label>
-              <TeamPicker value={teamA} onChange={setTeamA} teams={WORLD_CUP_TEAMS} placeholder="Select team..." />
+              <TeamPicker value={teamA} onChange={setTeamA} teams={teamList} placeholder="Select team..." />
             </div>
             <div className="shrink-0 text-center">
               <label className="text-xs text-gray-400 mb-1 block">Score</label>
@@ -300,7 +268,7 @@ export default function CreatePage({
             </div>
             <div className="flex-1">
               <label className="text-xs text-gray-400 mb-1 block">Team B</label>
-              <TeamPicker value={teamB} onChange={setTeamB} teams={WORLD_CUP_TEAMS} placeholder="Select team..." />
+              <TeamPicker value={teamB} onChange={setTeamB} teams={teamList} placeholder="Select team..." />
             </div>
           </div>
 
@@ -312,7 +280,7 @@ export default function CreatePage({
               </label>
               <div className="grid grid-cols-2 gap-2">
                 {[teamA, teamB].map((t) => {
-                  const info = WORLD_CUP_TEAMS.find(x => x.name === t);
+                  const info = teamList.find(x => x.name === t);
                   const active = (userTeam || teamA) === t;
                   return (
                     <button

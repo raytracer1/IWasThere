@@ -117,6 +117,7 @@ export interface GenerationWithEvent extends Generation {
 export interface GenerateRequest {
   eventId: string;
   imageKey: string;
+  aspectRatio?: string;     // "16:9" | "9:16" | "1:1"
   football?: {
     teamA: string;
     teamB: string;

@@ -90,16 +90,24 @@ export default function AdminEditPage({
             event={event}
             onSave={handleSave}
             onCancel={() => router.push("/admin")}
-            onGenerateAssets={async () => {
-              await adminFetch(`/admin/events/${eventId}/generate-assets`, accessToken, { method: 'POST' });
-              const poll = async () => {
-                const res = await adminFetch<{ data: Event & { pendingVideoTask?: string } }>(`/admin/events/${eventId}`, accessToken);
-                if (res.data) setEvent(res.data);
-                if (res.data?.pendingVideoTask) {
-                  setTimeout(poll, 5000);
-                }
-              };
-              poll();
+            onGenerateAssets={async (data) => {
+              await adminFetch(`/admin/events/${eventId}/generate-assets`, accessToken, {
+                method: 'POST',
+                body: JSON.stringify(data),
+              });
+              // Poll until video is ready (blocking — button shows "Generating...")
+              let seenTask = false;
+              await new Promise<void>((resolve) => {
+                (function poll() {
+                  setTimeout(async () => {
+                    const r = await adminFetch<{ data: Event & { pendingVideoTask?: string } }>(`/admin/events/${eventId}`, accessToken);
+                    if (r.data) { setEvent(r.data); if (r.data.pendingVideoTask) seenTask = true; }
+                    if (!seenTask) poll();
+                    else if (r.data?.pendingVideoTask) poll();
+                    else resolve();
+                  }, 5000);
+                })();
+              });
             }}
           />
         ) : null}

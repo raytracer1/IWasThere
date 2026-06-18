@@ -63,6 +63,7 @@ export interface Event {
   generation: EventGeneration;
   thumbnailUrl?: string;     // computed by backend
   backgroundUrl?: string;    // computed by backend
+  teams?: { name: string; code: string }[];  // from backend per category
   referenceVideo?: string;   // computed by backend
   status: EventStatus;
   createdAt: number;
@@ -114,6 +115,7 @@ export interface PaginatedResponse<T> {
 export interface GenerateRequest {
   eventId: string;
   imageBase64: string;
+  aspectRatio?: string;
   football?: {
     teamA: string;
     teamB: string;
