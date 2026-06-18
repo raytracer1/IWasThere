@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect, use, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { fetchGeneration } from "@/lib/api";
@@ -31,7 +31,8 @@ function drawWatermarks(
   height: number,
   football: { teamA: string; teamB: string; score: string; codeA?: string; codeB?: string } | null,
   flagA?: HTMLImageElement | null,
-  flagB?: HTMLImageElement | null
+  flagB?: HTMLImageElement | null,
+  matchSeconds = 0
 ) {
   const fontSize = Math.max(10, width / 60);
 
@@ -62,9 +63,17 @@ function drawWatermarks(
     ctx.font = `bold ${teamFontSize}px system-ui, sans-serif`;
     const tbW = ctx.measureText(football.teamB).width;
 
+    // Clock width
+    const clockFontSize = Math.max(9, Math.round(scoreFontSize * 0.85));
+    ctx.font = `bold ${clockFontSize}px system-ui, monospace`;
+    const mins = Math.floor(matchSeconds / 60);
+    const secs = matchSeconds % 60;
+    const clock = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    const clkW = ctx.measureText(clock).width;
+
     const flagAW = flagA ? flgW + gap : 0;
     const flagBW = flagB ? flgW + gap : 0;
-    const totalW = taW + gap + flagAW + scW + gap + flagBW + tbW;
+    const totalW = taW + gap + flagAW + scW + gap + flagBW + tbW + gap * 2 + clkW;
     let sx = width - totalW - 8;
 
     const drawText = (text: string, fontSize: number, x: number) => {
@@ -92,6 +101,15 @@ function drawWatermarks(
 
     // Team B
     drawText(football.teamB, teamFontSize, sx);
+    sx += tbW + gap * 2;
+
+    // Match clock (pre-computed above)
+    ctx.font = `bold ${clockFontSize}px system-ui, monospace`;
+    ctx.fillStyle = "white";
+    ctx.strokeStyle = "rgba(0,0,0,0.7)";
+    ctx.lineWidth = 1;
+    ctx.strokeText(clock, sx, midY);
+    ctx.fillText(clock, sx, midY);
 
     ctx.textBaseline = "alphabetic";
   }
@@ -115,7 +133,8 @@ async function downloadImageWithWatermark(
   canvas.height = img.naturalHeight;
   const ctx = canvas.getContext("2d")!;
   ctx.drawImage(img, 0, 0);
-  drawWatermarks(ctx, canvas.width, canvas.height, football, flagA, flagB);
+  const matchTime = Math.floor(Math.random() * 90 * 60);
+  drawWatermarks(ctx, canvas.width, canvas.height, football, flagA, flagB, matchTime);
 
   canvas.toBlob((blob) => {
     if (!blob) return;
@@ -146,11 +165,19 @@ async function downloadVideoWithWatermark(
   await new Promise<void>((resolve) => { video.onloadedmetadata = () => resolve(); });
   const { videoWidth, videoHeight } = video;
 
+  const startTime = Math.floor(Math.random() * 90 * 60);
+
   const canvas = document.createElement("canvas");
   canvas.width = videoWidth;
   canvas.height = videoHeight;
   const ctx = canvas.getContext("2d")!;
   const stream = canvas.captureStream(30);
+  // Capture audio from the video element
+  try {
+    const videoStream = (video as unknown as { captureStream(): MediaStream }).captureStream();
+    const audioTrack = videoStream.getAudioTracks()[0];
+    if (audioTrack) stream.addTrack(audioTrack);
+  } catch {}
   const recorder = new MediaRecorder(stream, { mimeType: "video/webm" });
   const chunks: Blob[] = [];
   recorder.ondataavailable = (e) => chunks.push(e.data);
@@ -176,7 +203,7 @@ async function downloadVideoWithWatermark(
   const drawFrame = () => {
     if (video.ended || video.paused) { recorder.stop(); return; }
     ctx.drawImage(video, 0, 0);
-    drawWatermarks(ctx, videoWidth, videoHeight, football, flagA, flagB);
+    drawWatermarks(ctx, videoWidth, videoHeight, football, flagA, flagB, startTime + Math.floor(video.currentTime));
     requestAnimationFrame(drawFrame);
   };
   drawFrame();
@@ -196,6 +223,9 @@ export default function ResultPage({
   const [gen, setGen] = useState<Generation | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [selectedCaption, setSelectedCaption] = useState<string | undefined>();
+  const [matchStart] = useState(() => Math.floor(Math.random() * 90 * 60));
+  const [elapsed, setElapsed] = useState(0);
+  const playingRef = useRef(false);
 
   useEffect(() => {
     if (!accessToken) return;
@@ -245,6 +275,14 @@ export default function ResultPage({
   const isProcessing = !gen || gen.status === "queued" || gen.status === "processing";
   const isCompleted = gen?.status === "completed";
   const isFailed = gen?.status === "failed";
+
+  useEffect(() => {
+    if (!isCompleted) return;
+    const timer = setInterval(() => {
+      if (playingRef.current) setElapsed((e) => e + 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [isCompleted]);
 
   return (
     <div className="mx-auto max-w-lg px-4 py-6 pb-20">
@@ -302,6 +340,8 @@ export default function ResultPage({
                   autoPlay
                   loop
                   playsInline
+                  onPlay={playingRef ? () => { playingRef.current = true; } : undefined}
+                  onPause={playingRef ? () => { playingRef.current = false; } : undefined}
                   className="w-full max-h-[60vh] object-contain"
                 />
 
@@ -315,6 +355,7 @@ export default function ResultPage({
                     <span className="text-[10px] font-black text-white tabular-nums">{fb.score}</span>
                     {fb.codeB && <img src={`https://flagcdn.com/w40/${fb.codeB}.png`} alt="" className="w-3.5 h-2.5 rounded-sm" />}
                     <span className="text-[10px] font-bold text-white truncate max-w-16">{fb.teamB}</span>
+                    <span className="text-[9px] text-white/60 tabular-nums ml-1">{(() => { const t = matchStart + elapsed; const m = Math.floor(t/60); const s = t%60; return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; })()}</span>
                   </div>
                 );
               })()}
@@ -328,6 +369,8 @@ export default function ResultPage({
                 <img
                   src={gen.outputImageUrl}
                   alt="Your AI-generated sports moment"
+                  onPlay={playingRef ? () => { playingRef.current = true; } : undefined}
+                  onPause={playingRef ? () => { playingRef.current = false; } : undefined}
                   className="w-full max-h-[60vh] object-contain"
                 />
                 {(gen.football && gen.eventCategory === 'football') && (() => {
@@ -339,6 +382,7 @@ export default function ResultPage({
                     <span className="text-[10px] font-black text-white tabular-nums">{fb.score}</span>
                     {fb.codeB && <img src={`https://flagcdn.com/w40/${fb.codeB}.png`} alt="" className="w-3.5 h-2.5 rounded-sm" />}
                     <span className="text-[10px] font-bold text-white truncate max-w-16">{fb.teamB}</span>
+                    <span className="text-[9px] text-white/60 tabular-nums ml-1">{(() => { const t = matchStart + elapsed; const m = Math.floor(t/60); const s = t%60; return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; })()}</span>
                   </div>
                 );
               })()}
