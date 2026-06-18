@@ -57,6 +57,7 @@ generationRouter.get('/:id', async (c) => {
   try { parsedCaptions = gen.captions ? JSON.parse(gen.captions) : []; } catch {}
 
   const publicBase = c.env.R2_PUBLIC_URL || `${new URL(c.req.url).origin}/public`;
+  const refVideo = `${publicBase}/events/${gen.eventId}/reference.mp4`;
 
   return c.json({
     success: true,
@@ -64,7 +65,7 @@ generationRouter.get('/:id', async (c) => {
       ...gen,
       inputImageUrl,
       outputImageUrl: imageUrl,
-      outputVideoUrl: videoUrl,
+      outputVideoUrl: videoUrl || (gen.status === 'failed' ? refVideo : undefined),
       eventThumbnail: `${publicBase}/events/${gen.eventId}/thumbnail.webp?t=${Date.now()}`,
       captions: parsedCaptions,
     },

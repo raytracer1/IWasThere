@@ -273,8 +273,8 @@ export default function ResultPage({
   }
 
   const isProcessing = !gen || gen.status === "queued" || gen.status === "processing";
-  const isCompleted = gen?.status === "completed";
-  const isFailed = gen?.status === "failed";
+  const isCompleted = gen?.status === "completed" || (gen?.status === "failed" && !!gen?.outputVideoUrl);
+  const isFailed = gen?.status === "failed" && !gen?.outputVideoUrl;
 
   useEffect(() => {
     if (!isCompleted) return;
