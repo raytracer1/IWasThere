@@ -52,7 +52,7 @@ generateRouter.post('/', async (c) => {
 
   const userId = dbUser?.id || user.id;
 
-  const { imagePrompt } = compileEventPrompts(event, (football || basketball) as Record<string, unknown> | undefined);
+  const { imagePrompt } = compileEventPrompts(event, (football || basketball) as never);
   const generationId = crypto.randomUUID();
 
   await db.createGeneration({

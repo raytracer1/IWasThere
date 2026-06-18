@@ -1,0 +1,11 @@
+-- Seed: Three-Body Dual-Vector Foil event
+INSERT OR IGNORE INTO events (id, title, category, scene, camera, generation, status, created_at) VALUES (
+  '00000001-0001-4000-8000-000000000004',
+  'Three-Body — Witness the Dual-Vector Foil',
+  'fiction',
+  '{"type":"spaceship_interior","venue":"Deep Space Observatory Deck","location":"Edge of the Solar System","time_period":"Crisis Era","lighting":"dim_emergency","weather":"none","crowd_density":"alone","atmosphere":["horror","despair","cosmic_dread","silence","inevitability"],"description":"The dual-vector foil is expanding. Space itself is collapsing into two dimensions. A lone observer watches from a spaceship window, face frozen in terror."}',
+  '{"style":"cinematic_photography","angle":"eye_level","shot_type":"medium","lens":"35mm","depth_of_field":"shallow","lighting":"eerie_cosmic_glow"}',
+  '{"prompt_template":"Place this person inside a dark spaceship observation deck, standing by a large viewport window. Through the window, reality itself is collapsing — a shimmering, expanding wall of pure light is consuming the starfield, flattening everything into two dimensions. The dual-vector foil is spreading across the solar system.\n\nThe person''s face is pressed close to the window, expression frozen in horror and despair — mouth slightly open, eyes wide, face pale from the dim emergency lighting. One hand pressed against the glass. They are witnessing the death of three-dimensional space.\n\nThe spaceship interior is dark, lit only by the eerie glow from the window and dim red emergency lights. The atmosphere is one of absolute cosmic dread and silence.\n\nThe person is facing the window but their face is visible in profile/three-quarter view, illuminated by the otherworldly light from outside. THIS IS A SCENE OF COSMIC HORROR AND DESPAIR.\n\nVisual style: Ultra-realistic cinematic photography, sci-fi film aesthetic, dramatic cosmic lighting, shallow depth of field, 8K, anamorphic lens. Keep facial features intact. No text or logos.","negative_prompt":"blurry face, duplicate person, extra fingers, cropped face, distorted body, low quality, cartoon, painting, illustration, watermark, text, logo, back turned, facing away from camera, happy, smiling, colorful, bright cheerful scene","insert_zone":""}',
+  'active',
+  unixepoch()
+);
