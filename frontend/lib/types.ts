@@ -63,7 +63,7 @@ export interface Event {
   generation: EventGeneration;
   thumbnailUrl?: string;     // computed by backend
   backgroundUrl?: string;    // computed by backend
-  teams?: { name: string; code: string }[];  // from backend per category
+  teams?: { name: string; code: string; flag: string }[];  // from backend per category
   referenceVideo?: string;   // computed by backend
   status: EventStatus;
   createdAt: number;

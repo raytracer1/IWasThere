@@ -47,10 +47,22 @@ const BASKETBALL_TEAMS = [
   { name: "Utah Jazz", code: "uth" }, { name: "Washington Wizards", code: "was" },
 ];
 
+const NBA_TEAM_IDS: Record<string, number> = {
+  atl:1610612737,bos:1610612738,bkn:1610612751,cha:1610612766,chi:1610612741,cle:1610612739,
+  dal:1610612742,den:1610612743,det:1610612765,gsw:1610612744,hou:1610612745,ind:1610612754,
+  lac:1610612746,lal:1610612747,mem:1610612763,mia:1610612748,mil:1610612749,min:1610612750,
+  nop:1610612740,nyk:1610612752,okc:1610612760,orl:1610612753,phi:1610612755,phx:1610612756,
+  por:1610612757,sac:1610612758,sas:1610612759,tor:1610612761,uth:1610612762,was:1610612764,
+};
+
 function attachTeams(event: Record<string, unknown>): Record<string, unknown> {
   const category = event.category as string;
-  if (category === 'football') return { ...event, teams: FOOTBALL_TEAMS };
-  if (category === 'basketball') return { ...event, teams: BASKETBALL_TEAMS };
+  if (category === 'football') {
+    return { ...event, teams: FOOTBALL_TEAMS.map(t => ({ ...t, flag: `https://flagcdn.com/w80/${t.code}.png` })) };
+  }
+  if (category === 'basketball') {
+    return { ...event, teams: BASKETBALL_TEAMS.map(t => ({ ...t, flag: `https://cdn.nba.com/logos/nba/${NBA_TEAM_IDS[t.code]}/primary/L/logo.svg` })) };
+  }
   return event;
 }
 

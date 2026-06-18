@@ -14,15 +14,10 @@ const CATEGORY_ICON: Record<string, string> = {
   cricket: "🏏", boxing: "🥊", american_football: "🏈", other: "🏟️",
 };
 
-/** Render a flag <img> for a country code */
-function flagUrl(code: string) {
-  return `https://flagcdn.com/w80/${code}.png`;
-}
-
 function TeamPicker({ value, onChange, teams, placeholder }: {
   value: string;
   onChange: (v: string) => void;
-  teams: { name: string; code: string }[];
+  teams: { name: string; code: string; flag: string }[];
   placeholder: string;
 }) {
   const [open, setOpen] = useState(false);
@@ -37,7 +32,7 @@ function TeamPicker({ value, onChange, teams, placeholder }: {
       >
         {selected ? (
           <>
-            <img src={flagUrl(selected.code)} alt="" className="w-5 h-3.5 rounded-sm shrink-0" />
+            {selected.flag && <img src={selected.flag} alt="" className="w-5 h-3.5 rounded-sm shrink-0" />}
             <span className="truncate">{selected.name}</span>
           </>
         ) : (
@@ -55,7 +50,7 @@ function TeamPicker({ value, onChange, teams, placeholder }: {
                 onClick={() => { onChange(t.name); setOpen(false); }}
                 className="w-full flex items-center gap-2 px-3 py-2 text-sm text-white hover:bg-gray-700 transition-colors"
               >
-                <img src={flagUrl(t.code)} alt="" className="w-5 h-3.5 rounded-sm shrink-0" />
+                {t.flag && <img src={t.flag} alt="" className="w-5 h-3.5 rounded-sm shrink-0" />}
                 <span className="truncate">{t.name}</span>
               </button>
             ))}
@@ -139,7 +134,7 @@ export default function CreatePage({
       const teamBInfo = teamList.find(t => t.name === teamB);
       const football =
         isTeamSport && teamA && teamB && scoreA !== null && scoreB !== null
-          ? { teamA, teamB, score: `${scoreA}-${scoreB}`, mood, userTeam: userTeam || teamA, codeA: teamAInfo?.code || '', codeB: teamBInfo?.code || '' }
+          ? { teamA, teamB, score: `${scoreA}-${scoreB}`, mood, userTeam: userTeam || teamA, flagA: teamAInfo?.flag || '', flagB: teamBInfo?.flag || '' }
           : undefined;
 
       const res = await triggerGenerate({ eventId, imageBase64, football }, accessToken);
@@ -230,7 +225,7 @@ export default function CreatePage({
             <div className="flex items-center justify-center px-4 py-5 gap-3">
               <div className="flex-1 flex flex-col items-center gap-2 min-w-0">
                 {teamA ? (() => { const t = teamList.find(t => t.name === teamA); return (<>
-                  <img src={flagUrl(t!.code)} alt={teamA} className="w-10 h-7 rounded shadow-md object-cover" />
+                  {t?.flag && <img src={t.flag} alt={teamA} className="w-10 h-7 rounded shadow-md object-cover" />}
                   <span className="text-sm font-bold text-white text-center leading-tight truncate max-w-full">{teamA}</span>
                 </>); })() : (
                   <span className="text-xs text-gray-600">Team A</span>
@@ -243,7 +238,7 @@ export default function CreatePage({
               </div>
               <div className="flex-1 flex flex-col items-center gap-2 min-w-0">
                 {teamB ? (() => { const t = teamList.find(t => t.name === teamB); return (<>
-                  <img src={flagUrl(t!.code)} alt={teamB} className="w-10 h-7 rounded shadow-md object-cover" />
+                  {t?.flag && <img src={t.flag} alt={teamB} className="w-10 h-7 rounded shadow-md object-cover" />}
                   <span className="text-sm font-bold text-white text-center leading-tight truncate max-w-full">{teamB}</span>
                 </>); })() : (
                   <span className="text-xs text-gray-600">Team B</span>
@@ -293,7 +288,7 @@ export default function CreatePage({
                           : "border-white/10 bg-gray-800 text-gray-400 hover:border-gray-300 dark:border-white/20"
                       }`}
                     >
-                      {info && <img src={flagUrl(info.code)} alt={t} className="w-6 h-4 rounded shadow" />}
+                      {info?.flag && <img src={info.flag} alt={t} className="w-6 h-4 rounded shadow" />}
                       <span className="truncate">{t}</span>
                     </button>
                   );

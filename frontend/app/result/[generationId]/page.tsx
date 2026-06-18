@@ -12,15 +12,15 @@ const WATERMARK = "IfIWasThere.AI";
 
 const flagCache = new Map<string, HTMLImageElement>();
 
-async function loadFlag(code: string): Promise<HTMLImageElement | null> {
-  if (!code) return null;
-  if (flagCache.has(code)) return flagCache.get(code)!;
+async function loadFlag(url: string): Promise<HTMLImageElement | null> {
+  if (!url) return null;
+  if (flagCache.has(url)) return flagCache.get(url)!;
   try {
     const img = new Image();
     img.crossOrigin = "anonymous";
-    img.src = `https://flagcdn.com/w80/${code}.png`;
+    img.src = url;
     await new Promise<void>((resolve, reject) => { img.onload = () => resolve(); img.onerror = () => reject(); });
-    flagCache.set(code, img);
+    flagCache.set(url, img);
     return img;
   } catch { return null; }
 }
@@ -29,7 +29,7 @@ function drawWatermarks(
   ctx: CanvasRenderingContext2D,
   width: number,
   height: number,
-  football: { teamA: string; teamB: string; score: string; codeA?: string; codeB?: string } | null,
+  football: { teamA: string; teamB: string; score: string; flagA?: string; flagB?: string } | null,
   flagA?: HTMLImageElement | null,
   flagB?: HTMLImageElement | null,
   matchSeconds = 0
@@ -117,15 +117,15 @@ function drawWatermarks(
 
 async function downloadImageWithWatermark(
   imageUrl: string, filename: string,
-  football: { teamA: string; teamB: string; score: string; codeA?: string; codeB?: string } | null
+  football: { teamA: string; teamB: string; score: string; flagA?: string; flagB?: string } | null
 ) {
   const [img, flagA, flagB] = await Promise.all([
     new Promise<HTMLImageElement>((resolve, reject) => {
       const i = new Image(); i.crossOrigin = "anonymous"; i.src = imageUrl;
       i.onload = () => resolve(i); i.onerror = () => reject(new Error("load failed"));
     }),
-    loadFlag(football?.codeA || ''),
-    loadFlag(football?.codeB || ''),
+    loadFlag(football?.flagA || ''),
+    loadFlag(football?.flagB || ''),
   ]);
 
   const canvas = document.createElement("canvas");
@@ -149,11 +149,11 @@ async function downloadImageWithWatermark(
 
 async function downloadVideoWithWatermark(
   videoUrl: string, filename: string,
-  football: { teamA: string; teamB: string; score: string; codeA?: string; codeB?: string } | null
+  football: { teamA: string; teamB: string; score: string; flagA?: string; flagB?: string } | null
 ) {
   const [flagA, flagB] = await Promise.all([
-    loadFlag(football?.codeA || ''),
-    loadFlag(football?.codeB || ''),
+    loadFlag(football?.flagA || ''),
+    loadFlag(football?.flagB || ''),
   ]);
 
   const proxyUrl = `/api/proxy?url=${encodeURIComponent(videoUrl)}`;
