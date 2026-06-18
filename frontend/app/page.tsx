@@ -8,6 +8,7 @@ import { EventCard } from "@/components/EventCard";
 const CATEGORY_TABS: { key: string; label: string }[] = [
   { key: "", label: "All" },
   { key: "sports", label: "Sports" },
+  { key: "music", label: "Music" },
   { key: "fiction", label: "Fiction" },
   { key: "history", label: "History" },
 ];
