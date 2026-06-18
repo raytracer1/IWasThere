@@ -5,7 +5,7 @@ import type { Event } from "@/lib/types";
 
 const CATEGORIES = [
   "football", "basketball", "tennis", "athletics",
-  "cricket", "boxing", "american_football", "music", "fiction", "other",
+  "cricket", "boxing", "american_football", "music", "fiction", "history", "other",
 ] as const;
 
 const DEFAULT_SCENE = { location: "", time_period: "", atmosphere: "", description: "" };
