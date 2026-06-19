@@ -38,7 +38,7 @@ The person wearing a {user_team} jersey, arms raised, expression showing {mood},
 Original stadium structure, crowd layout, pitch, lighting direction, person's facial features intact.
 DSLR sports photography, World Cup broadcast aesthetic. No text or logos.`,
       negative_prompt: 'blurry face, duplicate person, extra fingers, cropped face, distorted body, low quality, cartoon, painting, illustration, watermark, text, logo, player on field, back turned, facing away from camera, person facing backwards, back of head visible, person turned away, profile view, side view, looking backwards',
-      video_prompt: 'Animate the person with subtle cheering motion, arms raising and lowering, confetti falling gently, flags waving in the stadium breeze, crowd swaying in the background, while keeping the face and outfit consistent.',
+      video_prompt: 'Animate the person with subtle body motion, confetti falling gently, flags waving in the stadium breeze, crowd swaying in the background, while keeping the face and outfit consistent.',
       insert_zone: '',
     },
     status: 'active',
@@ -73,7 +73,7 @@ The person wearing a {user_team} jersey, expression showing {mood}, same lightin
 Original arena layout, court, crowd structure, lighting, person's facial features intact.
 DSLR sports photography, NBA broadcast aesthetic. No text or logos.`,
       negative_prompt: 'blurry face, duplicate person, extra fingers, cropped face, distorted body, low quality, cartoon, painting, illustration, watermark, text, logo, player on court, back turned, facing away from camera, person facing backwards, back of head visible, person turned away, profile view, side view, looking backwards',
-      video_prompt: 'Animate the person with subtle cheering motion, head nodding to the rhythm of the game, crowd swaying behind, arena lights flickering, while keeping the face and outfit consistent.',
+      video_prompt: 'Animate the person with subtle body motion, crowd swaying behind, arena lights flickering, while keeping the face and outfit consistent.',
       insert_zone: '',
     },
     status: 'active',
