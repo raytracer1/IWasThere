@@ -47,6 +47,10 @@ export function compileEventPrompts(event: Event, game?: GenerateRequest['footba
 
   let imagePrompt = replacePlaceholders(promptTemplate, vars);
 
+  const s = event.scene || {};
+  const cam = event.camera || {};
+  const enrichSuffix = buildEnrichSuffix(s as Record<string, unknown>, cam as Record<string, unknown>);
+
   // Build game context once — append to both image and video
   let gameSuffix = '';
   if (game) {
@@ -90,8 +94,10 @@ export function compileEventPrompts(event: Event, game?: GenerateRequest['footba
     }
   }
 
+  imagePrompt += enrichSuffix;
+
   const videoTemplate = event.generation?.video_prompt || promptTemplate;
-  const videoPrompt = replacePlaceholders(videoTemplate, vars) + gameSuffix;
+  const videoPrompt = replacePlaceholders(videoTemplate, vars) + gameSuffix + enrichSuffix;
 
   return {
     imagePrompt,
@@ -99,6 +105,26 @@ export function compileEventPrompts(event: Event, game?: GenerateRequest['footba
     captions: [],
     hashtags: '',
   };
+}
+
+export function buildEnrichSuffix(scene: Record<string, unknown>, camera: Record<string, unknown>): string {
+  const parts: string[] = [];
+  if (scene.type) parts.push(`${scene.type}`);
+  if (scene.venue) parts.push(`${scene.venue}`);
+  if (scene.lighting) parts.push(`${scene.lighting} lighting`);
+  if (scene.weather) parts.push(`${scene.weather} weather`);
+  if (scene.crowd_density) parts.push(`${scene.crowd_density} crowd`);
+  if (scene.atmosphere) {
+    const atm = Array.isArray(scene.atmosphere) ? scene.atmosphere.join(', ') : String(scene.atmosphere);
+    parts.push(atm);
+  }
+  if (camera.angle) parts.push(`${camera.angle} angle`);
+  if (camera.shot_type) parts.push(`${camera.shot_type} shot`);
+  if (camera.style) parts.push(`${camera.style}`);
+  if (camera.lighting) parts.push(`camera: ${camera.lighting}`);
+  if (camera.lens) parts.push(`${camera.lens} lens`);
+  if (camera.depth_of_field) parts.push(`${camera.depth_of_field} depth of field`);
+  return parts.length > 0 ? '\n\n' + parts.join(', ') + '.' : '';
 }
 
 function replacePlaceholders(template: string, vars: PromptVariables): string {

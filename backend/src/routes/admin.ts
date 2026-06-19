@@ -2,6 +2,7 @@ import { Hono } from 'hono';
 import { D1Helper } from '../utils/d1';
 import { uploadToR2, deleteFromR2, generateSignedUrl, buildEventAssetUrls } from '../utils/r2';
 import { generateImageFromText, submitVideo } from '../utils/agnes';
+import { buildEnrichSuffix } from '../utils/promptBuilder';
 import { MAX_THUMBNAIL_SIZE, DEFAULT_PAGE_SIZE } from '../shared';
 import type { Event } from '../shared';
 import type { Bindings } from '../types';
@@ -201,7 +202,8 @@ adminRouter.post('/events/:id/generate-assets', async (c) => {
 
   try {
     // 1. Generate background image from text
-    const bgPrompt = `Ultra-realistic stadium scene: ${scene.venue || 'stadium'}, ${scene.time_period || ''}, ${scene.lighting || 'night'} lighting, packed crowd. ${genericPrompt.slice(0, 200)}`;
+    const enrich = buildEnrichSuffix(scene, event.camera as Record<string, unknown> || {});
+    const bgPrompt = `Ultra-realistic stadium scene: ${scene.venue || 'stadium'}, ${scene.time_period || ''}, ${scene.lighting || 'night'} lighting, packed crowd. ${genericPrompt}${enrich}`;
     const sizeMap: Record<string, string> = { '9:16': '720x1280', '16:9': '1280x720', '1:1': '720x720', '4:3': '960x720', '3:4': '720x960' };
     const size = sizeMap[ratio] || '1280x720';
     const [w, h] = size.split('x').map(Number);
@@ -223,7 +225,8 @@ adminRouter.post('/events/:id/generate-assets', async (c) => {
     const bgStoredUrl = bgKey ? `${publicBase}/${bgKey}` : bgImageUrl;
 
     // 2. Generate reference video from the background image
-    const videoTaskId = await submitVideo(genericPrompt.slice(0, 500), bgImageUrl, apiKey, 121, 24, w, h, negativePrompt);
+    const videoPrompt = genericPrompt + enrich;
+    const videoTaskId = await submitVideo(videoPrompt, bgImageUrl, apiKey, 121, 24, w, h, negativePrompt);
     console.log(`[admin] Video task: ${videoTaskId}`);
 
     // Update the event (cron will poll for video completion)
