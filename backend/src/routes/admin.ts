@@ -206,7 +206,7 @@ adminRouter.post('/events/:id/generate-assets', async (c) => {
     const size = sizeMap[ratio] || '1280x720';
     const [w, h] = size.split('x').map(Number);
 
-    const bgImageUrl = await generateImageFromText(bgPrompt, apiKey, size, negativePrompt);
+    const bgImageUrl = await generateImageFromText(bgPrompt, apiKey, size);
     console.log(`[admin] Background image: ${bgImageUrl}`);
 
     // Download and store in R2 (public bucket)

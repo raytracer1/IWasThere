@@ -48,6 +48,7 @@ export interface EventCamera {
 
 export interface EventGeneration {
   prompt_template: string;
+  video_prompt?: string;    // motion/animation instructions for video
   negative_prompt?: string;
   insert_zone?: string | InsertZone;
 }

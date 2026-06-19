@@ -52,7 +52,7 @@ generateRouter.post('/', async (c) => {
 
   const userId = dbUser?.id || user.id;
 
-  const { imagePrompt } = compileEventPrompts(event, (football || basketball) as never);
+  const { imagePrompt, videoPrompt } = compileEventPrompts(event, (football || basketball) as never);
   const generationId = crypto.randomUUID();
 
   await db.createGeneration({
@@ -75,7 +75,7 @@ generateRouter.post('/', async (c) => {
   while (retries < MAX_RETRIES) {
     try {
       console.log(`[generate] Step 1: Image attempt ${retries + 1}/${MAX_RETRIES} for ${generationId}`);
-      generatedImageUrl = await generateImage(imagePrompt, selfieBase64, apiKey, size, event.generation?.negative_prompt);
+      generatedImageUrl = await generateImage(imagePrompt, selfieBase64, apiKey, size);
       console.log(`[generate] Image done: ${generatedImageUrl}`);
       await db.updateGeneration(generationId, { outputImage: generatedImageUrl });
       break;
@@ -98,7 +98,7 @@ generateRouter.post('/', async (c) => {
       console.log(`[generate] Step 2: Video attempt ${retries + 1}/${MAX_RETRIES}`);
       const duration = Math.round(event.duration || 5);
       const numFrames = Math.ceil(duration * 24 / 8) * 8 + 1;
-      const taskId = await submitVideo(imagePrompt, generatedImageUrl!, apiKey, numFrames, 24, w, h, event.generation?.negative_prompt);
+      const taskId = await submitVideo(videoPrompt, generatedImageUrl!, apiKey, numFrames, 24, w, h, event.generation?.negative_prompt);
       console.log(`[generate] Video task: ${taskId}`);
       await db.updateGeneration(generationId, { agnesJobId: taskId });
       return c.json({ success: true, data: { generationId, status: 'processing' } });

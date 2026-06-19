@@ -22,6 +22,7 @@ interface PromptVariables {
  */
 export function compileEventPrompts(event: Event, game?: GenerateRequest['football']): {
   imagePrompt: string;
+  videoPrompt: string;
   captions: string[];
   hashtags: string;
 } {
@@ -46,8 +47,8 @@ export function compileEventPrompts(event: Event, game?: GenerateRequest['footba
 
   let imagePrompt = replacePlaceholders(promptTemplate, vars);
 
-  // If user provided football customization, append it explicitly so it
-  // always affects generation even if the template lacks the placeholders.
+  // Build game context once — append to both image and video
+  let gameSuffix = '';
   if (game) {
     const parts: string[] = [];
     if (game.teamA && game.teamB) {
@@ -76,7 +77,6 @@ export function compileEventPrompts(event: Event, game?: GenerateRequest['footba
       const desc = userMoodDesc[game.mood];
       if (desc) {
         parts.push(desc);
-        // Describe contrasting crowd reactions
         if (isPositive) {
           parts.push(`Around them, ${userTeam} fans are going absolutely wild with the same joy — hugging strangers, flags waving, pure ecstasy. Across the stadium, ${otherTeam} fans sit devastated — heads in hands, tears, stunned silence, heartbreak.`);
         } else {
@@ -85,12 +85,17 @@ export function compileEventPrompts(event: Event, game?: GenerateRequest['footba
       }
     }
     if (parts.length > 0) {
-      imagePrompt += '\n\n' + parts.join(' ');
+      gameSuffix = '\n\n' + parts.join(' ');
+      imagePrompt += gameSuffix;
     }
   }
 
+  const videoTemplate = event.generation?.video_prompt || promptTemplate;
+  const videoPrompt = replacePlaceholders(videoTemplate, vars) + gameSuffix;
+
   return {
     imagePrompt,
+    videoPrompt,
     captions: [],
     hashtags: '',
   };

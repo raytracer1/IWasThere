@@ -23,13 +23,11 @@ export async function generateImageFromText(
   prompt: string,
   apiKey: string,
   size = '1280x720',
-  negativePrompt?: string,
 ): Promise<string> {
   const body = {
     model: 'agnes-image-2.1-flash',
     prompt,
     size,
-    negative_prompt: negativePrompt || '',
     extra_body: { response_format: 'url' },
   };
   const json = await agnesPost('/images/generations', body, apiKey);
@@ -44,13 +42,11 @@ export async function generateImage(
   imageBase64: string,
   apiKey: string,
   size = '576x1024',
-  negativePrompt?: string,
 ): Promise<string> {
   const body = {
     model: 'agnes-image-2.1-flash',
     prompt,
     size,
-    negative_prompt: negativePrompt || '',
     extra_body: {
       image: [imageBase64],
       response_format: 'url',
