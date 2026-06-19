@@ -232,60 +232,77 @@ export default function EventForm({ event, onSave, onCancel, onGenerateAssets }:
         </div>
 
         {/* 4. Basic fields */}
-        <input
-          placeholder="Title"
-          value={form.title}
-          onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
-          className="col-span-2 rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-white"
-        />
-        <select
-          value={form.category}
-          onChange={(e) => setForm((prev) => ({ ...prev, category: e.target.value }))}
-          className="rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-white"
-        >
-          {CATEGORIES.map((s) => (<option key={s} value={s}>{s}</option>))}
-        </select>
-        <select
-          value={form.aspectRatio}
-          onChange={(e) => setForm((prev) => ({ ...prev, aspectRatio: e.target.value }))}
-          className="rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-white"
-        >
-          <option value="9:16">9:16 (Portrait)</option>
-          <option value="16:9">16:9 (Landscape)</option>
-          <option value="1:1">1:1 (Square)</option>
-          <option value="4:3">4:3 (Traditional)</option>
-          <option value="3:4">3:4 (Portrait)</option>
-        </select>
-        <input
-          type="text"
-          inputMode="decimal"
-          value={priceStr}
-          onChange={(e) => {
-            const v = e.target.value;
-            if (v === "" || /^\d+(\.\d{0,2})?$/.test(v)) {
-              setPriceStr(v);
-            }
-          }}
-          placeholder="0"
-          className="rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-white w-16"
-        />
-        <input
-          type="number"
-          min={1}
-          max={30}
-          value={form.duration}
-          onChange={(e) => setForm((prev) => ({ ...prev, duration: parseInt(e.target.value) || 5 }))}
-          placeholder="Duration (s)"
-          className="rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-white w-20"
-        />
-        <select
-          value={form.status}
-          onChange={(e) => setForm((prev) => ({ ...prev, status: e.target.value as "active" | "draft" }))}
-          className="rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-white"
-        >
-          <option value="active">Active</option>
-          <option value="draft">Draft</option>
-        </select>
+        <div className="col-span-2">
+          <label className="text-xs text-gray-400 mb-1 block">Title</label>
+          <input
+            value={form.title}
+            onChange={(e) => setForm((prev) => ({ ...prev, title: e.target.value }))}
+            className="w-full rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-white"
+          />
+        </div>
+        <div>
+          <label className="text-xs text-gray-400 mb-1 block">Category</label>
+          <select
+            value={form.category}
+            onChange={(e) => setForm((prev) => ({ ...prev, category: e.target.value }))}
+            className="w-full rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-white"
+          >
+            {CATEGORIES.map((s) => (<option key={s} value={s}>{s}</option>))}
+          </select>
+        </div>
+        <div>
+          <label className="text-xs text-gray-400 mb-1 block">Aspect Ratio</label>
+          <select
+            value={form.aspectRatio}
+            onChange={(e) => setForm((prev) => ({ ...prev, aspectRatio: e.target.value }))}
+            className="w-full rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-white"
+          >
+            <option value="9:16">9:16</option>
+            <option value="16:9">16:9</option>
+            <option value="1:1">1:1</option>
+            <option value="4:3">4:3</option>
+            <option value="3:4">3:4</option>
+          </select>
+        </div>
+        <div className="col-span-2 grid grid-cols-3 gap-3">
+          <div>
+            <label className="text-xs text-gray-400 mb-1 block">Price</label>
+            <input
+              type="text"
+              inputMode="decimal"
+              value={priceStr}
+              onChange={(e) => {
+                const v = e.target.value;
+                if (v === "" || /^\d+(\.\d{0,2})?$/.test(v)) {
+                  setPriceStr(v);
+                }
+              }}
+              className="w-full rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-white"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-gray-400 mb-1 block">Duration (s)</label>
+            <input
+              type="number"
+              min={1}
+              max={30}
+              value={form.duration}
+              onChange={(e) => setForm((prev) => ({ ...prev, duration: parseInt(e.target.value) || 5 }))}
+              className="w-full rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-white"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-gray-400 mb-1 block">Status</label>
+            <select
+              value={form.status}
+              onChange={(e) => setForm((prev) => ({ ...prev, status: e.target.value as "active" | "draft" }))}
+              className="w-full rounded-lg bg-gray-800 border border-white/10 px-3 py-2 text-sm text-white"
+            >
+              <option value="active">Active</option>
+              <option value="draft">Draft</option>
+            </select>
+          </div>
+        </div>
 
         {/* JSON Editor Fields — only scene, camera, generation remain */}
         <div className="col-span-2 mt-2">
