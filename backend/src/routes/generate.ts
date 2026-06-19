@@ -84,10 +84,10 @@ generateRouter.post('/', async (c) => {
       console.error(`[generate] Image attempt ${retries} failed:`, String(err));
       if (retries >= MAX_RETRIES) {
         await db.updateGeneration(generationId, { status: 'failed', retryImage: retries, errorMessage: String(err) });
-        return c.json({ success: false, error: 'Image generation failed after 3 attempts' }, 500);
+        return c.json({ success: true, data: { generationId, status: 'failed' } }, 200);
       }
       await db.updateGeneration(generationId, { retryImage: retries });
-      await new Promise(r => setTimeout(r, 2000)); // wait 2s before retry
+      await new Promise(r => setTimeout(r, 2000));
     }
   }
 
@@ -106,7 +106,7 @@ generateRouter.post('/', async (c) => {
       console.error(`[generate] Video attempt ${retries} failed:`, String(err));
       if (retries >= MAX_RETRIES) {
         await db.updateGeneration(generationId, { status: 'failed', retryVideo: retries, errorMessage: String(err) });
-        return c.json({ success: false, error: 'Video generation failed after 3 attempts' }, 500);
+        return c.json({ success: true, data: { generationId, status: 'failed' } }, 200);
       }
       await db.updateGeneration(generationId, { retryVideo: retries });
       await new Promise(r => setTimeout(r, 2000));
