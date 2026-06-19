@@ -39,6 +39,11 @@ export default function AdminListPage() {
     if (!confirm("Delete this event?")) return;
     try {
       await adminFetch(`/admin/events/${id}`, accessToken, { method: "DELETE" });
+      if (typeof pendo !== 'undefined') {
+        pendo.track("admin_event_deleted", {
+          eventId: id,
+        });
+      }
       loadEvents();
     } catch (err) {
       alert(err instanceof Error ? err.message : "Delete failed");

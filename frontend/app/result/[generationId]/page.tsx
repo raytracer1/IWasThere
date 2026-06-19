@@ -10,6 +10,10 @@ import { POLL_INTERVAL_MS } from "@/lib/types";
 
 const WATERMARK = "IfIWasThere.AI";
 
+// Module-level dedup sets for polling-detected events (survive component remounts)
+const trackedCompletedIds = new Set<string>();
+const trackedFailedIds = new Set<string>();
+
 const flagCache = new Map<string, HTMLImageElement>();
 
 async function loadFlag(url: string): Promise<HTMLImageElement | null> {
@@ -355,6 +359,32 @@ export default function ResultPage({
         if (stopped) return;
         if (res.data) {
           setGen(res.data);
+          if (res.data.status === "completed" && !trackedCompletedIds.has(generationId)) {
+            trackedCompletedIds.add(generationId);
+            if (typeof pendo !== 'undefined') {
+              pendo.track("generation_completed", {
+                generationId,
+                eventId: res.data.eventId,
+                eventCategory: res.data.eventCategory || '',
+                eventTitle: (res.data.eventTitle || '').substring(0, 100),
+                hasOutputVideo: !!res.data.outputVideoUrl,
+                hasOutputImage: !!res.data.outputImageUrl,
+                hasCaptions: !!(res.data.captions?.length),
+                captionCount: res.data.captions?.length || 0,
+              });
+            }
+          }
+          if (res.data.status === "failed" && !res.data.outputVideoUrl && !trackedFailedIds.has(generationId)) {
+            trackedFailedIds.add(generationId);
+            if (typeof pendo !== 'undefined') {
+              pendo.track("generation_failed", {
+                generationId,
+                eventId: res.data.eventId,
+                eventCategory: res.data.eventCategory || '',
+                errorMessage: (res.data.errorMessage || '').substring(0, 200),
+              });
+            }
+          }
           if (res.data.status === "completed" || res.data.status === "failed") {
             clearInterval(timer);
           }
@@ -577,7 +607,17 @@ export default function ResultPage({
           {gen.captions && gen.captions.length > 0 && (
             <CaptionPicker
               captions={gen.captions}
-              onSelect={setSelectedCaption}
+              onSelect={(caption) => {
+                setSelectedCaption(caption);
+                if (typeof pendo !== 'undefined') {
+                  pendo.track("caption_selected", {
+                    generationId,
+                    eventId: gen.eventId,
+                    captionIndex: gen.captions!.indexOf(caption),
+                    captionLength: caption.length,
+                  });
+                }
+              }}
               selected={selectedCaption}
             />
           )}
@@ -589,6 +629,15 @@ export default function ResultPage({
                 onClick={() => {
                   const fb = (gen.basketball || (gen.football || gen.basketball)) ? JSON.parse((gen.basketball || (gen.football || gen.basketball))!) : null;
                   downloadVideoWithWatermark(gen.outputVideoUrl!, `ifiwasthere-${gen.eventId}`, fb);
+                  if (typeof pendo !== 'undefined') {
+                    pendo.track("video_downloaded", {
+                      generationId,
+                      eventId: gen.eventId,
+                      eventCategory: gen.eventCategory || '',
+                      hasScoreboard: !!fb,
+                      outputFormat: 'video',
+                    });
+                  }
                 }}
                 className="block w-full text-center rounded-xl bg-white/10 border border-white/10 py-3 text-sm font-medium text-gray-900 dark:text-white hover:bg-white/20 transition-colors"
               >
@@ -600,6 +649,14 @@ export default function ResultPage({
                 onClick={() => {
                   const fb = (gen.basketball || (gen.football || gen.basketball)) ? JSON.parse((gen.basketball || (gen.football || gen.basketball))!) : null;
                   downloadImageWithWatermark(gen.outputImageUrl!, `ifiwasthere-${gen.eventId}`, fb);
+                  if (typeof pendo !== 'undefined') {
+                    pendo.track("image_downloaded", {
+                      generationId,
+                      eventId: gen.eventId,
+                      eventCategory: gen.eventCategory || '',
+                      hasScoreboard: !!fb,
+                    });
+                  }
                 }}
                 className="block w-full text-center rounded-xl bg-white/10 border border-white/10 py-3 text-sm font-medium text-gray-900 dark:text-white hover:bg-white/20 transition-colors"
               >
@@ -612,6 +669,14 @@ export default function ResultPage({
                 onClick={() => {
                   const text = encodeURIComponent(selectedCaption);
                   window.open(`https://x.com/intent/tweet?text=${text}`, "_blank");
+                  if (typeof pendo !== 'undefined') {
+                    pendo.track("shared_on_x", {
+                      generationId,
+                      eventId: gen.eventId,
+                      eventCategory: gen.eventCategory || '',
+                      captionLength: selectedCaption.length,
+                    });
+                  }
                 }}
                 className="block w-full text-center rounded-xl bg-black border border-white/20 py-3 text-sm font-medium text-gray-900 dark:text-white hover:bg-gray-900 transition-colors"
               >

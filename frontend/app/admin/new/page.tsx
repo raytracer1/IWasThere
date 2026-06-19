@@ -35,6 +35,19 @@ export default function AdminNewPage() {
       method: "POST",
       body: JSON.stringify({ ...data.body, id: eventId }),
     });
+    if (typeof pendo !== 'undefined') {
+      pendo.track("admin_event_created", {
+        eventId,
+        category: String(data.body.category || ''),
+        status: String(data.body.status || ''),
+        aspectRatio: String(data.body.aspectRatio || ''),
+        price: Number(data.body.price) || 0,
+        duration: Number(data.body.duration) || 0,
+        hasThumbnail: !!data.thumbnailFile,
+        hasBackground: !!data.backgroundFile,
+        hasReferenceVideo: !!data.videoFile,
+      });
+    }
     router.push("/admin");
   };
 

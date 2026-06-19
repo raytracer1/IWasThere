@@ -120,6 +120,14 @@ export default function CreatePage({
       setSelfiePreview(reader.result as string);
       setImageBase64(reader.result as string);
       setConverting(false);
+      if (typeof pendo !== 'undefined') {
+        pendo.track("selfie_uploaded", {
+          eventId,
+          eventCategory: event?.category || '',
+          fileType: file.type,
+          fileSizeBytes: file.size,
+        });
+      }
     };
     reader.onerror = () => { setGenError("Failed to read image"); setConverting(false); };
     reader.readAsDataURL(file);
@@ -137,12 +145,40 @@ export default function CreatePage({
           ? { teamA, teamB, score: `${scoreA}:${scoreB}`, scoreA, scoreB, mood, userTeam: userTeam || teamA, flagA: teamAInfo?.flag || '', flagB: teamBInfo?.flag || '', codeA: teamAInfo?.code || '', codeB: teamBInfo?.code || '', sport: event?.category || '' }
           : undefined;
 
+      if (gameData && typeof pendo !== 'undefined') {
+        pendo.track("match_customized", {
+          eventId,
+          eventCategory: event?.category || '',
+          teamA: gameData.teamA,
+          teamB: gameData.teamB,
+          scoreA: gameData.scoreA,
+          scoreB: gameData.scoreB,
+          userTeam: gameData.userTeam,
+          mood: gameData.mood,
+          sport: gameData.sport,
+        });
+      }
+
       const reqBody: GenerateRequest = { eventId, imageBase64 };
       if (event?.category === 'basketball') reqBody.basketball = gameData;
       else if (event?.category === 'football') reqBody.football = gameData;
 
       const res = await triggerGenerate(reqBody, accessToken);
       if (res.data?.generationId) {
+        if (typeof pendo !== 'undefined') {
+          pendo.track("generation_submitted", {
+            eventId,
+            eventCategory: event?.category || '',
+            generationId: res.data.generationId,
+            hasTeamCustomization: !!gameData,
+            teamA: gameData?.teamA || '',
+            teamB: gameData?.teamB || '',
+            score: gameData?.score || '',
+            mood: gameData?.mood || '',
+            userTeam: gameData?.userTeam || '',
+            aspectRatio: event?.aspectRatio || '',
+          });
+        }
         useUserStore.getState().refreshCredits(accessToken!);
         router.push(`/result/${res.data.generationId}`);
       }
