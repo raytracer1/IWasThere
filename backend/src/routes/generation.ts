@@ -19,7 +19,7 @@ generationRouter.get('/', async (c) => {
   const publicBase = c.env.R2_PUBLIC_URL || `${new URL(c.req.url).origin}/public`;
   const data = generations.map((g) => ({
     ...g,
-    eventThumbnail: `${publicBase}/events/${g.eventId}/thumbnail.webp?t=${Date.now()}`,
+    eventThumbnail: `${publicBase}/events/${g.eventId}/thumbnail.webp`,
   }));
 
   return c.json({ success: true, data, total, page, pageSize });
@@ -66,7 +66,7 @@ generationRouter.get('/:id', async (c) => {
       inputImageUrl,
       outputImageUrl: imageUrl,
       outputVideoUrl: videoUrl || (gen.status === 'failed' ? refVideo : undefined),
-      eventThumbnail: `${publicBase}/events/${gen.eventId}/thumbnail.webp?t=${Date.now()}`,
+      eventThumbnail: `${publicBase}/events/${gen.eventId}/thumbnail.webp`,
       captions: parsedCaptions,
     },
   });

@@ -126,11 +126,10 @@ export function buildEventAssetUrls(
   r2PublicUrl: string
 ): Record<string, unknown> {
   const id = event.id as string;
-  const t = Date.now(); // cache buster
   return {
     ...event,
-    thumbnailUrl: `${r2PublicUrl}/events/${id}/thumbnail.webp?t=${t}`,
-    backgroundUrl: `${r2PublicUrl}/events/${id}/background.webp?t=${t}`,
+    thumbnailUrl: `${r2PublicUrl}/events/${id}/thumbnail.webp`,
+    backgroundUrl: `${r2PublicUrl}/events/${id}/background.webp`,
     referenceVideo: (event.referenceVideo as string)?.startsWith('http')
       ? event.referenceVideo
       : `${r2PublicUrl}/events/${id}/reference.mp4`,
