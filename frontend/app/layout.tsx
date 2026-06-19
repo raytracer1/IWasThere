@@ -20,6 +20,13 @@ export const metadata: Metadata = {
   title: "IfIWasThere — Step into historic moments",
   description:
     "Upload your selfie and see yourself at history's greatest sports moments. AI-powered sports imagination. Free.",
+  openGraph: {
+    images: ['/og.jpg'],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    images: ['/og.jpg'],
+  },
 };
 
 export default function RootLayout({
