@@ -15,6 +15,12 @@ export function CaptionPicker({ captions, onSelect, selected }: CaptionPickerPro
     await navigator.clipboard.writeText(caption);
     setCopied(caption);
     setTimeout(() => setCopied(null), 2000);
+    if (typeof pendo !== 'undefined') {
+      pendo.track("caption_copied", {
+        captionLength: caption.length,
+        captionIndex: captions.indexOf(caption),
+      });
+    }
   };
 
   return (

@@ -65,6 +65,18 @@ export default function AdminEditPage({
       method: "PUT",
       body: JSON.stringify(data.body),
     });
+    if (typeof pendo !== 'undefined') {
+      pendo.track("admin_event_updated", {
+        eventId,
+        category: String(data.body.category || ''),
+        status: String(data.body.status || ''),
+        aspectRatio: String(data.body.aspectRatio || ''),
+        price: Number(data.body.price) || 0,
+        updatedThumbnail: !!data.thumbnailFile,
+        updatedBackground: !!data.backgroundFile,
+        updatedVideo: !!data.videoFile,
+      });
+    }
     router.push("/admin");
   };
 
@@ -95,6 +107,14 @@ export default function AdminEditPage({
                 method: 'POST',
                 body: JSON.stringify(data),
               });
+              if (typeof pendo !== 'undefined') {
+                pendo.track("admin_assets_generated", {
+                  eventId,
+                  title: (data.title || '').substring(0, 100),
+                  aspectRatio: data.aspectRatio || '',
+                  hasNegativePrompt: !!data.negativePrompt,
+                });
+              }
               // Poll until video is ready (blocking — button shows "Generating...")
               let seenTask = false;
               await new Promise<void>((resolve) => {
