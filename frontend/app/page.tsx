@@ -60,7 +60,7 @@ export default function HomePage() {
             className={`shrink-0 rounded-full px-4 py-1.5 text-xs font-medium transition-colors ${
               category === tab.key
                 ? "bg-cyan-500/20 text-cyan-300 border border-cyan-500/30"
-                : "bg-white/5 text-gray-400 border border-white/10 hover:text-white hover:bg-white/10"
+                : "bg-white/5 text-gray-400 border border-white/10 hover:text-gray-900 dark:hover:text-white hover:bg-white/10"
             }`}
           >
             {tab.label}

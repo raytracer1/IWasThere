@@ -41,7 +41,7 @@ export function EventCard({ event }: { event: Event }) {
         </div>
         {/* Year Badge */}
         {timePeriod && (
-          <div className="absolute top-3 left-3 rounded-lg bg-black/70 backdrop-blur-sm px-2.5 py-1 text-xs font-bold text-gray-900 dark:text-white">
+          <div className="absolute top-3 left-3 rounded-lg bg-black/70 backdrop-blur-sm px-2.5 py-1 text-xs font-bold text-white">
             {timePeriod}
           </div>
         )}
