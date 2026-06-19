@@ -47,7 +47,7 @@ export function Navbar() {
               )}
               <span className="text-xs text-gray-400 hidden sm:inline">{email}</span>
               <button
-                onClick={() => signOut()}
+                onClick={() => { pendo.clearSession(); signOut(); }}
                 className="text-xs text-gray-500 hover:text-red-400 transition-colors"
               >
                 Sign out
