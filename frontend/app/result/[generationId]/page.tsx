@@ -169,10 +169,16 @@ function drawWatermarks(
       ctx.font = `bold ${teamFontSize}px Arial, Helvetica, sans-serif`;
       const taW = ctx.measureText(teamADisplay).width;
       ctx.font = `bold ${scoreFontSize}px Arial, Helvetica, sans-serif`;
-      const scoreSpacing = Math.round(scoreFontSize * 0.35);
+      const scoreSpacing = Math.round(scoreFontSize * 0.15);
+      const scoreParts = game.score.split(':');
       let scW = 0;
-      for (const ch of game.score) { scW += ctx.measureText(ch).width + scoreSpacing; }
-      scW -= scoreSpacing;
+      for (let i = 0; i < scoreParts.length; i++) {
+        for (const ch of scoreParts[i]) { scW += ctx.measureText(ch).width + scoreSpacing; }
+        if (scoreSpacing > 0) scW -= scoreSpacing;
+        if (i < scoreParts.length - 1) {
+          scW += gap + ctx.measureText(':').width + gap;
+        }
+      }
       ctx.font = `bold ${teamFontSize}px Arial, Helvetica, sans-serif`;
       const tbW = ctx.measureText(teamBDisplay).width;
 
@@ -203,18 +209,30 @@ function drawWatermarks(
       sx += taW + gap;
       if (flagA) { ctx.drawImage(flagA, sx, midY - flgH/2, flgW, flgH); sx += flgW + gap; }
 
+      // Draw score with tighter spacing within each number, regular spacing around colon
+      const parts = game.score.split(':');
       ctx.font = `bold ${scoreFontSize}px Arial, Helvetica, sans-serif`;
       ctx.fillStyle = "white";
       ctx.strokeStyle = "rgba(0,0,0,0.7)";
       ctx.lineWidth = 1;
-      for (const ch of game.score) {
-        ctx.strokeText(ch, sx, midY);
-        ctx.fillText(ch, sx, midY);
-        sx += ctx.measureText(ch).width + scoreSpacing;
+      for (let i = 0; i < parts.length; i++) {
+        const digits = parts[i];
+        for (const ch of digits) {
+          ctx.strokeText(ch, sx, midY);
+          ctx.fillText(ch, sx, midY);
+          sx += ctx.measureText(ch).width + scoreSpacing;
+        }
+        if (scoreSpacing > 0) sx -= scoreSpacing;
+        if (i < parts.length - 1) {
+          const colonW = ctx.measureText(':').width;
+          sx += gap;
+          ctx.strokeText(':', sx, midY);
+          ctx.fillText(':', sx, midY);
+          sx += colonW + gap;
+        }
       }
-      sx -= scoreSpacing;
-      sx += gap;
 
+      sx += gap;
       if (flagB) { ctx.drawImage(flagB, sx, midY - flgH/2, flgW, flgH); sx += flgW + gap; }
       drawText(teamBDisplay, teamFontSize, sx);
       sx += tbW + gap * 2;
@@ -494,7 +512,9 @@ export default function ResultPage({
                   <div className="absolute top-3 right-3 z-10 flex items-center gap-1 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
                     <span className="text-[10px] font-bold text-white truncate max-w-12">{aName}</span>
                     {fb.flagA && <img src={fb.flagA} alt="" className="w-3.5 h-2.5 rounded-sm" />}
-                    <span className="text-[10px] font-black text-white tabular-nums tracking-[0.15em]">{fb.score}</span>
+                    <span className="text-[10px] font-black text-white tabular-nums">
+                    {(() => { const p = fb.score.split(':'); return <>{p[0]}<span className="tracking-normal mx-0.5">:</span>{p[1]}</>; })()}
+                  </span>
                     {fb.flagB && <img src={fb.flagB} alt="" className="w-3.5 h-2.5 rounded-sm" />}
                     <span className="text-[10px] font-bold text-white truncate max-w-12">{bName}</span>
                     <span className="text-[9px] text-white/60 tabular-nums font-sans ml-1">{clock}</span>
@@ -547,7 +567,9 @@ export default function ResultPage({
                   <div className="absolute top-3 right-3 z-10 flex items-center gap-1 drop-shadow-[0_1px_2px_rgba(0,0,0,0.9)]">
                     <span className="text-[10px] font-bold text-white truncate max-w-12">{aName}</span>
                     {fb.flagA && <img src={fb.flagA} alt="" className="w-3.5 h-2.5 rounded-sm" />}
-                    <span className="text-[10px] font-black text-white tabular-nums tracking-[0.15em]">{fb.score}</span>
+                    <span className="text-[10px] font-black text-white tabular-nums">
+                    {(() => { const p = fb.score.split(':'); return <>{p[0]}<span className="tracking-normal mx-0.5">:</span>{p[1]}</>; })()}
+                  </span>
                     {fb.flagB && <img src={fb.flagB} alt="" className="w-3.5 h-2.5 rounded-sm" />}
                     <span className="text-[10px] font-bold text-white truncate max-w-12">{bName}</span>
                     <span className="text-[9px] text-white/60 tabular-nums font-sans ml-1">{clock}</span>
